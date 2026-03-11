@@ -1,0 +1,30 @@
+# 数据文件 - 不上传
+data/
+*.pk
+*.pkl
+*.npy
+*.csv
+*.txt
+*.tar.gz
+*.zip
+*.gz
+
+# 模型权重
+*.pt
+*.pth
+*.ckpt
+
+# 输出结果（可保留图片）
+save/
+results/
+__pycache__/
+*.pyc
+
+# 环境配置
+venv/
+env/
+.venv/
+
+# 临时文件
+*.log
+.DS_Store

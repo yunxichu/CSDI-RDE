@@ -1,0 +1,37 @@
+train:
+  lr: 0.001
+  batch_size: 16
+  n_epochs: 100
+  patience: 10
+  epochs: 500
+  itr_per_epoch: 100 
+
+model:
+  is_unconditional: 0
+  target_dim: 4
+  seq_len: 100
+  embed_time: 128
+  timeemb: 128
+  embed_feature: 16
+  featureemb: 16
+  residual_layers: 8
+  residual_channels: 64
+  dilation_cycle_length: 2
+  nheads: 8
+  unet_channels: 64
+  unet_layers: 3
+  target_strategy: "default"  # 新增这一行
+
+diffusion:
+  num_steps: 50
+  beta_1: 0.0001
+  beta_T: 0.02
+  mode: "quad"
+  layers: 4 
+  channels: 64 
+  nheads: 8
+  diffusion_embedding_dim: 128
+  beta_start: 0.0001
+  beta_end: 0.5
+  schedule: "quad"
+  is_linear: False
