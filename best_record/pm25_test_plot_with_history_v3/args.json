@@ -1,0 +1,23 @@
+{
+    "imputed_history_path": "./save/pm25_history_imputed_split0.5_seed42_20260324_154400/history_imputed.csv",
+    "ground_path": "./data/pm25/Code/STMVL/SampleData/pm25_ground.txt",
+    "split_ratio": 0.5,
+    "seed": 42,
+    "horizon_days": 0.0,
+    "horizon_steps": 24,
+    "trainlength": 100,
+    "L": 4,
+    "s": 20,
+    "steps_ahead": 1,
+    "n_jobs": 2,
+    "noise_strength": 0.0,
+    "no_optimize_hyp": false,
+    "target_indices": "0",
+    "plot_dim": 0,
+    "skip_metrics": false,
+    "out_dir": "./save/pm25_test_plot_with_history_v3",
+    "missing_positions_path": "./save/pm25_history_imputed_split0.5_seed42_20260324_154400/history_missing_positions.csv",
+    "history_timesteps": 72,
+    "debug": false,
+    "debug_steps": 3
+}

@@ -1,0 +1,12 @@
+注意，本测试中⚠️ 需要注意的地方
+Delta 预测（残差学习）是偏离标准 NeuralCDE 的设计选择
+
+delta = self.readout(z_final)
+if x_last is not None:
+    return x_last + delta   # ← 这不是标准 NeuralCDE 输出方式
+return delta
+
+
+官方 NeuralCDE 直接用 readout(z_final) 作为预测值。这里改成了"预测增量"（当前时刻值 + 模型输出的变化量），本质上是残差学习。
+
+这不算错误，但它引入了一个隐含假设：PM2.5 在预测步内不会剧烈突变，模型只学习"变化量"。如果 PM2.5 波动很大，可能导致训练初期梯度较小，收敛慢。建议在日志中说明这一设计选择。

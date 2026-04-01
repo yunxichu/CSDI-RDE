@@ -1,0 +1,75 @@
+{
+    "meta": {
+        "total_len": 8759,
+        "split_ratio": 0.5,
+        "split_point": 4379,
+        "hist_len": 4379,
+        "fut_len": 4380,
+        "hist_start": "2014-05-01 01:00:00",
+        "hist_end": "2014-10-30 11:00:00",
+        "fut_start": "2014-10-30 12:00:00",
+        "fut_end": "2015-04-30 23:00:00"
+    },
+    "args": {
+        "imputed_history_path": "./pm25_history_imputed_split0.5_seed42_20260128_101132/history_imputed.csv",
+        "ground_path": "./data/pm25/Code/STMVL/SampleData/pm25_ground.txt",
+        "split_ratio": 0.5,
+        "seed": 42,
+        "horizon_days": 1.0,
+        "horizon_steps": 0,
+        "window_size": 48,
+        "hidden_channels": 64,
+        "num_layers": 3,
+        "steps_ahead": 1,
+        "use_fixed_solver": true,
+        "rk4_nsteps": 0,
+        "epochs": 30,
+        "batch_size": 128,
+        "lr": 0.001,
+        "patience": 15,
+        "device": "auto",
+        "out_dir": "",
+        "plot_dim": 0,
+        "skip_metrics": false,
+        "no_verbose": true
+    },
+    "checks": {
+        "final_horizon_steps": 24,
+        "num_train_samples": 4331,
+        "input_channels": 37,
+        "window_size": 48,
+        "pred_has_nan": true,
+        "pred_all_zero": false
+    },
+    "history_stats": {
+        "name": "history_imputed",
+        "shape": [
+            4379,
+            36
+        ],
+        "nan_count": 0,
+        "inf_count": 0,
+        "min": 2.0,
+        "max": 517.1016,
+        "mean": 76.832551662801,
+        "std": 67.97160756204961
+    },
+    "training": {
+        "train_time_sec": 16851.95,
+        "best_loss_normalized_mse": 0.036376609565671666,
+        "epochs_run": 30
+    },
+    "pred_stats": {
+        "name": "preds",
+        "shape": [
+            24,
+            36
+        ],
+        "nan_count": 91,
+        "inf_count": 0,
+        "min": 80.3493043385093,
+        "max": 310.05122414165726,
+        "mean": 186.9364035312996,
+        "std": 39.04663682499903
+    }
+}

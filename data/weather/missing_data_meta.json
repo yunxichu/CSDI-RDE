@@ -1,0 +1,38 @@
+{
+    "ground_file": "weather_ground.npy",
+    "original_shape": [
+        52696,
+        21
+    ],
+    "seed": 42,
+    "results": [
+        {
+            "mode": "uniform",
+            "ratio": 0.1,
+            "actual_ratio": 0.10000759363174438,
+            "filename": "weather_missing_uniform_ratio0.1_seed42.npy",
+            "mask_filename": "weather_mask_uniform_ratio0.1_seed42.npy"
+        },
+        {
+            "mode": "uniform",
+            "ratio": 0.2,
+            "actual_ratio": 0.20001518726348877,
+            "filename": "weather_missing_uniform_ratio0.2_seed42.npy",
+            "mask_filename": "weather_mask_uniform_ratio0.2_seed42.npy"
+        },
+        {
+            "mode": "random",
+            "ratio": 0.1,
+            "actual_ratio": 0.09999948740005493,
+            "filename": "weather_missing_random_ratio0.1_seed42.npy",
+            "mask_filename": "weather_mask_random_ratio0.1_seed42.npy"
+        },
+        {
+            "mode": "random",
+            "ratio": 0.2,
+            "actual_ratio": 0.19999980926513672,
+            "filename": "weather_missing_random_ratio0.2_seed42.npy",
+            "mask_filename": "weather_mask_random_ratio0.2_seed42.npy"
+        }
+    ]
+}

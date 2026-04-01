@@ -1,22 +1,11 @@
-# 数据文件 - 不上传
-data/
-*.pk
-*.pkl
-*.npy
-*.csv
-*.txt
-*.tar.gz
-*.zip
-*.gz
-
 # 模型权重
 *.pt
 *.pth
 *.ckpt
 
-# 输出结果（可保留图片）
-save/
+# 输出结果
 results/
+save/
 __pycache__/
 *.pyc
 
@@ -24,7 +13,23 @@ __pycache__/
 venv/
 env/
 .venv/
+.idea/
+.vscode/
 
 # 临时文件
 *.log
 .DS_Store
+
+# 压缩包
+*.zip
+*.tar.gz
+*.gz
+
+# data目录下的大文件（保留目录结构）
+data/*.pk
+data/*.pkl
+data/*.npy
+data/*.csv
+data/*.txt
+data/*.tar.gz
+data/*.gz

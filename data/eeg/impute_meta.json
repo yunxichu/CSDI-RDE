@@ -1,0 +1,10 @@
+{
+  "total_len": 999,
+  "split_ratio": 0.5,
+  "split_point": 500,
+  "hist_len": 500,
+  "fut_len": 499,
+  "missing_ratio": 0.1,
+  "missing_mode": "random",
+  "seed": 42
+}

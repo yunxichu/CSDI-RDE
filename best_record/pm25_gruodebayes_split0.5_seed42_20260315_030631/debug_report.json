@@ -1,0 +1,82 @@
+{
+    "meta": {
+        "total_len": 8759,
+        "split_ratio": 0.5,
+        "split_point": 4379,
+        "hist_len": 4379,
+        "fut_len": 4380,
+        "hist_start": "2014-05-01 01:00:00",
+        "hist_end": "2014-10-30 11:00:00",
+        "fut_start": "2014-10-30 12:00:00",
+        "fut_end": "2015-04-30 23:00:00"
+    },
+    "args": {
+        "imputed_history_path": "./pm25_history_imputed_split0.5_seed42_20260128_101132/history_imputed.csv",
+        "ground_path": "./data/pm25/Code/STMVL/SampleData/pm25_ground.txt",
+        "split_ratio": 0.5,
+        "seed": 42,
+        "horizon_days": 1.0,
+        "horizon_steps": 0,
+        "hidden_size": 64,
+        "p_hidden": 32,
+        "prep_hidden": 32,
+        "solver": "euler",
+        "delta_t": 0.1,
+        "time_scale": 0.02,
+        "full_gru_ode": false,
+        "impute": false,
+        "mixing": 0.0001,
+        "window_size": 48,
+        "steps_ahead": 1,
+        "epochs": 30,
+        "batch_size": 128,
+        "lr": 0.001,
+        "patience": 15,
+        "device": "auto",
+        "out_dir": "",
+        "plot_dim": 0,
+        "skip_metrics": false,
+        "no_verbose": true,
+        "use_true_window": true,
+        "lambda_increment": 0.5
+    },
+    "checks": {
+        "final_horizon_steps": 24,
+        "num_train_samples": 4331,
+        "D": 36,
+        "window_size": 48,
+        "pred_nan_count": 91
+    },
+    "history_stats": {
+        "name": "history_imputed",
+        "shape": [
+            4379,
+            36
+        ],
+        "nan_count": 0,
+        "inf_count": 0,
+        "min": 2.0,
+        "max": 517.1016,
+        "mean": 76.832551662801,
+        "std": 67.97160756204961
+    },
+    "training": {
+        "train_time_sec": 185.43,
+        "best_mse_normalized": 0.038909903948314194,
+        "epochs_run": 30,
+        "n_params": 265006
+    },
+    "pred_stats": {
+        "name": "preds",
+        "shape": [
+            24,
+            36
+        ],
+        "nan_count": 91,
+        "inf_count": 0,
+        "min": 60.999999865585664,
+        "max": 304.00000355081556,
+        "mean": 179.464041916272,
+        "std": 37.75987750608007
+    }
+}

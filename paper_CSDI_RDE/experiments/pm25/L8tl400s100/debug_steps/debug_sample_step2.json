@@ -1,0 +1,90 @@
+{
+    "step": 2,
+    "traindata_stats": {
+        "name": "traindata",
+        "shape": [
+            400,
+            36
+        ],
+        "nan_count": 9,
+        "inf_count": 0,
+        "min": 3.0,
+        "max": 517.1016,
+        "mean": 125.24080645251894,
+        "std": 102.15447539072862
+    },
+    "baseline_prev_true_stats": {
+        "name": "baseline_prev_true",
+        "shape": [
+            36
+        ],
+        "nan_count": 4,
+        "inf_count": 0,
+        "min": 122.0,
+        "max": 288.0,
+        "mean": 165.40625,
+        "std": 32.7183619843277
+    },
+    "targets": [
+        {
+            "target_idx": 0,
+            "L": 8,
+            "s_selected": 100,
+            "ok_count": 27,
+            "fail_exception_count": 0,
+            "fail_degenerate_count": 73,
+            "valid_pred_count": 27,
+            "pred_min": 119.69205770813683,
+            "pred_max": 175.56470375210566,
+            "pred_mean": 158.29630140525347
+        },
+        {
+            "target_idx": 1,
+            "L": 8,
+            "s_selected": 100,
+            "ok_count": 0,
+            "fail_exception_count": 0,
+            "fail_degenerate_count": 100,
+            "valid_pred_count": 0,
+            "pred_min": null,
+            "pred_max": null,
+            "pred_mean": null
+        },
+        {
+            "target_idx": 2,
+            "L": 8,
+            "s_selected": 100,
+            "ok_count": 36,
+            "fail_exception_count": 0,
+            "fail_degenerate_count": 64,
+            "valid_pred_count": 36,
+            "pred_min": 122.40943808315025,
+            "pred_max": 171.20480843933206,
+            "pred_mean": 149.44955527405858
+        }
+    ],
+    "pred_row_stats": {
+        "name": "pred_row",
+        "shape": [
+            36
+        ],
+        "nan_count": 4,
+        "inf_count": 0,
+        "min": 122.0,
+        "max": 288.0,
+        "mean": 165.45745964697304,
+        "std": 32.45063509581688
+    },
+    "true_row_stats": {
+        "name": "true_row",
+        "shape": [
+            36
+        ],
+        "nan_count": 3,
+        "inf_count": 0,
+        "min": 86.0,
+        "max": 291.0,
+        "mean": 168.0909090909091,
+        "std": 34.44131032276954
+    }
+}
