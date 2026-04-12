@@ -137,18 +137,19 @@ class SSSD(nn.Module):
         cond = torch.cat([cond * mask, mask.float()], 1)
         te = self.fc_t(t_embed(steps, 128))
         x = self.init(noise)
-        outs = [x]
+        skips = []
         for L in self.dl:
             if isinstance(L, ResBlock): x = L(x, cond, te)
-            else: x = L(x)
-            outs.append(x)
+            else:
+                skips.append(x)
+                x = L(x)
         for L in self.cl: x = L(x, cond, te)
-        x = x + outs.pop()
         for block in self.ul:
             for L in block:
                 if isinstance(L, ResBlock): x = L(x, cond, te)
                 else: x = L(x)
-            x = x + outs.pop()
+            if skips:
+                x = x + skips.pop()
         return self.final(self.norm(x.transpose(1,2)).transpose(1,2))
 
 
