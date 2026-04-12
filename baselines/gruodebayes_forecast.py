@@ -278,8 +278,16 @@ def main():
     ensure_dir(out_dir)
     safe_json_dump(vars(args), os.path.join(out_dir, "args.json"))
 
-    device = (torch.device("cuda" if torch.cuda.is_available() else "cpu")
-              if args.device == "auto" else torch.device(args.device))
+    if args.device == "auto":
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    else:
+        try:
+            device = torch.device(args.device)
+            if device.type == "cuda":
+                torch.cuda.device_count()
+        except (RuntimeError, AssertionError):
+            print(f"[警告] CUDA不可用，回退到CPU")
+            device = torch.device("cpu")
 
     if args.dataset == "pm25":
         history, fut_true, columns, horizon, fut_index = load_pm25_data(args)

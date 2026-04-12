@@ -258,7 +258,16 @@ def main():
     a = pa.parse_args()
 
     set_seed(a.seed)
-    dev = torch.device("cuda" if torch.cuda.is_available() else "cpu") if a.device == "auto" else torch.device(a.device)
+    if a.device == "auto":
+        dev = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    else:
+        try:
+            dev = torch.device(a.device)
+            if dev.type == "cuda":
+                torch.cuda.device_count()
+        except (RuntimeError, AssertionError):
+            print("[警告] CUDA不可用，回退到CPU")
+            dev = torch.device("cpu")
     out_dir = a.out_dir or f"./save/{a.dataset}_sssd_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}/"
     ensure_dir(out_dir)
 

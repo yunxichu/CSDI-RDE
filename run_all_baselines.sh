@@ -51,7 +51,7 @@ CUDA_VISIBLE_DEVICES=0 python3 baselines/neuralcde_forecast.py \
     --trainlength 60 --horizon_steps 40 \
     --window_size 20 --hidden_channels 64 --num_layers 3 \
     --epochs ${EPOCHS} --batch_size 128 --lr 1e-3 --seed ${SEED} \
-    --device cuda:0 \
+    --device auto \
     --out_dir ${OUT_BASE}/lorenz96/neuralcde \
     2>&1 | tee ${LOG_DIR}/l96_neuralcde.log
 echo "[L96-NeuralCDE] 完成 $(date)"
@@ -66,7 +66,7 @@ CUDA_VISIBLE_DEVICES=0 python3 baselines/gruodebayes_forecast.py \
     --p_hidden 32 --prep_hidden 32 \
     --delta_t 0.1 --time_scale 0.02 --solver euler \
     --epochs ${EPOCHS} --batch_size 128 --lr 1e-3 --seed ${SEED} \
-    --device cuda:0 \
+    --device auto \
     --out_dir ${OUT_BASE}/lorenz96/gruodebayes \
     2>&1 | tee ${LOG_DIR}/l96_gruodebayes.log
 echo "[L96-GRUODEBayes] 完成 $(date)"
@@ -80,7 +80,7 @@ CUDA_VISIBLE_DEVICES=2 python3 baselines/sssd_forecast.py \
     --d_model 64 --n_layers 4 --diffusion_steps 50 \
     --window_size 20 \
     --epochs ${EPOCHS} --batch_size 16 --lr 1e-4 --seed ${SEED} \
-    --device cuda:0 \
+    --device auto \
     --out_dir ${OUT_BASE}/lorenz96/sssd \
     2>&1 | tee ${LOG_DIR}/l96_sssd.log
 echo "[L96-SSSD] 完成 $(date)"
@@ -93,7 +93,7 @@ CUDA_VISIBLE_DEVICES=0 python3 baselines/neuralcde_forecast.py \
     --trainlength 60 --horizon_steps 40 \
     --window_size 20 --hidden_channels 64 --num_layers 3 \
     --epochs ${EPOCHS} --batch_size 128 --lr 1e-3 --seed ${SEED} \
-    --device cuda:0 \
+    --device auto \
     --out_dir ${OUT_BASE}/lorenz63/neuralcde \
     2>&1 | tee ${LOG_DIR}/l63_neuralcde.log
 echo "[L63-NeuralCDE] 完成 $(date)"
@@ -108,7 +108,7 @@ CUDA_VISIBLE_DEVICES=0 python3 baselines/gruodebayes_forecast.py \
     --p_hidden 32 --prep_hidden 32 \
     --delta_t 0.1 --time_scale 0.02 --solver euler \
     --epochs ${EPOCHS} --batch_size 128 --lr 1e-3 --seed ${SEED} \
-    --device cuda:0 \
+    --device auto \
     --out_dir ${OUT_BASE}/lorenz63/gruodebayes \
     2>&1 | tee ${LOG_DIR}/l63_gruodebayes.log
 echo "[L63-GRUODEBayes] 完成 $(date)"
@@ -122,7 +122,7 @@ CUDA_VISIBLE_DEVICES=2 python3 baselines/sssd_forecast.py \
     --d_model 64 --n_layers 4 --diffusion_steps 50 \
     --window_size 20 \
     --epochs ${EPOCHS} --batch_size 16 --lr 1e-4 --seed ${SEED} \
-    --device cuda:0 \
+    --device auto \
     --out_dir ${OUT_BASE}/lorenz63/sssd \
     2>&1 | tee ${LOG_DIR}/l63_sssd.log
 echo "[L63-SSSD] 完成 $(date)"
@@ -152,7 +152,7 @@ else
         --split_ratio ${SPLIT_RATIO} --horizon_days ${HORIZON_DAYS} \
         --window_size 48 --hidden_channels 64 --num_layers 3 \
         --epochs ${EPOCHS} --batch_size 128 --lr 1e-3 --seed ${SEED} \
-        --device cuda:0 \
+        --device auto \
         --out_dir ${OUT_BASE}/pm25/neuralcde \
         2>&1 | tee ${LOG_DIR}/pm25_neuralcde.log
     echo "[PM25-NeuralCDE] 完成 $(date)"
@@ -167,7 +167,7 @@ else
         --p_hidden 32 --prep_hidden 32 \
         --delta_t 0.1 --time_scale 0.02 --solver euler \
         --epochs ${EPOCHS} --batch_size 128 --lr 1e-3 --seed ${SEED} \
-        --device cuda:0 \
+        --device auto \
         --out_dir ${OUT_BASE}/pm25/gruodebayes \
         2>&1 | tee ${LOG_DIR}/pm25_gruodebayes.log
     echo "[PM25-GRUODEBayes] 完成 $(date)"
@@ -181,7 +181,7 @@ else
         --d_model 64 --n_layers 4 --diffusion_steps 100 \
         --window_size 48 \
         --epochs ${EPOCHS} --batch_size 16 --lr 1e-4 --seed ${SEED} \
-        --device cuda:0 \
+        --device auto \
         --out_dir ${OUT_BASE}/pm25/sssd \
         2>&1 | tee ${LOG_DIR}/pm25_sssd.log
     echo "[PM25-SSSD] 完成 $(date)"
@@ -213,7 +213,7 @@ if [ -f "${EEG_GROUND}" ] && [ -f "${EEG_IMPUTED}" ]; then
         --target_dims 0,1,2 \
         --window_size 48 --hidden_channels 64 --num_layers 3 \
         --epochs ${EPOCHS} --batch_size 128 --lr 1e-3 --seed ${SEED} \
-        --device cuda:0 \
+        --device auto \
         --out_dir ${OUT_BASE}/eeg/neuralcde \
         2>&1 | tee ${LOG_DIR}/eeg_neuralcde.log
     echo "[EEG-NeuralCDE] 完成 $(date)"
@@ -229,7 +229,7 @@ if [ -f "${EEG_GROUND}" ] && [ -f "${EEG_IMPUTED}" ]; then
         --p_hidden 32 --prep_hidden 32 \
         --delta_t 0.1 --time_scale 0.02 --solver euler \
         --epochs ${EPOCHS} --batch_size 128 --lr 1e-3 --seed ${SEED} \
-        --device cuda:0 \
+        --device auto \
         --out_dir ${OUT_BASE}/eeg/gruodebayes \
         2>&1 | tee ${LOG_DIR}/eeg_gruodebayes.log
     echo "[EEG-GRUODEBayes] 完成 $(date)"
@@ -244,13 +244,13 @@ if [ -f "${EEG_GROUND}" ] && [ -f "${EEG_IMPUTED}" ]; then
         --d_model 64 --n_layers 4 --diffusion_steps 50 \
         --window_size 48 \
         --epochs ${EPOCHS} --batch_size 16 --lr 1e-4 --seed ${SEED} \
-        --device cuda:0 \
+        --device auto \
         --out_dir ${OUT_BASE}/eeg/sssd \
         2>&1 | tee ${LOG_DIR}/eeg_sssd.log
     echo "[EEG-SSSD] 完成 $(date)"
 else
     echo "⚠️  EEG数据不完整，跳过V3"
-    echo "  需要先运行CSDI补值: python experiments/exe_eeg.py --device cuda:0"
+    echo "  需要先运行CSDI补值: python experiments/exe_eeg.py --device auto"
 fi
 
 # ==============================================================================
