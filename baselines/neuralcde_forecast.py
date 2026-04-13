@@ -200,7 +200,23 @@ def forecast(model, history_scaled, fut_true_scaled, horizon, window_size,
     import torchcde
     T_hist = history_scaled.shape[0]
     D = history_scaled.shape[1]
-    full = np.concatenate([history_scaled, fut_true_scaled], axis=0).astype(np.float32)
+    fut_clean = fut_true_scaled.copy()
+    nan_mask = np.isnan(fut_clean)
+    if nan_mask.any():
+        if verbose:
+            print(f"  检测到fut_true中有{nan_mask.sum()}个NaN，使用前向填充")
+        for j in range(fut_clean.shape[1]):
+            col = fut_clean[:, j]
+            nan_idx = np.where(np.isnan(col))[0]
+            for idx in nan_idx:
+                last_valid = history_scaled[-1, j]
+                for k in range(idx - 1, -1, -1):
+                    if not np.isnan(fut_clean[k, j]):
+                        last_valid = fut_clean[k, j]
+                        break
+                col[idx] = last_valid
+            fut_clean[:, j] = col
+    full = np.concatenate([history_scaled, fut_clean], axis=0).astype(np.float32)
     W = window_size
     windows = np.stack([full[T_hist - W + i: T_hist + i] for i in range(horizon)])
     X_all_np = make_cde_input(windows)

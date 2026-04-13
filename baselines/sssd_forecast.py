@@ -324,6 +324,21 @@ def main():
     print("\n[Forecasting with true value filling]")
     t1 = time.time()
     net.eval()
+    fut_true_scaled_clean = fut_true_scaled.copy()
+    nan_mask = np.isnan(fut_true_scaled_clean)
+    if nan_mask.any():
+        print(f"  检测到fut_true中有{nan_mask.sum()}个NaN，使用前向填充")
+        for j in range(fut_true_scaled_clean.shape[1]):
+            col = fut_true_scaled_clean[:, j]
+            nan_idx = np.where(np.isnan(col))[0]
+            for idx in nan_idx:
+                last_valid = hist_s[-1, j]
+                for k in range(idx - 1, -1, -1):
+                    if not np.isnan(fut_true_scaled_clean[k, j]):
+                        last_valid = fut_true_scaled_clean[k, j]
+                        break
+                col[idx] = last_valid
+            fut_true_scaled_clean[:, j] = col
     cur = hist_s[-a.window_size:].copy()
     preds = []
     for i in tqdm(range(horizon), desc="Forecast"):
@@ -333,7 +348,7 @@ def main():
         with torch.no_grad():
             pred = sample(net, cond, mask, dh, dev)[:,:, -1].cpu().numpy()[0]
         preds.append(pred)
-        cur = np.vstack([cur[1:], fut_true_scaled[i][np.newaxis]])
+        cur = np.vstack([cur[1:], fut_true_scaled_clean[i][np.newaxis]])
 
     preds = sc.inverse_transform(np.array(preds))
     print(f"Done in {time.time()-t1:.1f}s")

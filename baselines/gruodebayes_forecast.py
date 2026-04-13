@@ -379,7 +379,22 @@ def main():
 
     print("\n[预测阶段]")
     t1 = time.time()
-    full = np.concatenate([history_scaled, fut_true_scaled], axis=0).astype(np.float32)
+    fut_true_scaled_clean = fut_true_scaled.copy()
+    nan_mask = np.isnan(fut_true_scaled_clean)
+    if nan_mask.any():
+        print(f"  检测到fut_true中有{nan_mask.sum()}个NaN，使用前向填充")
+        for j in range(fut_true_scaled_clean.shape[1]):
+            col = fut_true_scaled_clean[:, j]
+            nan_idx = np.where(np.isnan(col))[0]
+            for idx in nan_idx:
+                last_valid = history_scaled[-1, j]
+                for k in range(idx - 1, -1, -1):
+                    if not np.isnan(fut_true_scaled_clean[k, j]):
+                        last_valid = fut_true_scaled_clean[k, j]
+                        break
+                col[idx] = last_valid
+            fut_true_scaled_clean[:, j] = col
+    full = np.concatenate([history_scaled, fut_true_scaled_clean], axis=0).astype(np.float32)
     preds_list = []
 
     model.eval()
