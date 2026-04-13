@@ -18,10 +18,11 @@
     "delta_t": 0.1,
     "time_scale": 0.02,
     "solver": "euler",
-    "epochs": 100,
+    "epochs": 50,
     "batch_size": 128,
     "lr": 0.001,
-    "patience": 15,
+    "patience": 10,
+    "max_train_samples": 500,
     "device": "auto",
     "out_dir": "./experiments_v1/pm25/gruodebayes",
     "plot_dim": 0

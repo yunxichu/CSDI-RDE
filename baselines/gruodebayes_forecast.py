@@ -267,6 +267,7 @@ def main():
     parser.add_argument("--batch_size", type=int, default=128)
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--patience", type=int, default=15)
+    parser.add_argument("--max_train_samples", type=int, default=0, help="0=use all, >0=subsample per epoch")
     parser.add_argument("--device", type=str, default="auto")
     parser.add_argument("--out_dir", type=str, default="")
     parser.add_argument("--plot_dim", type=int, default=0)
@@ -316,15 +317,22 @@ def main():
     t0 = time.time()
 
     N_samples = len(history_scaled) - W
+    max_train = getattr(args, 'max_train_samples', 0)
+    if max_train > 0 and max_train < N_samples:
+        print(f"  子采样: {N_samples} -> {max_train} 样本/epoch")
     best_loss, best_state, no_imp = float("inf"), None, 0
 
     for epoch in tqdm(range(args.epochs), desc="训练"):
         model.train()
         epoch_loss = 0.0
-        indices = np.random.permutation(N_samples)
+        n_used = 0
+        if max_train > 0 and max_train < N_samples:
+            indices = np.random.choice(N_samples, max_train, replace=False)
+        else:
+            indices = np.random.permutation(N_samples)
         bs = args.batch_size
 
-        for b_start in range(0, N_samples, bs):
+        for b_start in range(0, len(indices), bs):
             b_idx = indices[b_start:b_start + bs]
             b_loss = 0.0
             optimizer.zero_grad()
@@ -350,8 +358,9 @@ def main():
             nn.utils.clip_grad_norm_(model.parameters(), max_norm=5.0)
             optimizer.step()
             epoch_loss += b_loss.item() * len(b_idx)
+            n_used += len(b_idx)
 
-        epoch_loss /= N_samples
+        epoch_loss /= n_used
         scheduler.step(epoch_loss)
         if epoch_loss < best_loss:
             best_loss = epoch_loss
