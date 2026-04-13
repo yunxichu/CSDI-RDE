@@ -134,19 +134,19 @@ class SSSD(nn.Module):
         self.fc_t = nn.Sequential(nn.Linear(128, dd), nn.ReLU(), nn.Linear(dd, dd), nn.ReLU())
 
     def forward(self, noise, cond, mask, steps):
-        cond = torch.cat([cond * mask, mask.float()], 1)
+        cond_input = torch.cat([cond * (1 - mask), (1 - mask).float()], 1)
         te = self.fc_t(t_embed(steps, 128))
         x = self.init(noise)
         skips = []
         for L in self.dl:
-            if isinstance(L, ResBlock): x = L(x, cond, te)
+            if isinstance(L, ResBlock): x = L(x, cond_input, te)
             else:
                 skips.append(x)
                 x = L(x)
-        for L in self.cl: x = L(x, cond, te)
+        for L in self.cl: x = L(x, cond_input, te)
         for block in self.ul:
             for L in block:
-                if isinstance(L, ResBlock): x = L(x, cond, te)
+                if isinstance(L, ResBlock): x = L(x, cond_input, te)
                 else: x = L(x)
             if skips:
                 x = x + skips.pop()
@@ -173,12 +173,12 @@ def sample(net, cond, mask, dh, dev):
     Sigma = dh["Sigma"].to(dev)
     with torch.no_grad():
         for t in range(dh["T"]-1, -1, -1):
-            x = x * (1 - mask) + cond * mask
+            x = x * mask + cond * (1 - mask)
             eps = net(x, cond, mask, torch.full((B,), t, device=dev))
             a, ab, s = Alpha[t], Alpha_bar[t], Sigma[t]
             x = (x - (1-a)/torch.sqrt(1-ab)*eps) / torch.sqrt(a)
             if t > 0: x = x + s * torch.randn_like(x)
-            x = x * (1 - mask) + cond * mask
+            x = x * mask + cond * (1 - mask)
     return x
 
 
