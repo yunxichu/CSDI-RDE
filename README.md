@@ -1,6 +1,6 @@
 # CSDI-RDE-GPR: Conditional Score-based Diffusion Models with Random Delay/Dimension Ensemble and Gaussian Process Regression
 
-时序预测项目，结合CSDI扩散模型与RDE/RDE-Delay方法进行时间序列填补和预测。本项目在多个数据集上进行了测试：Lorenz63系统、Lorenz96系统、PM2.5（真实数据）和Physio。
+时序预测项目，结合CSDI扩散模型与RDE/RDE-Delay方法进行时间序列填补和预测。本项目在多个数据集上进行了测试：Lorenz63系统、Lorenz96系统、PM2.5（真实数据）和EEG。
 
 ## 项目结构
 
@@ -443,6 +443,28 @@ dx_i/dt = (x_{i+1} - x_{i-2}) * x_{i-1} - x_i + F
 ```
 原始数据(400步) → 稀疏采样(每8步) → 50点 → CSDI补值 → 100点 → RDE预测
 ```
+
+## 实验对比设计（2026-04-17 update）
+
+CSDI-RDE-GPR 作为**完整 pipeline** 是针对**稀疏 / 高缺失数据**的时序预测方法。对应的对比实验分两 track：
+
+### Track-A 预处理对齐对比（方法预测能力）
+- 所有方法（包括基线）都用 **CSDI 补值后的完整数据**作输入
+- 对比目的：在同样预处理的数据上，哪种预测模型更好
+- 当前位置：[experiments_v2/](experiments_v2/)（已基本完成）
+
+### Track-B 完整 pipeline 对比（主对比，补跑中）
+- 基线直接使用**原始稀疏 / 缺失数据**作输入（这些基线天然支持不规则时间序列）
+- 我的方法 = 原始稀疏 → CSDI 补值 → RDE-GPR（或 RDE-Delay-GPR）
+- 对比目的：展示 CSDI 补值 + GP 滚动的端到端价值
+- 当前位置：`experiments_v2/*/{method}_sparse/`（补跑中）
+
+方法命名规范：
+- **RDE-GPR**：随机嵌入 + GPR，空间集成（同一时刻不同维度）
+- **RDE-Delay-GPR**：随机延迟嵌入 + GPR，时间延迟特征
+- **CSDI-RDE-GPR / CSDI-RDE-Delay-GPR**：完整 pipeline（含 CSDI 补值预处理）
+
+详细实验清单：[session_notes/2026-04-17_experiment_inventory.md](session_notes/2026-04-17_experiment_inventory.md)
 
 ## 实验结果
 

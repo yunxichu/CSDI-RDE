@@ -1,4 +1,16 @@
-# 2026-04-17 实验清单（修正版 v2 — 已核查全部脚本行为）
+# 2026-04-17 实验清单（修正版 v3 — Track-A / Track-B 双对比维度）
+
+> **v3 更新（2026-04-17 下午晚）**：用户明确 CSDI-RDE-GPR 是完整 pipeline，方法定位是处理稀疏/缺失数据。
+> 故分为两个对比 Track：
+> - **Track-A 预处理对齐对比**（现有 experiments_v2 全部数据，两边都用 CSDI 补值数据）
+> - **Track-B 完整 pipeline 对比**（新增：基线直接用稀疏/缺失数据，我方法用 CSDI 补值 + RDE-GPR）
+>
+> 详见 [2026-04-17_full_pipeline_comparison.md](2026-04-17_full_pipeline_comparison.md)
+> 详细对话时间线：[2026-04-17_conversation_snapshot.md](2026-04-17_conversation_snapshot.md)
+
+---
+
+# 原 v2 清单（Track-A 预处理对齐）
 
 > **重大修正**：初次整理时误以为 `experiments_v2/` 里所有基线是"前馈模式"。实际核查后发现**通用基线脚本默认就是 Mode B 单步滚动 + teacher-forcing**。
 >
