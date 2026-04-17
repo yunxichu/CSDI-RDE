@@ -1,0 +1,41 @@
+{
+  "dataset": "lorenz96",
+  "n_seeds": 5,
+  "seeds": [42, 43, 44, 45, 46],
+  "trainlength": 60,
+  "horizon": 40,
+  "target_dim": 0,
+  "eval": "full-40 (对齐基线 horizon_steps=40)",
+  "generator": "lorenz96_generate(N=100, T=400, forcing=8.0, seed=<S>)",
+  "hyperparams": {
+    "L": 4,
+    "s": 100,
+    "max_delay": 50,
+    "M": 4,
+    "num_samples": 100,
+    "steps_ahead": 1
+  },
+  "rde_full40": {
+    "rmse_mean": 0.2845,
+    "rmse_std": 0.0986
+  },
+  "rde_delay_full40": {
+    "rmse_mean": 0.2647,
+    "rmse_std": 0.1068
+  },
+  "rde_cmp20": {
+    "rmse_mean": 0.2809,
+    "rmse_std": 0.0980
+  },
+  "rde_delay_cmp20": {
+    "rmse_mean": 0.2357,
+    "rmse_std": 0.0788
+  },
+  "csdi_impute_rmse_mean": 0.0994,
+  "baselines_dim0": {
+    "neuralcde": {"rmse": 7.0635, "mae": 5.4729},
+    "gruodebayes": {"rmse": 2.6974, "mae": 2.1749},
+    "sssd_v1": {"rmse": 4.0532, "mae": 3.4269},
+    "sssd_v2": {"rmse": 3.5447, "mae": 2.9287}
+  }
+}

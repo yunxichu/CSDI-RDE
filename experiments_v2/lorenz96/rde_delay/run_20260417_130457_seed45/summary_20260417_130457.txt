@@ -1,0 +1,29 @@
+================================================================================
+Lorenz96 CSDI Imputation + RDE/RDE-Delay Prediction Summary
+================================================================================
+
+Timestamp: 20260417_130457
+
+Data Parameters:
+  Lorenz96 N=100, T=400
+  Full data: (400, 100)
+  Sparse for prediction: (50, 100) (every 8 steps)
+  Sparse for CSDI: (50, 100) (every 8 steps starting from 4)
+  Imputed data: (100, 100)
+
+Prediction Parameters:
+  Sparse: trainlength=30, predict 20 steps
+  Imputed: trainlength=60, predict 40 steps, compare 20
+  RDE: L=4, s=100
+  RDE-Delay: max_delay=50, M=4, num_samples=100
+
+--------------------------------------------------------------------------------
+Method                   RMSE         MaxErr       2σ Cov(%)     
+--------------------------------------------------------------------------------
+RDE (Sparse)             0.6727       1.3799       100.0         
+RDE-Delay (Sparse)       0.6619       1.3338       100.0         
+RDE (Imputed->20)        0.2480       0.5172       100.0         
+RDE-Delay (Imputed->20)  0.2163       0.4789       100.0         
+--------------------------------------------------------------------------------
+
+CSDI Imputation RMSE: 0.0871

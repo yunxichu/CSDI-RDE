@@ -1,0 +1,36 @@
+================================================================================
+CSDI Imputation + RDE/RDE-Delay Prediction Summary
+================================================================================
+
+Timestamp: 20260417_121926
+
+Data Parameters:
+  Lorenz N=5, L=200, full_data stepsize=1
+  Full data: (400, 15)
+  Sparse for prediction: (50, 15) (every 8 steps)
+  Sparse for CSDI: (50, 15) (every 8 steps starting from 4)
+  Imputed data: (100, 15)
+
+Prediction Parameters:
+  Sparse: trainlength=30, predict 20 steps
+  Imputed: trainlength=60, predict 40 steps, compare 20
+  RDE: L=4, s=100
+  RDE-Delay: max_delay=50, M=4, num_samples=100
+
+--------------------------------------------------------------------------------
+Method                   RMSE         MaxErr       2σ Cov(%)     
+--------------------------------------------------------------------------------
+RDE (Sparse)             0.7553       1.9242       100.0         
+RDE-Delay (Sparse)       3.9781       9.0604       100.0         
+RDE (Imputed->20)        0.3399       0.7821       100.0         
+RDE-Delay (Imputed->20)  1.1582       2.4004       100.0         
+
+CSDI Imputation Quality (50 even positions):
+  RMSE = 0.1751
+  MAE  = 0.0755
+================================================================================
+
+Output Files:
+  Comparison Fig: /home/rhl/Github/experiments_v2/lorenz63/rde_delay/run_20260417_121926_seed44/full_comparison_20260417_121926.png
+  Imputation Fig: /home/rhl/Github/experiments_v2/lorenz63/rde_delay/run_20260417_121926_seed44/imputation_quality_20260417_121926.png
+  Summary: /home/rhl/Github/experiments_v2/lorenz63/rde_delay/run_20260417_121926_seed44/summary_20260417_121926.txt

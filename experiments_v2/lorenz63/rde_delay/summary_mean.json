@@ -1,0 +1,40 @@
+{
+  "dataset": "lorenz63",
+  "n_seeds": 5,
+  "seeds": [42, 43, 44, 45, 46],
+  "trainlength": 60,
+  "horizon": 40,
+  "target_dim": 0,
+  "eval": "full-40 (对齐基线 horizon_steps=40)",
+  "generator": "generate_coupled_lorenz(N=5, L=400, stepsize=1), seed via np.random.seed",
+  "hyperparams": {
+    "L": 4,
+    "s": 100,
+    "max_delay": 50,
+    "M": 4,
+    "num_samples": 100,
+    "steps_ahead": 1
+  },
+  "rde_full40": {
+    "rmse_mean": 0.5726,
+    "rmse_std": 0.1445
+  },
+  "rde_delay_full40": {
+    "rmse_mean": 1.4029,
+    "rmse_std": 0.4126
+  },
+  "rde_cmp20": {
+    "rmse_mean": 0.5287,
+    "rmse_std": 0.1447
+  },
+  "rde_delay_cmp20": {
+    "rmse_mean": 1.3262,
+    "rmse_std": 0.3467
+  },
+  "csdi_impute_rmse_mean": 0.2316,
+  "baselines_dim0": {
+    "neuralcde": {"rmse": 2.7505, "mae": 1.8463},
+    "gruodebayes": {"rmse": 6.7753, "mae": 4.4072},
+    "sssd_v2": {"rmse": 15.1851, "mae": 12.2225}
+  }
+}
