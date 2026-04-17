@@ -14,7 +14,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 
-OUT_DIR = "./experiments_v1/comparison_figures"
+OUT_DIR = "./experiments_v2/figures"
 os.makedirs(OUT_DIR, exist_ok=True)
 
 DATASETS = {
@@ -29,43 +29,84 @@ BASELINE_LABELS = {"neuralcde": "NeuralCDE", "gruodebayes": "GRU-ODE-Bayes", "ss
 BASELINE_COLORS = {"neuralcde": "#2196F3", "gruodebayes": "#FF9800", "sssd": "#9C27B0",
                    "RDE": "#4CAF50", "RDE-Delay": "#F44336"}
 
-EXP_BASE = "./experiments_v1"
+EXP_BASE = "./experiments_v2"
 
 
 def load_baseline_metrics(dataset, method):
-    mpath = os.path.join(EXP_BASE, dataset, method, "metrics.json")
-    if os.path.exists(mpath):
-        with open(mpath) as f:
-            m = json.load(f)
-        if "overall" in m:
-            return m["overall"]
-        return m
+    candidates = [method]
+    if method == "sssd":
+        candidates = ["sssd_v2", "sssd"]
+    for sub in candidates:
+        mpath = os.path.join(EXP_BASE, dataset, sub, "metrics.json")
+        if os.path.exists(mpath):
+            with open(mpath) as f:
+                m = json.load(f)
+            src = m.pop("__source", None) if isinstance(m, dict) else None
+            if "overall" in m:
+                out = m["overall"]
+            else:
+                out = m
+            out = dict(out)
+            out["__source"] = sub
+            return out
     return None
 
 
 def load_rde_metrics():
     rde_results = {}
-    pm25_path = "./best_record/pm25_rc_rde_0.5_42_20260317_122531/metrics.json"
-    if os.path.exists(pm25_path):
-        with open(pm25_path) as f:
-            rde_results["pm25"] = json.load(f)
-
-    eeg_dirs = ["./save/eeg_rde", "./save/eeg_rde_delay"]
-    for d in eeg_dirs:
-        mpath = os.path.join(d, "metrics.json")
-        if os.path.exists(mpath):
-            with open(mpath) as f:
-                rde_results["eeg"] = json.load(f)
 
     l63_path = "./lorenz_rde_delay/results/25experiments.csv"
     if os.path.exists(l63_path):
         data = np.loadtxt(l63_path, delimiter=',')
-        rde_results["lorenz63"] = {"rmse": float(np.mean(data[:, 0])), "mae": float(np.mean(data[:, 1]))}
+        rde_results["lorenz63"] = {
+            "rmse": float(np.mean(data[:, 0])),
+            "mae": float(np.mean(data[:, 1])),
+            "__source": l63_path,
+        }
 
-    l96_path = "./lorenz96_rde_delay/results/25experiments.csv"
-    if os.path.exists(l96_path):
-        data = np.loadtxt(l96_path, delimiter=',')
-        rde_results["lorenz96"] = {"rmse": float(np.mean(data[:, 0])), "mae": float(np.mean(data[:, 1]))}
+    l96_summary_glob = sorted(
+        [p for p in os.listdir("./lorenz96_rde_delay/results")
+         if p.startswith("summary_") and p.endswith(".txt")]
+    ) if os.path.isdir("./lorenz96_rde_delay/results") else []
+    if l96_summary_glob:
+        import re
+        latest = os.path.join("./lorenz96_rde_delay/results", l96_summary_glob[-1])
+        rmse_val = None
+        with open(latest) as f:
+            for line in f:
+                m = re.match(r"RDE-Delay \(Imputed->\d+\)\s+([0-9.]+)", line)
+                if m:
+                    rmse_val = float(m.group(1))
+                    break
+        if rmse_val is not None:
+            rde_results["lorenz96"] = {"rmse": rmse_val, "mae": None, "__source": latest}
+    if "lorenz96" not in rde_results:
+        rde_results["lorenz96"] = {"rmse": 0.34, "mae": None, "__source": "结题报告.md (Table 3)"}
+
+    pm25_comparison = "./save/pm25_comparison/comparison_summary.csv"
+    if os.path.exists(pm25_comparison):
+        df = pd.read_csv(pm25_comparison)
+        row = df[df["Method"].str.contains("RDE", case=False, na=False)]
+        if len(row):
+            rde_results["pm25"] = {
+                "rmse": float(row.iloc[0]["RMSE"]),
+                "mae": float(row.iloc[0]["MAE"]),
+                "__source": pm25_comparison,
+            }
+    if "pm25" not in rde_results:
+        rde_results["pm25"] = {"rmse": 11.42, "mae": 9.40,
+                               "__source": "结题报告.md PM2.5 站点001001"}
+
+    eeg_comparison = "./结题报告素材/data/comparison_summary.csv"
+    if os.path.exists(eeg_comparison):
+        df = pd.read_csv(eeg_comparison)
+        row = df[df["Method"].str.contains("RDE", case=False, na=False)]
+        if len(row):
+            rde_results["eeg"] = {
+                "rmse": float(row.iloc[0]["RMSE"]),
+                "mae": float(row.iloc[0]["MAE"]),
+                "__source": eeg_comparison,
+            }
 
     return rde_results
 
@@ -125,7 +166,7 @@ def plot_mae_comparison(all_results):
                 colors.append(BASELINE_COLORS[method])
 
         rde_m = all_results.get(ds, {}).get("RDE-Delay")
-        if rde_m and "mae" in rde_m:
+        if rde_m and rde_m.get("mae") is not None:
             methods.append("RDE-Delay")
             maes.append(rde_m["mae"])
             colors.append(BASELINE_COLORS["RDE-Delay"])
@@ -205,9 +246,10 @@ def generate_summary_table(all_results):
         for method in all_methods:
             m = all_results.get(ds, {}).get(method)
             label = BASELINE_LABELS.get(method, method)
-            if m and "rmse" in m:
+            if m and "rmse" in m and m.get("rmse") is not None:
                 row[f"{label}_RMSE"] = f"{m['rmse']:.4f}"
-                row[f"{label}_MAE"] = f"{m['mae']:.4f}" if "mae" in m else "N/A"
+                mae = m.get("mae")
+                row[f"{label}_MAE"] = f"{mae:.4f}" if isinstance(mae, (int, float)) else "N/A"
             else:
                 row[f"{label}_RMSE"] = "N/A"
                 row[f"{label}_MAE"] = "N/A"
@@ -235,6 +277,8 @@ def main():
     for ds, m in rde_results.items():
         if ds in all_results:
             all_results[ds]["RDE-Delay"] = m
+            src = m.get('__source', '')
+            print(f"  [RDE-Delay {ds} loaded from: {src}]")
 
     print("=" * 60)
     print("  基线对比实验结果汇总")
@@ -246,7 +290,9 @@ def main():
             mae_val = m.get('mae', 'N/A')
             rmse_str = f"{rmse_val:.4f}" if isinstance(rmse_val, (int, float)) else str(rmse_val)
             mae_str = f"{mae_val:.4f}" if isinstance(mae_val, (int, float)) else str(mae_val)
-            print(f"  {method}: RMSE={rmse_str}, MAE={mae_str}")
+            src = m.get('__source')
+            src_tag = f" [{src}]" if src else ""
+            print(f"  {method}{src_tag}: RMSE={rmse_str}, MAE={mae_str}")
 
     plot_rmse_comparison(all_results)
     plot_mae_comparison(all_results)
