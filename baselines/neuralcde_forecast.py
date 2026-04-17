@@ -152,8 +152,14 @@ def train_model(model, X_train_np, y_train_np, epochs, batch_size, lr,
     X_tensor = torch.tensor(X_train_np, dtype=torch.float32)
     with torch.no_grad():
         coeffs_cpu = torchcde.hermite_cubic_coefficients_with_backward_differences(X_tensor)
-    y_tensor = torch.tensor(y_train_np, dtype=torch.float32)
-    x_last_cpu = torch.tensor(X_train_np[:, -1, 1:], dtype=torch.float32)
+    y_np = y_train_np.astype(np.float32)
+    y_mask_np = (~np.isnan(y_np)).astype(np.float32)
+    y_clean = np.nan_to_num(y_np, nan=0.0)
+    x_last_raw = X_train_np[:, -1, 1:].astype(np.float32)
+    x_last_clean = np.nan_to_num(x_last_raw, nan=0.0)
+    y_tensor = torch.tensor(y_clean, dtype=torch.float32)
+    y_mask = torch.tensor(y_mask_np, dtype=torch.float32)
+    x_last_cpu = torch.tensor(x_last_clean, dtype=torch.float32)
     N = len(y_train_np)
 
     loader = DataLoader(TensorDataset(torch.arange(N)),
@@ -168,9 +174,11 @@ def train_model(model, X_train_np, y_train_np, epochs, batch_size, lr,
             optimizer.zero_grad()
             b_coeffs = coeffs_cpu[idx].to(device)
             b_y = y_tensor[idx].to(device)
+            b_m = y_mask[idx].to(device)
             b_x_last = x_last_cpu[idx].to(device)
             pred = model(b_coeffs, b_x_last)
-            loss = nn.functional.mse_loss(pred, b_y)
+            sq = (pred - b_y) ** 2 * b_m
+            loss = sq.sum() / b_m.sum().clamp_min(1.0)
             loss.backward()
             nn.utils.clip_grad_norm_(model.parameters(), max_norm=5.0)
             optimizer.step()
@@ -221,7 +229,8 @@ def forecast(model, history_scaled, fut_true_scaled, horizon, window_size,
     windows = np.stack([full[T_hist - W + i: T_hist + i] for i in range(horizon)])
     X_all_np = make_cde_input(windows)
     X_all = torch.tensor(X_all_np, dtype=torch.float32)
-    x_last_all = torch.tensor(windows[:, -1, :], dtype=torch.float32)
+    x_last_np = np.nan_to_num(windows[:, -1, :].astype(np.float32), nan=0.0)
+    x_last_all = torch.tensor(x_last_np, dtype=torch.float32)
     with torch.no_grad():
         coeffs_all = torchcde.hermite_cubic_coefficients_with_backward_differences(X_all)
 

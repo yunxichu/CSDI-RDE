@@ -175,8 +175,11 @@ def build_gob_batches(data_scaled, window_size, delta_t, time_scale, batch_size,
         win = data_scaled[i:i+window_size+1]
         times_i = (np.arange(window_size) * time_scale).tolist()
         time_ptr_i = list(range(window_size))
-        X_i = torch.tensor(win[:window_size], dtype=torch.float32)
-        M_i = torch.ones(window_size, D, dtype=torch.float32)
+        win_in = win[:window_size]
+        # NaN → 0 占位, mask 标记实际观测位置 (对齐 GRU-ODE-Bayes 原论文)
+        M_np = (~np.isnan(win_in)).astype(np.float32)
+        X_i = torch.tensor(np.nan_to_num(win_in, nan=0.0), dtype=torch.float32)
+        M_i = torch.tensor(M_np, dtype=torch.float32)
         obs_idx_i = torch.arange(1, dtype=torch.long).repeat(window_size)
         cov_i = torch.ones(1, 1, dtype=torch.float32)
         y_i = win[window_size]
@@ -340,8 +343,10 @@ def main():
             for i in b_idx:
                 win = history_scaled[i:i+W+1]
                 times_i = (np.arange(W) * args.time_scale).tolist()
-                X_i = torch.tensor(win[:W], dtype=torch.float32, device=device)
-                M_i = torch.ones(W, D, dtype=torch.float32, device=device)
+                win_in = win[:W]
+                M_np = (~np.isnan(win_in)).astype(np.float32)
+                X_i = torch.tensor(np.nan_to_num(win_in, nan=0.0), dtype=torch.float32, device=device)
+                M_i = torch.tensor(M_np, dtype=torch.float32, device=device)
                 obs_idx_i = torch.zeros(W, dtype=torch.long, device=device)
                 cov_i = torch.ones(1, 1, device=device)
                 time_ptr_i = list(range(W + 1))
@@ -350,8 +355,11 @@ def main():
                 h, p, loss = model(times_i, time_ptr_i, X_i, M_i, obs_idx_i,
                                    args.delta_t, T_val, cov_i)
                 mean_pred = p[:, :D]
-                target = torch.tensor(win[W], dtype=torch.float32, device=device).unsqueeze(0)
-                b_loss = b_loss + nn.functional.mse_loss(mean_pred, target)
+                target_np = win[W]
+                t_mask = torch.tensor((~np.isnan(target_np)).astype(np.float32), dtype=torch.float32, device=device)
+                target = torch.tensor(np.nan_to_num(target_np, nan=0.0), dtype=torch.float32, device=device).unsqueeze(0)
+                diff = (mean_pred - target) ** 2 * t_mask
+                b_loss = b_loss + diff.sum() / t_mask.sum().clamp_min(1.0)
 
             b_loss = b_loss / len(b_idx)
             b_loss.backward()
@@ -401,8 +409,10 @@ def main():
     for step in tqdm(range(horizon), desc="预测"):
         win = full[len(history_scaled) - W + step: len(history_scaled) + step]
         times_i = (np.arange(W) * args.time_scale).tolist()
-        X_i = torch.tensor(win[:W], dtype=torch.float32, device=device)
-        M_i = torch.ones(W, D, dtype=torch.float32, device=device)
+        win_in = win[:W]
+        M_np = (~np.isnan(win_in)).astype(np.float32)
+        X_i = torch.tensor(np.nan_to_num(win_in, nan=0.0), dtype=torch.float32, device=device)
+        M_i = torch.tensor(M_np, dtype=torch.float32, device=device)
         obs_idx_i = torch.zeros(W, dtype=torch.long, device=device)
         cov_i = torch.ones(1, 1, device=device)
         time_ptr_i = list(range(W + 1))
