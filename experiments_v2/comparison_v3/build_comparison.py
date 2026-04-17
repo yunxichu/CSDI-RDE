@@ -47,13 +47,12 @@ GT_PATHS = {
 }
 
 METHOD_COLORS = {
-    "NeuralCDE":     "#2196F3",
-    "GRU-ODE-Bayes": "#FF9800",
-    "SSSD_v1":       "#CE93D8",
-    "SSSD_v2":       "#9C27B0",
-    "RDE":           "#4CAF50",
-    "RDE-Delay":     "#F44336",
-    "RDE-GPR":       "#4CAF50",
+    "NeuralCDE":      "#2196F3",
+    "GRU-ODE-Bayes":  "#FF9800",
+    "SSSD_v1":        "#CE93D8",
+    "SSSD_v2":        "#9C27B0",
+    "RDE-GPR":        "#4CAF50",
+    "RDE-Delay-GPR":  "#F44336",
 }
 
 
@@ -102,10 +101,15 @@ def collect_baselines_mode_B():
 
 
 def collect_rde_mode_B():
-    """RDE/RDE-Delay/RDE-GPR Mode B (滚动) 对齐结果"""
+    """
+    RDE-GPR / RDE-Delay-GPR Mode B (滚动) 对齐结果
+    命名规范（与结题报告一致）：
+      - RDE-GPR       = 空间集成 GPR，同一时刻不同维度组合 (Lorenz 里 "RDE", PM25 默认)
+      - RDE-Delay-GPR = 延迟嵌入 GPR (Lorenz 里 "RDE-Delay", EEG 加 --use_delay_embedding)
+    """
     rows = []
 
-    # Lorenz63/96 RDE, RDE-Delay (5 seeds 均值)
+    # Lorenz63/96 同时跑了 RDE-GPR (空间) 和 RDE-Delay-GPR (延迟), 5 seeds 均值
     for ds in ["lorenz63", "lorenz96"]:
         summary_path = f"{EXP_BASE}/{ds}/rde_delay/summary_mean.json"
         sm = load_json(summary_path)
@@ -113,40 +117,40 @@ def collect_rde_mode_B():
             continue
         rows.append({
             "dataset":  DATASET_LABELS[ds],
-            "method":   "RDE",
+            "method":   "RDE-GPR",
             "mode":     "Mode B (rolling+TF)",
             "rmse":     sm["rde_full40"]["rmse_mean"],
             "rmse_std": sm["rde_full40"]["rmse_std"],
             "mae":      np.nan,
             "source":   f"experiments_v2/{ds}/rde_delay/summary_mean.json (5 seeds)",
-            "notes":    "dim 0, horizon 40, 5 seeds 均值",
+            "notes":    "空间集成, dim 0, horizon 40, 5 seeds 均值",
         })
         rows.append({
             "dataset":  DATASET_LABELS[ds],
-            "method":   "RDE-Delay",
+            "method":   "RDE-Delay-GPR",
             "mode":     "Mode B (rolling+TF)",
             "rmse":     sm["rde_delay_full40"]["rmse_mean"],
             "rmse_std": sm["rde_delay_full40"]["rmse_std"],
             "mae":      np.nan,
             "source":   f"experiments_v2/{ds}/rde_delay/summary_mean.json (5 seeds)",
-            "notes":    "dim 0, horizon 40, 5 seeds 均值",
+            "notes":    "延迟嵌入, dim 0, horizon 40, 5 seeds 均值",
         })
 
-    # EEG RDE-GPR Mode B
+    # EEG 用 --use_delay_embedding 跑 → RDE-Delay-GPR
     m = load_json(f"{EXP_BASE}/eeg/rdegpr_modeB/metrics.json")
     o = extract_overall(m)
     if o is not None:
         rows.append({
             "dataset":  "EEG",
-            "method":   "RDE-GPR",
+            "method":   "RDE-Delay-GPR",
             "mode":     "Mode B (rolling+TF)",
             "rmse":     o["rmse"],
             "mae":      o.get("mae", np.nan),
             "source":   "experiments_v2/eeg/rdegpr_modeB/metrics.json",
-            "notes":    "history=976, horizon=24, target=0,1,2, trainlength=300",
+            "notes":    "延迟嵌入, history=976, horizon=24, target=0,1,2, trainlength=300",
         })
 
-    # PM25 RDE-GPR Mode B (若已完成)
+    # PM25 pm25_CSDIimpute_after-RDEgpr.py 不带 delay → RDE-GPR (空间集成)
     m = load_json(f"{EXP_BASE}/pm25/rdegpr_modeB/metrics.json")
     o = extract_overall(m)
     if o is not None:
@@ -157,7 +161,7 @@ def collect_rde_mode_B():
             "rmse":     o["rmse"],
             "mae":      o.get("mae", np.nan),
             "source":   "experiments_v2/pm25/rdegpr_modeB/metrics.json",
-            "notes":    "split_ratio=0.5, horizon=24, 全36站, trainlength=500",
+            "notes":    "空间集成, split_ratio=0.5, horizon=24, 全36站, trainlength=500",
         })
 
     return rows
@@ -205,7 +209,7 @@ def dim0_from_npy(pred_path, gt_path, horizon, is_csv=False):
 
 def plot_rmse_bar(df_modeB):
     """四数据集 RMSE 柱状图 (Mode B)"""
-    methods_order = ["NeuralCDE", "GRU-ODE-Bayes", "SSSD_v2", "RDE", "RDE-Delay", "RDE-GPR"]
+    methods_order = ["NeuralCDE", "GRU-ODE-Bayes", "SSSD_v2", "RDE-GPR", "RDE-Delay-GPR"]
     fig, axes = plt.subplots(1, 4, figsize=(22, 5))
     for ax, ds in zip(axes, DATASETS):
         sub = df_modeB[df_modeB["dataset"] == DATASET_LABELS[ds]]
@@ -240,7 +244,7 @@ def plot_rmse_bar(df_modeB):
 
 
 def plot_mae_bar(df_modeB):
-    methods_order = ["NeuralCDE", "GRU-ODE-Bayes", "SSSD_v2", "RDE", "RDE-Delay", "RDE-GPR"]
+    methods_order = ["NeuralCDE", "GRU-ODE-Bayes", "SSSD_v2", "RDE-GPR", "RDE-Delay-GPR"]
     fig, axes = plt.subplots(1, 4, figsize=(22, 5))
     for ax, ds in zip(axes, DATASETS):
         sub = df_modeB[df_modeB["dataset"] == DATASET_LABELS[ds]]
@@ -312,30 +316,28 @@ def plot_trajectory(dataset):
                 ax.plot(range(horizon), pred[:horizon, 0], '--', color=color,
                         linewidth=1.5, label=name, alpha=0.8)
 
-    # RDE / RDE-Delay (Lorenz only, 5 seeds 取第一个)
+    # RDE-Delay-GPR (Lorenz only, 5 seeds 取 seed42)
     if dataset in ("lorenz63", "lorenz96"):
         runs = sorted(glob.glob(f"{EXP_BASE}/{dataset}/rde_delay/run_*_seed42"))
         if runs:
             run0 = runs[0]
-            for name, color in [("RDE-Delay", "#F44336")]:
-                pred_path = f"{run0}/rde_delay_pred_full40.npy"
-                if os.path.exists(pred_path):
-                    pred = np.load(pred_path)
-                    ax.plot(range(len(pred)), pred, '-', color=color, linewidth=2,
-                            label=f"{name} (seed 42)", alpha=0.85)
+            pred_path = f"{run0}/rde_delay_pred_full40.npy"
+            if os.path.exists(pred_path):
+                pred = np.load(pred_path)
+                ax.plot(range(len(pred)), pred, '-', color="#F44336", linewidth=2,
+                        label="RDE-Delay-GPR (seed 42)", alpha=0.85)
 
-    # EEG RDE-GPR Mode B
+    # EEG RDE-Delay-GPR Mode B
     if dataset == "eeg":
         p = f"{EXP_BASE}/eeg/rdegpr_modeB/future_pred.csv"
         if os.path.exists(p):
-            pred = pd.read_csv(p).values  # 包含 index 列可能，尝试
-            # future_pred.csv 可能首列是 step index
+            pred = pd.read_csv(p).values
             if pred.shape[1] > 3:
                 pred = pred[:, 1:]
             ax.plot(range(min(horizon, pred.shape[0])), pred[:horizon, 0],
-                    '-', color="#4CAF50", linewidth=2, label="RDE-GPR (Mode B)", alpha=0.85)
+                    '-', color="#F44336", linewidth=2, label="RDE-Delay-GPR (Mode B)", alpha=0.85)
 
-    # PM25 RDE-GPR Mode B (if available)
+    # PM25 RDE-GPR Mode B (空间集成版)
     if dataset == "pm25":
         p = f"{EXP_BASE}/pm25/rdegpr_modeB/future_pred.csv"
         if os.path.exists(p):
@@ -345,7 +347,7 @@ def plot_trajectory(dataset):
                     df_p = df_p.set_index("datetime")
                 pred = df_p.values
                 ax.plot(range(min(horizon, pred.shape[0])), pred[:horizon, 0],
-                        '-', color="#4CAF50", linewidth=2, label="RDE-GPR (Mode B)", alpha=0.85)
+                        '-', color="#4CAF50", linewidth=2, label="RDE-GPR (空间集成)", alpha=0.85)
             except Exception as e:
                 print(f"[warn] PM25 RDE-GPR pred read failed: {e}")
 
@@ -394,14 +396,20 @@ def write_summary_md(df_all, df_modeB):
     lines.append("")
     lines.append(f"生成时间: {pd.Timestamp.now():%Y-%m-%d %H:%M}")
     lines.append("")
+    lines.append("## 方法命名")
+    lines.append("")
+    lines.append("- **RDE-GPR**: 随机嵌入 + 高斯过程回归（空间集成，同一时刻不同维度组合）")
+    lines.append("- **RDE-Delay-GPR**: 随机延迟嵌入 + 高斯过程回归（时间延迟特征）")
+    lines.append("- Lorenz63/96 的 eval_aligned.py 同时跑了上述两种方法；EEG 用延迟版；PM25 用空间版")
+    lines.append("")
     lines.append("## 对齐基线 Mode B 的主对比表")
     lines.append("")
-    lines.append("| 数据集 | NeuralCDE | GRU-ODE-Bayes | SSSD_v2 | RDE | RDE-Delay | RDE-GPR |")
-    lines.append("|--------|-----------|---------------|---------|-----|-----------|---------|")
+    lines.append("| 数据集 | NeuralCDE | GRU-ODE-Bayes | SSSD_v2 | RDE-GPR | RDE-Delay-GPR |")
+    lines.append("|--------|-----------|---------------|---------|---------|---------------|")
     for ds in ["Lorenz63", "Lorenz96", "PM2.5", "EEG"]:
         row = [ds]
         sub = df_modeB[df_modeB["dataset"] == ds]
-        for m in ["NeuralCDE", "GRU-ODE-Bayes", "SSSD_v2", "RDE", "RDE-Delay", "RDE-GPR"]:
+        for m in ["NeuralCDE", "GRU-ODE-Bayes", "SSSD_v2", "RDE-GPR", "RDE-Delay-GPR"]:
             r = sub[sub["method"] == m]
             if len(r) == 0:
                 row.append("—")

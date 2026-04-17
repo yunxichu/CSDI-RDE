@@ -6,6 +6,15 @@
 
 ---
 
+## 0.0 方法命名规范（与结题报告一致）
+
+| 名称 | 特征构造 | 对应脚本标签 |
+|------|----------|--------------|
+| **RDE-GPR** | **空间集成**：同一时刻 L 个不同维度 `[x_{d1}(t), ..., x_{dL}(t)]` | Lorenz 的 "RDE"；PM25 默认 |
+| **RDE-Delay-GPR** | **延迟嵌入**：不同维度×不同时间延迟 `[x_{d1}(t-τ1), ..., x_{dM}(t-τM)]` | Lorenz 的 "RDE-Delay"；EEG 加 `--use_delay_embedding` |
+
+Lorenz63/96 的 `eval_aligned.py` **同时跑**了 RDE-GPR 和 RDE-Delay-GPR 两个 variant。
+
 ## 0. 术语与核心区分
 
 | 模式 | 定义 | 代表 |
@@ -63,14 +72,14 @@
 | Lorenz63 | GRU-ODE-Bayes | Mode B | 5.97 | 4.03 |
 | Lorenz63 | SSSD v1 (mask 错误) | Mode B | 18.80 | 15.20 |
 | Lorenz63 | **SSSD v2** | Mode B | **15.21** | 12.02 |
-| Lorenz63 | **RDE (5 seeds)** | Mode B | **0.57 ± 0.14** | — |
-| Lorenz63 | **RDE-Delay (5 seeds)** | Mode B | **1.40 ± 0.41** | — |
+| Lorenz63 | **RDE-GPR (5 seeds, 空间集成)** | Mode B | **0.57 ± 0.14** | — |
+| Lorenz63 | **RDE-Delay-GPR (5 seeds, 延迟嵌入)** | Mode B | **1.40 ± 0.41** | — |
 | Lorenz96 | NeuralCDE | Mode B | 9.94 | 7.16 |
 | Lorenz96 | GRU-ODE-Bayes | Mode B | 4.10 | 3.26 |
 | Lorenz96 | SSSD v1 | Mode B | 5.59 | 4.43 |
 | Lorenz96 | **SSSD v2** | Mode B | **6.66** | 5.18 |
-| Lorenz96 | **RDE (5 seeds)** | Mode B | **0.28 ± 0.10** | — |
-| Lorenz96 | **RDE-Delay (5 seeds)** | Mode B | **0.26 ± 0.11** | — |
+| Lorenz96 | **RDE-GPR (5 seeds, 空间集成)** | Mode B | **0.28 ± 0.10** | — |
+| Lorenz96 | **RDE-Delay-GPR (5 seeds, 延迟嵌入)** | Mode B | **0.26 ± 0.11** | — |
 | PM25 | NeuralCDE | Mode B | 15.06 | 10.44 |
 | PM25 | GRU-ODE-Bayes | Mode B | 20.99 | 15.56 |
 | PM25 | SSSD v1 | Mode B | 105.21 | 95.32 |
