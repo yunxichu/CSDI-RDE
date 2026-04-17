@@ -1,147 +1,158 @@
-# 2026-04-17 实验清单（已做 / 未做 / 运行中）
+# 2026-04-17 实验清单（修正版 v2 — 已核查全部脚本行为）
 
-> 目的：系统梳理项目所有实验，覆盖 **四数据集 × 所有方法 × 两种预测模式**，标明每格状态与下一步优先级。
-> RDE-Delay / RDE-GPR 是本项目主方法，NeuralCDE / GRU-ODE-Bayes / SSSD 是缺失值处理领域三大深度学习基线。
-
-## 两种预测模式的定义
-
-| 模式 | 说明 | 典型方法 |
-|------|------|---------|
-| **Mode A 前馈 (feed-forward)** | 模型一次输出完整 horizon 步，中间步不看 GT | 基线天然做法；RDE-GPR 需 `--multi_step --multi_step_mode direct`；RDE-Delay 的 `eval_aligned.py` 默认即为此 |
-| **Mode B 单步滚动 + teacher-forcing** | 每步只预测 1 步，下一步输入用**真值** `future_truth` 替换，训练窗口随之滑动 | RDE-GPR 的 `*_CSDIimpute_after-RDEgpr.py` 默认；基线 `eeg_*_forecast.py` 加 `--use_teacher_forcing` 亦可 |
-
-两种模式的 RMSE 不可直接比较：**Mode B 误差不累积 → 同方法 RMSE 会低一个数量级**。
+> **重大修正**：初次整理时误以为 `experiments_v2/` 里所有基线是"前馈模式"。实际核查后发现**通用基线脚本默认就是 Mode B 单步滚动 + teacher-forcing**。
+>
+> 这意味着 RDE-Delay 和基线在 `experiments_v2/` 里**已经模式对齐**，无需改写基线代码。只需补齐缺失的 RDE-GPR 对齐实验和仍在跑的 SSSD v2。
 
 ---
 
-## 一、基线实验 (experiments_v2/) — Mode A 前馈
+## 0. 术语与核心区分
 
-所有基线用 `--lr 1e-3 --batch 128 --epochs 100/500`，前馈一次性预测。
+| 模式 | 定义 | 代表 |
+|------|------|------|
+| **Mode A 纯前馈** | 模型一次输出 horizon 步，中间步不看 GT；OR 自回归：用自己前一步预测作为下一步输入 | 基线训练目标；RDE-GPR 加 `--multi_step` |
+| **Mode B 滚动 + teacher-forcing** | 每预测一步后，下一步窗口引入 `future_truth[t]` 真值 | 所有 experiments_v2 通用基线默认；RDE-GPR 默认 |
 
-### 对齐设置（权威）
-
-| 数据集 | history / trainlength | horizon | target_dims | ground_path |
-|--------|------------------------|---------|-------------|-------------|
-| Lorenz63 | 60 | 40 | 全 3 维 | [gt_100_20260320_110418.csv](../lorenz_rde_delay/results/gt_100_20260320_110418.csv) |
-| Lorenz96 | 60 | 40 | 全 100 维 | [gt_100_20260323_192045.csv](../lorenz96_rde_delay/results/gt_100_20260323_192045.csv) |
-| PM2.5 | 4379 (split=0.5) | 24 | 全 36 站 | pm25_ground.txt |
-| EEG | 976 | 24 | dims 0,1,2 | eeg_full.npy |
-
-### 状态矩阵（overall RMSE / MAE）
-
-| 方法 | Lorenz63 | Lorenz96 | PM2.5 | EEG |
-|------|----------|----------|-------|-----|
-| NeuralCDE | ✅ 6.05 / 4.22 | ✅ 9.94 / 7.16 | ✅ 15.06 / 10.44 | ✅ 17.04 / 12.27 |
-| GRU-ODE-Bayes | ✅ 5.97 / 4.03 | ✅ 4.10 / 3.26 | ✅ 20.99 / 15.56 | ✅ 6.24 / 5.19 |
-| SSSD v1 (mask错误版) | 18.80 / 15.20 | 5.59 / 4.43 | 105.21 / 95.32 | 87.57 / 73.15 |
-| **SSSD v2** (mask 修复) | ✅ 15.21 / 12.02 | ✅ 6.66 / 5.18 | 🔄 **运行中** (GPU 7, ~30%) | ✅ 64.06 / 56.48 |
-
-### 基线 dim 0 提取（和 RDE-Delay 只跑 dim0 公平对比）
-
-| 方法 | Lorenz63 dim0 RMSE | Lorenz96 dim0 RMSE |
-|------|---------------------|----------------------|
-| NeuralCDE | 2.75 | 7.06 |
-| GRU-ODE-Bayes | 6.78 | 2.70 |
-| SSSD v2 | 15.19 | 3.54 |
+**模式 B 下误差不累积 → 同方法 RMSE 会低 1 个数量级**。仅同模式间可比。
 
 ---
 
-## 二、RDE-Delay / RDE-GPR (我的方法) — 两种模式
+## 1. 每个脚本的默认预测模式（已核查）
 
-### Mode A 前馈（对齐基线）
+### 通用基线脚本（experiments_v2 全部用这些）
 
-| 数据集 | 方法 | 状态 | RMSE / MAE | 备注 |
-|--------|------|------|------------|------|
-| Lorenz63 | RDE (5 seeds) | ✅ 完成 | **0.57 ± 0.14** | dim0, trainlength=60, horizon=40, 5 seeds 均值 |
-| Lorenz63 | RDE-Delay (5 seeds) | ✅ 完成 | **1.40 ± 0.41** | 同上 |
-| Lorenz96 | RDE (5 seeds) | ✅ 完成 | **0.28 ± 0.10** | dim0, trainlength=60, horizon=40, 5 seeds 均值 |
-| Lorenz96 | RDE-Delay (5 seeds) | ✅ 完成 | **0.26 ± 0.11** | 同上 |
-| PM2.5 | RDE-GPR | ❌ **未做** | — | 脚本 [pm25_CSDIimpute_after-RDEgpr.py](../rde_gpr/pm25_CSDIimpute_after-RDEgpr.py) 无 `--multi_step` 选项，默认是 Mode B |
-| EEG | RDE-GPR | 🔄 **运行中** | — | `history=976, horizon=24, multi_step direct`, 约 50 分钟 |
+| 脚本 | 默认模式 | 关键代码位置 |
+|------|----------|--------------|
+| [baselines/neuralcde_forecast.py](../baselines/neuralcde_forecast.py) | **Mode B 滚动** | Line 221: `full = [history, fut_clean]; windows = [full[T_hist - W + i : T_hist + i] for i in range(horizon)]` |
+| [baselines/gruodebayes_forecast.py](../baselines/gruodebayes_forecast.py) | **Mode B 滚动** | Line 398: `win = full[len(history) - W + step : len(history) + step]` |
+| [baselines/sssd_forecast.py](../baselines/sssd_forecast.py) | **Mode B 滚动** | Line 351: `cur = np.vstack([cur[1:], fut_true_scaled_clean[i][np.newaxis]])` |
 
-### Mode B 单步滚动 + teacher-forcing（GT 泄露到滑窗）
+### PM25 专用脚本（未在 experiments_v2 使用）
 
-| 数据集 | 方法 | 状态 | RMSE / MAE | 来源 |
-|--------|------|------|------------|------|
-| Lorenz63 | RDE-GPR | ❌ **未做** | — | 脚本缺 (Lorenz 用 eval_aligned.py) |
-| Lorenz96 | RDE-GPR | ❌ **未做** | — | 同上 |
-| PM2.5 | RDE-GPR 全 36 站 | ❌ 严格未做（有旧跑） | 旧跑: 15.39 / 10.01 | [best_record/pm25_rc_rde_0.5_42_20260317_122531](../best_record/pm25_rc_rde_0.5_42_20260317_122531/) trainlength=4, L=10 (参数差) |
-| PM2.5 | RDE-GPR 3 站 | 旧跑 | 13.90 / 9.27 (3站) / 11.42 (站001001) | [best_record/pm25_test_plot_with_history_v3](../best_record/pm25_test_plot_with_history_v3/) |
-| EEG | RDE-GPR, h=100 | ✅ **已做** | **7.53 / 6.23** | [结题报告素材/data/comparison_summary.csv](../结题报告素材/data/comparison_summary.csv)，[eeg_rdegpr_h100_horizon24_20260331_013232](../save/eeg_rdegpr_h100_horizon24_20260331_013232/) |
-| EEG | RDE-GPR, h=976 | ❌ 未做严格 Mode B | — | 当前跑的是 Mode A direct |
+| 脚本 | 默认模式 | 备注 |
+|------|----------|------|
+| [baselines/pm25_neuralcde_forecast.py](../baselines/pm25_neuralcde_forecast.py) | Mode B 滚动 | Line 320: `full = [history, fut_true]` |
+| [baselines/pm25_gruodebayes_forecast.py](../baselines/pm25_gruodebayes_forecast.py) | **Mode A 自回归** | Line 525: `use_autoregressive=True` 默认 → 用预测值作为下一步输入（不看真值）|
+| [baselines/pm25_sssd_forecast.py](../baselines/pm25_sssd_forecast.py) | Mode B 滚动 | Line 214: `cur = np.vstack([cur[1:], true_val])` |
 
----
+### EEG 专用脚本（未在 experiments_v2 使用，仅用于 `eeg_forecast_comparison.py`）
 
-## 三、基线的 Mode B（让大家都 teacher-forcing）
+| 脚本 | 默认模式 | 开关 |
+|------|----------|------|
+| [baselines/eeg_neuralcde_forecast.py](../baselines/eeg_neuralcde_forecast.py) | **Mode A 前馈** | `--use_teacher_forcing` 切 Mode B |
+| [baselines/eeg_gruodebayes_forecast.py](../baselines/eeg_gruodebayes_forecast.py) | **Mode A 前馈** | `--use_teacher_forcing` 切 Mode B |
 
-结题报告 Table 5 的"公平对比"：**只在 EEG 上做过**，只跑 GRU / LSTM / GRU-ODE-Bayes / NeuralCDE，**history=100**。
+### RDE 方法脚本
 
-### 已做
-
-| 数据集 | 方法 | 状态 | RMSE / MAE (Mode B) | 来源 |
-|--------|------|------|------------------|------|
-| EEG (h=100) | **RDE-GPR** | ✅ | **7.53 / 6.23** | comparison_summary.csv |
-| EEG (h=100) | GRU | ✅ | 11.25 / 9.30 | 同上 |
-| EEG (h=100) | LSTM | ✅ | 11.21 / 9.40 | 同上 |
-| EEG (h=100) | GRU-ODE-Bayes | ✅ | 9.62 / 8.08 | 同上 |
-| EEG (h=100) | NeuralCDE | ⚠️ 脚本存在但 CSV 里无结果 | — | [baselines/eeg_neuralcde_forecast.py](../baselines/eeg_neuralcde_forecast.py) 已支持 `--use_teacher_forcing` |
-
-### 未做（Mode B）
-
-| 数据集 | 方法 | 状态 | 脚本是否已支持 `--use_teacher_forcing` | 代价 |
-|--------|------|------|----------------------------------------|------|
-| EEG (h=976 对齐) | NeuralCDE | ❌ | ✅ eeg_neuralcde_forecast.py 支持 | 低（调参即可） |
-| EEG (h=976) | GRU-ODE-Bayes | ❌ | ✅ eeg_gruodebayes_forecast.py 支持 | 低 |
-| EEG (h=976) | SSSD | ❌ | ❌ sssd_forecast.py 无此参数 | 高（改代码 + 慢，扩散模型每步重新 denoise 100 步） |
-| Lorenz63 | NeuralCDE/GRU-ODE-Bayes/SSSD | ❌ | ❌ baselines/*_forecast.py 无此参数 | 中（需改基线代码） |
-| Lorenz96 | NeuralCDE/GRU-ODE-Bayes/SSSD | ❌ | ❌ 同上 | 中 |
-| PM2.5 | NeuralCDE/GRU-ODE-Bayes/SSSD | ❌ | ❌ 同上 | 中 |
+| 脚本 | 默认模式 | 备注 |
+|------|----------|------|
+| [rde_gpr/pm25_CSDIimpute_after-RDEgpr.py](../rde_gpr/pm25_CSDIimpute_after-RDEgpr.py) | **Mode B 滚动** | `seq_true = vstack([history, future_truth])`，滑窗包含真值 |
+| [rde_gpr/eeg_CSDIimpute_after-RDEgpr.py](../rde_gpr/eeg_CSDIimpute_after-RDEgpr.py) | **Mode B 滚动** | `--multi_step --multi_step_mode direct` 切 Mode A |
+| [lorenz_rde_delay/inference/eval_aligned.py](../lorenz_rde_delay/inference/eval_aligned.py) | **Mode B 滚动** | 每步滑窗从 `imputed_100` 抽（imputed 含 GT） |
+| [lorenz96_rde_delay/inference/eval_aligned.py](../lorenz96_rde_delay/inference/eval_aligned.py) | **Mode B 滚动** | 同上 |
 
 ---
 
-## 四、总结：所有缺口
+## 2. experiments_v2/ 实际已做的实验（**全部 Mode B 滚动 teacher-forcing**）
 
-### 🔴 P0 紧急，不做就不能发布最终对比
-- [x] Lorenz96 SSSD v2（已完成，RMSE=6.66）
-- [ ] PM2.5 SSSD v2（🔄 运行中，GPU 7，~30%）
-- [ ] EEG RDE-GPR Mode A 前馈 h=976（🔄 运行中，~50 min）
+所有基线都用**通用**脚本（通过对比 `args.json` 里的 `num_layers / p_hidden / delta_t / solver` 确认）。
 
-### 🟡 P1 重要，严重影响"严谨对齐"
-- [ ] **PM2.5 RDE-GPR 严格 Mode A 前馈全 36 站**
-  - 脚本 [pm25_CSDIimpute_after-RDEgpr.py](../rde_gpr/pm25_CSDIimpute_after-RDEgpr.py) 需加 `--multi_step --multi_step_mode direct` 选项
-  - 工作量：中（参考 [eeg_CSDIimpute_after-RDEgpr.py](../rde_gpr/eeg_CSDIimpute_after-RDEgpr.py) 已有的实现）
-- [ ] **EEG 基线 Mode B teacher-forcing，h=976**（与 Mode A 的 h=976 基线双赛道对比）
-  - NeuralCDE / GRU-ODE-Bayes 脚本已支持，调参重跑即可
-  - 工作量：低（2 次运行）
+| 数据集 | 方法 | 模式 | RMSE | MAE |
+|--------|------|------|------|-----|
+| Lorenz63 | NeuralCDE | Mode B | 6.05 | 4.22 |
+| Lorenz63 | GRU-ODE-Bayes | Mode B | 5.97 | 4.03 |
+| Lorenz63 | SSSD v1 (mask 错误) | Mode B | 18.80 | 15.20 |
+| Lorenz63 | **SSSD v2** | Mode B | **15.21** | 12.02 |
+| Lorenz63 | **RDE (5 seeds)** | Mode B | **0.57 ± 0.14** | — |
+| Lorenz63 | **RDE-Delay (5 seeds)** | Mode B | **1.40 ± 0.41** | — |
+| Lorenz96 | NeuralCDE | Mode B | 9.94 | 7.16 |
+| Lorenz96 | GRU-ODE-Bayes | Mode B | 4.10 | 3.26 |
+| Lorenz96 | SSSD v1 | Mode B | 5.59 | 4.43 |
+| Lorenz96 | **SSSD v2** | Mode B | **6.66** | 5.18 |
+| Lorenz96 | **RDE (5 seeds)** | Mode B | **0.28 ± 0.10** | — |
+| Lorenz96 | **RDE-Delay (5 seeds)** | Mode B | **0.26 ± 0.11** | — |
+| PM25 | NeuralCDE | Mode B | 15.06 | 10.44 |
+| PM25 | GRU-ODE-Bayes | Mode B | 20.99 | 15.56 |
+| PM25 | SSSD v1 | Mode B | 105.21 | 95.32 |
+| PM25 | **SSSD v2** | Mode B | 🔄 运行中（~30%, GPU 7） | — |
+| EEG | NeuralCDE | Mode B | 17.04 | 12.27 |
+| EEG | GRU-ODE-Bayes | Mode B | 6.24 | 5.19 |
+| EEG | SSSD v1 | Mode B | 87.57 | 73.15 |
+| EEG | **SSSD v2** | Mode B | **64.06** | 56.48 |
 
-### 🟢 P2 可选，若要做"所有数据集的统一 teacher-forcing 对齐"路线
-- [ ] Lorenz63/96 所有基线的 Mode B
-  - NeuralCDE / GRU-ODE-Bayes 基线脚本需要加 `--use_teacher_forcing` 支持（参考 EEG 脚本）
-  - 工作量：高（改 3-6 个脚本，每个跑 3 个数据集）
-- [ ] PM2.5 所有基线的 Mode B
-  - 同上
-- [ ] Lorenz63/96/PM2.5 RDE-GPR 的严格 Mode B 评估（已经是 teacher-forcing 默认，只需补齐 metrics 到 experiments_v2 格式）
-
-### 🟤 P3 不建议做（代价过高）
-- [ ] SSSD 在任何数据集的 Mode B teacher-forcing（扩散模型逐步 denoise 24 次太慢，且意义不大）
-- [ ] Lorenz63/96 基线的**全 100/3 维** RDE-Delay（GP 逐维跑代价爆炸）
+**补充验证**（今天新做）：
+| 数据集 | 方法 | 模式 | RMSE | 说明 |
+|--------|------|------|------|------|
+| EEG | GRU-ODE-Bayes (EEG 专用脚本 + `--use_teacher_forcing`) | Mode B | 6.22 | 几乎等于上表 6.24 → 证实 experiments_v2 默认是 Mode B |
 
 ---
 
-## 五、建议的下一步顺序
+## 3. 关键修正：EEG RDE-GPR 之前跑偏方向
 
-**当前状态**：
-1. PM2.5 SSSD v2 在 GPU 7（~30% 完成，~30h 剩余）
-2. EEG RDE-GPR Mode A direct 在 CPU（~80% dim0 完成，~40 min 剩余）
+| 实验 | 模式 | RMSE | 对齐? |
+|------|------|------|-------|
+| EEG RDE-GPR `multi_step direct` (我之前跑) | **Mode A 前馈** | 91.06 | ❌ experiments_v2 基线没跑 Mode A |
+| EEG RDE-GPR 默认滚动（现在 🔄 运行中） | **Mode B 滚动** | 🔄 | ✅ 对齐 experiments_v2 17.04/6.24/64.06 |
 
-**接下来按优先级**：
-1. ⏳ **等 EEG RDE-GPR 跑完**（~40 min）→ 记录 Mode A h=976 前馈 RMSE
-2. **启动 PM2.5 RDE-GPR Mode B 全 36 站**（默认 teacher-forcing，就是现有脚本） → 作为 "PM25 当前可用的对齐对比"
-3. **改 PM25 RDE-GPR 脚本加 `--multi_step`** → 严格 Mode A 前馈对齐 SSSD/NeuralCDE
-4. **跑 EEG 基线 Mode B h=976**（NeuralCDE / GRU-ODE-Bayes）→ EEG 双赛道
-5. 可选：如要做全数据集 Mode B 对齐，再考虑改 Lorenz63/96/PM25 基线
+**Mode A 的 91.06 不是"RDE-GPR 表现差"的证据 — 它只是说 GP 不擅长长 horizon 纯前馈**，而基线的 17.04/6.24 也都是 Mode B，不是前馈。当前新跑的 Mode B 才是真正可比的数据。
 
-**估算时间**（不含神经网络重训）：
-- PM2.5 RDE-GPR Mode B (OMP=1, NJ=2, TL=500): **1-2 小时**
-- EEG 基线 Mode B h=976: **每个 30-60 min**（已训练过，只需推理）
-- 改 PM25 加 --multi_step：开发 ~30 min + 跑 1-2 小时
+---
+
+## 4. 当前缺口（剩余补跑清单）
+
+### 🔴 P0 必须完成（直接影响最终对比表）
+
+| # | 任务 | 状态 | 预估时间 | 备注 |
+|---|------|------|----------|------|
+| 1 | EEG RDE-GPR Mode B h=976 (默认滚动) | 🔄 运行中 | ~30 min | CPU 2 核，trainlength=300 |
+| 2 | PM25 SSSD v2 (experiments_v2/pm25/sssd_v2) | 🔄 GPU 7 ~30% | ~24h 剩 | 不打断 |
+| 3 | PM25 RDE-GPR Mode B 全 36 站对齐 | ⏳ 排队（等 EEG 完） | 1-2h | CPU 2 核，trainlength=500, OMP=1 |
+
+### 🟡 P1 可选（Mode A 对照赛道）
+
+如果要在报告里加一组"大家都前馈"的对照：
+
+| # | 任务 | 代价 |
+|---|------|------|
+| 4 | Lorenz63/96/PM25 基线 Mode A 严格前馈 | 改通用脚本加 `--no_teacher_forcing`，~2-3h 开发 + 4-6 次推理 |
+| 5 | Lorenz63/96/PM25 RDE-Delay Mode A 前馈 | 改 eval_aligned.py 加 `--feed_forward` mode |
+
+### 🟤 P2 不建议做
+
+| # | 任务 | 原因 |
+|---|------|------|
+| 6 | SSSD 的 Mode A 自回归版 | 扩散模型每步 denoise 代价极高 |
+| 7 | Lorenz63/96 全 100/3 维 RDE-Delay | GP 逐维 × 24 步代价爆炸 |
+
+---
+
+## 5. 有疑问但已废弃的旧结果（参考用，非对齐主基线）
+
+| 实验 | 数据 | 问题 |
+|------|------|------|
+| `结题报告素材/data/comparison_summary.csv` EEG | RDE-GPR=7.53, GRU-ODE-Bayes=9.62 | history=100，与 experiments_v2 h=976 不一致，仅作参考 |
+| `save/eeg_rdegpr_h100_horizon24_20260331_013232` | RMSE=63.93 | h=100, 前馈模式，既不对齐 h 也不对齐模式 |
+| `best_record/pm25_test_plot_with_history_v3` | 3 站 RMSE=13.90 | 只 3 站点，与基线 36 站不对齐 |
+| `best_record/pm25_rc_rde_0.5_42_20260317_122531` | 36 站 RMSE=15.39 | L=10, trainlength=4，与标准参数 L=4, trainlength=500 不对齐 |
+| `experiments_v2/eeg/rdegpr_aligned` | RMSE=91.06 | Mode A 前馈，不对齐基线 Mode B |
+| `experiments_v2/eeg/gruodebayes_modeB` | RMSE=6.22 | 用 EEG 专用脚本 + teacher_forcing，和通用脚本 6.24 近似，仅作复核 |
+
+---
+
+## 6. 最终交付物（等 P0 完成后生成）
+
+1. **对齐后对比表 CSV**：`experiments_v2/figures/summary_table_modeB.csv`
+2. **柱状对比图**：`experiments_v2/figures/rmse_modeB.png` / `mae_modeB.png`
+3. **轨迹对比图**（dim 0）：各数据集 `{dataset}_trajectory_comparison_modeB.png`
+4. **方法说明**：在 README 或 session notes 中明确标注"所有对比均在 Mode B 单步滚动 teacher-forcing 模式下进行"
+
+---
+
+## 7. 运行中/已启动的后台任务
+
+| PID/TaskID | 说明 | GPU/CPU | 开始时间 | 预估完成 |
+|------------|------|---------|----------|----------|
+| 909979 | PM25 SSSD v2 Mode B | GPU 7 | 2026-04-16 18:46 | 2026-04-18 晚 |
+| task beqb8twda | EEG RDE-GPR Mode B h=976 | CPU 2核 | 今天 15:30 | 今天 16:00 |
+
+（Monitor 任务已挂在 EEG RDE-GPR 上，完成自动通知）
