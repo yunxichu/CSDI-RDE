@@ -1,0 +1,2 @@
+dataset,method,mode,rmse,mae,source,notes
+EEG,RDE-GPR,Mode A (feed-forward direct),91.06183445033139,68.1044201331368,experiments_v2/eeg/rdegpr_aligned/metrics.json,--multi_step --multi_step_mode direct

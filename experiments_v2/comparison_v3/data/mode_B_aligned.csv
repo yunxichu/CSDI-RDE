@@ -1,0 +1,21 @@
+dataset,method,mode,rmse,mae,source,rmse_std,notes
+Lorenz63,NeuralCDE,Mode B (rolling+TF),6.047891053993558,4.224471738819418,experiments_v2/lorenz63/neuralcde/metrics.json,,
+Lorenz63,GRU-ODE-Bayes,Mode B (rolling+TF),5.96936484834554,4.029014563018304,experiments_v2/lorenz63/gruodebayes/metrics.json,,
+Lorenz63,SSSD_v1,Mode B (rolling+TF),18.80088958430331,15.204769396783744,experiments_v2/lorenz63/sssd/metrics.json,,
+Lorenz63,SSSD_v2,Mode B (rolling+TF),15.209231645373157,12.01780559338016,experiments_v2/lorenz63/sssd_v2/metrics.json,,
+Lorenz96,NeuralCDE,Mode B (rolling+TF),9.939031641608441,7.158819272574819,experiments_v2/lorenz96/neuralcde/metrics.json,,
+Lorenz96,GRU-ODE-Bayes,Mode B (rolling+TF),4.1047472427200455,3.257085006186889,experiments_v2/lorenz96/gruodebayes/metrics.json,,
+Lorenz96,SSSD_v1,Mode B (rolling+TF),5.591627555073574,4.432016016509644,experiments_v2/lorenz96/sssd/metrics.json,,
+Lorenz96,SSSD_v2,Mode B (rolling+TF),6.658687597122186,5.180468946810243,experiments_v2/lorenz96/sssd_v2/metrics.json,,
+PM2.5,NeuralCDE,Mode B (rolling+TF),15.063878543558165,10.43950556888877,experiments_v2/pm25/neuralcde/metrics.json,,
+PM2.5,GRU-ODE-Bayes,Mode B (rolling+TF),20.985670543128577,15.560527748485946,experiments_v2/pm25/gruodebayes/metrics.json,,
+PM2.5,SSSD_v1,Mode B (rolling+TF),105.21103380289328,95.31860980143149,experiments_v2/pm25/sssd/metrics.json,,
+EEG,NeuralCDE,Mode B (rolling+TF),17.041921524175645,12.272827729562627,experiments_v2/eeg/neuralcde/metrics.json,,
+EEG,GRU-ODE-Bayes,Mode B (rolling+TF),6.236323767305315,5.188355923295806,experiments_v2/eeg/gruodebayes/metrics.json,,
+EEG,SSSD_v1,Mode B (rolling+TF),87.57314388800306,73.14899359809027,experiments_v2/eeg/sssd/metrics.json,,
+EEG,SSSD_v2,Mode B (rolling+TF),64.0600634143049,56.475124782986114,experiments_v2/eeg/sssd_v2/metrics.json,,
+Lorenz63,RDE,Mode B (rolling+TF),0.5726,,experiments_v2/lorenz63/rde_delay/summary_mean.json (5 seeds),0.1445,"dim 0, horizon 40, 5 seeds 均值"
+Lorenz63,RDE-Delay,Mode B (rolling+TF),1.4029,,experiments_v2/lorenz63/rde_delay/summary_mean.json (5 seeds),0.4126,"dim 0, horizon 40, 5 seeds 均值"
+Lorenz96,RDE,Mode B (rolling+TF),0.2845,,experiments_v2/lorenz96/rde_delay/summary_mean.json (5 seeds),0.0986,"dim 0, horizon 40, 5 seeds 均值"
+Lorenz96,RDE-Delay,Mode B (rolling+TF),0.2647,,experiments_v2/lorenz96/rde_delay/summary_mean.json (5 seeds),0.1068,"dim 0, horizon 40, 5 seeds 均值"
+EEG,RDE-GPR,Mode B (rolling+TF),12.299039940010063,10.400314905348447,experiments_v2/eeg/rdegpr_modeB/metrics.json,,"history=976, horizon=24, target=0,1,2, trainlength=300"
