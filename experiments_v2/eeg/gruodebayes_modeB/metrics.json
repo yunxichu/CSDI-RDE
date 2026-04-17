@@ -1,0 +1,19 @@
+{
+    "method": "GRU-ODE-Bayes",
+    "rmse": 6.224454879760742,
+    "mae": 5.19005012512207,
+    "args": {
+        "imputed_path": "/home/rhl/Github/save/eeg_csdi_imputed/eeg_full.npy",
+        "ground_path": "/home/rhl/Github/save/eeg_csdi_imputed/eeg_full.npy",
+        "horizon_steps": "24",
+        "history_timesteps": "976",
+        "hidden_size": "64",
+        "epochs": "100",
+        "lr": "0.001",
+        "seed": "42",
+        "target_dims": "0,1,2",
+        "out_dir": "/home/rhl/Github/experiments_v2/eeg/gruodebayes_modeB",
+        "use_teacher_forcing": "True",
+        "use_ground_truth_train": "True"
+    }
+}
