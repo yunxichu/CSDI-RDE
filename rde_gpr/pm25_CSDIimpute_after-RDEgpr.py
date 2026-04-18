@@ -246,6 +246,102 @@ def _parallel_predict_one_comb(comb, traindata, target_idx, steps_ahead=1, optim
         return np.nan, np.nan, 1
 
 
+# ─────────── Delay embedding (ported from eeg_CSDIimpute_after-RDEgpr.py) ───────────
+
+def _sample_delay_combos(total_dims, tau_max, n_combos, rng, M):
+    dims = np.arange(total_dims)
+    taus = np.arange(1, tau_max + 1)
+    dd, tt = np.meshgrid(dims, taus, indexing='ij')
+    candidates = np.stack([dd.ravel(), tt.ravel()], axis=1)
+    n_cand = len(candidates)
+    M_use = min(M, n_cand)
+    combos = []
+    for _ in range(n_combos):
+        chosen_idx = rng.choice(n_cand, size=M_use, replace=False)
+        combos.append(candidates[chosen_idx])
+    return combos, M_use
+
+
+def _build_feature_with_delay(seq, combo, t):
+    feat = np.empty(len(combo))
+    for k, (dim, delay) in enumerate(combo):
+        idx = t - int(delay)
+        feat[k] = seq[idx, int(dim)] if idx >= 0 else np.nan
+    return feat
+
+
+def _parallel_predict_one_comb_delay(args):
+    comb, traindata, target_idx, steps_ahead, optimize_hyp, max_delay = args
+    try:
+        trainlength = len(traindata)
+        if trainlength - steps_ahead <= max_delay + 1:
+            return np.nan, np.nan, 2
+        max_delay_used = int(comb[:, 1].max())
+        t_min = max_delay_used
+        t_max = trainlength - steps_ahead - 1
+        if t_min > t_max or t_max - t_min < 5:
+            return np.nan, np.nan, 2
+        ts = np.arange(t_min, t_max + 1)
+        X = np.array([_build_feature_with_delay(traindata, comb, t) for t in ts])
+        y = traindata[ts + steps_ahead, target_idx]
+        valid = ~np.any(np.isnan(X), axis=1)
+        X, y = X[valid], y[valid]
+        if len(y) < max(5, len(comb) + 1):
+            return np.nan, np.nan, 2
+        if np.std(y) < 1e-8:
+            return np.nan, np.nan, 2
+        x_test = _build_feature_with_delay(traindata, comb, trainlength - steps_ahead)
+        if np.any(np.isnan(x_test)):
+            return np.nan, np.nan, 2
+        x_test = x_test.reshape(1, -1)
+        scaler_X = StandardScaler()
+        scaler_y = StandardScaler()
+        combined_X = np.vstack([X, x_test])
+        combined_X_scaled = scaler_X.fit_transform(combined_X)
+        X_scaled = combined_X_scaled[:-1]
+        x_test_scaled = combined_X_scaled[-1:]
+        y_scaled = scaler_y.fit_transform(y.reshape(-1, 1)).flatten()
+        gp = GaussianProcessRegressor(noise=1e-6)
+        gp.fit(X_scaled, y_scaled, init_params=(1.0, 1.0, 0.1), optimize=optimize_hyp)
+        pred_scaled, std_scaled = gp.predict(x_test_scaled, return_std=True)
+        pred = scaler_y.inverse_transform(pred_scaled.reshape(-1, 1))[0, 0]
+        std = std_scaled[0] * scaler_y.scale_[0]
+        return float(pred), float(std), 0
+    except Exception:
+        return np.nan, np.nan, 1
+
+
+def rdegpr_predict_with_delay(traindata, target_idx, L, s, steps_ahead, pool, rng, max_delay, optimize_hyp=True):
+    D = traindata.shape[1]
+    n_combos = min(int(s), 500)
+    combos, M_use = _sample_delay_combos(D, max_delay, n_combos, rng, L)
+    args_list = [(comb, traindata, target_idx, steps_ahead, optimize_hyp, max_delay) for comb in combos]
+    results = pool.map(_parallel_predict_one_comb_delay, args_list)
+    pred_values = np.array([r[0] for r in results], dtype=np.float64)
+    pred_stds = np.array([r[1] for r in results], dtype=np.float64)
+    valid = ~np.isnan(pred_values)
+    valid_preds = pred_values[valid]
+    valid_stds = pred_stds[valid]
+    if len(valid_preds) == 0:
+        return np.nan, np.nan, None
+    if len(valid_preds) == 1:
+        return float(valid_preds[0]), float(valid_stds[0]), None
+    inter_var = np.var(valid_preds)
+    intra_var = np.mean(valid_stds ** 2)
+    final_std = float(np.sqrt(inter_var + intra_var))
+    if len(valid_preds) >= 5:
+        try:
+            kde = gaussian_kde(valid_preds)
+            xi = np.linspace(valid_preds.min(), valid_preds.max(), 500)
+            density = kde(xi)
+            final_pred = float(np.sum(xi * density) / np.sum(density))
+        except Exception:
+            final_pred = float(np.mean(valid_preds))
+    else:
+        final_pred = float(np.mean(valid_preds))
+    return final_pred, final_std, None
+
+
 def rdegpr_predict_next_for_target(traindata, target_idx, L, s, steps_ahead, pool, rng, optimize_hyp=True, debug=False):
     """
     返回 pred, std, debug_info
@@ -318,6 +414,8 @@ def rdegpr_forecast_multivariate(
     debug=False,
     debug_steps=3,
     debug_out_dir=None,
+    use_delay_embedding=False,
+    max_delay=20,
 ):
     """
     一步滚动预测（Teacher Forcing / Open-loop）：
@@ -396,17 +494,30 @@ def rdegpr_forecast_multivariate(
 
             for j in target_indices:
                 tj_rng = np.random.default_rng(int(seed + 100000 * step + 1000 * int(j)))
-                pred_j, std_j, dbg_j = rdegpr_predict_next_for_target(
-                    traindata=traindata,
-                    target_idx=int(j),
-                    L=L,
-                    s=s,
-                    steps_ahead=steps_ahead,
-                    pool=pool,
-                    rng=tj_rng,
-                    optimize_hyp=optimize_hyp,
-                    debug=(debug and step < debug_steps),
-                )
+                if use_delay_embedding:
+                    pred_j, std_j, dbg_j = rdegpr_predict_with_delay(
+                        traindata=traindata,
+                        target_idx=int(j),
+                        L=L,
+                        s=s,
+                        steps_ahead=steps_ahead,
+                        pool=pool,
+                        rng=tj_rng,
+                        max_delay=max_delay,
+                        optimize_hyp=optimize_hyp,
+                    )
+                else:
+                    pred_j, std_j, dbg_j = rdegpr_predict_next_for_target(
+                        traindata=traindata,
+                        target_idx=int(j),
+                        L=L,
+                        s=s,
+                        steps_ahead=steps_ahead,
+                        pool=pool,
+                        rng=tj_rng,
+                        optimize_hyp=optimize_hyp,
+                        debug=(debug and step < debug_steps),
+                    )
 
                 # 失败就回退到持久性（上一时刻真实值），避免 NaN 传播
                 if np.isnan(pred_j):
@@ -556,6 +667,8 @@ def main():
     parser.add_argument("--steps_ahead", type=int, default=1)
     parser.add_argument("--n_jobs", type=int, default=8)
     parser.add_argument("--noise_strength", type=float, default=0.0, help="建议从 1e-4 开始试")
+    parser.add_argument("--use_delay_embedding", action="store_true", help="使用 RDE-Delay (延迟嵌入, 和 EEG 脚本一致)")
+    parser.add_argument("--max_delay", type=int, default=20, help="延迟嵌入最大 delay (仅 --use_delay_embedding 生效)")
     parser.add_argument("--no_optimize_hyp", action="store_true")
 
     parser.add_argument("--target_indices", type=str, default="", help="只预测部分维度：如 '0,1,2'；为空=全维")
@@ -681,6 +794,8 @@ def main():
         debug=args.debug,
         debug_steps=args.debug_steps,
         debug_out_dir=debug_out,
+        use_delay_embedding=args.use_delay_embedding,
+        max_delay=args.max_delay,
     )
 
     # 预测输出自检（0/NaN）
