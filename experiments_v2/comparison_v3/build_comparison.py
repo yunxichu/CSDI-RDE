@@ -136,18 +136,37 @@ def collect_rde_mode_B():
             "notes":    "延迟嵌入, dim 0, horizon 40, 5 seeds 均值",
         })
 
-    # EEG 用 --use_delay_embedding 跑 → RDE-Delay-GPR
-    m = load_json(f"{EXP_BASE}/eeg/rdegpr_modeB/metrics.json")
+    # EEG RDE-Delay-GPR: 优先读 redo 版 (用 eeg_imputed.npy = CSDI 补值, 正确的 pipeline)
+    # rdegpr_modeB/ 用的是 eeg_full.npy (真值, 绕过 CSDI 补值) ← 弃用
+    for eeg_dir, note in [
+        ("rde_delay_gpr_modeB_redo", "延迟嵌入, imputed=CSDI补值 eeg_imputed.npy, history=976, horizon=24"),
+        ("rdegpr_modeB",             "延迟嵌入, ⚠️ imputed=eeg_full (未走 CSDI) 旧版参考"),
+    ]:
+        m = load_json(f"{EXP_BASE}/eeg/{eeg_dir}/metrics.json")
+        o = extract_overall(m)
+        if o is not None:
+            rows.append({
+                "dataset":  "EEG",
+                "method":   "RDE-Delay-GPR",
+                "mode":     "Mode B (rolling+TF)",
+                "rmse":     o["rmse"],
+                "mae":      o.get("mae", np.nan),
+                "source":   f"experiments_v2/eeg/{eeg_dir}/metrics.json",
+                "notes":    note,
+            })
+            break  # 只要一个 (优先 redo)
+    # EEG RDE-GPR 空间集成版 (对照, 表现差, 说明 EEG 需要 delay)
+    m = load_json(f"{EXP_BASE}/eeg/rdegpr_spatial_modeB/metrics.json")
     o = extract_overall(m)
     if o is not None:
         rows.append({
             "dataset":  "EEG",
-            "method":   "RDE-Delay-GPR",
+            "method":   "RDE-GPR",
             "mode":     "Mode B (rolling+TF)",
             "rmse":     o["rmse"],
             "mae":      o.get("mae", np.nan),
-            "source":   "experiments_v2/eeg/rdegpr_modeB/metrics.json",
-            "notes":    "延迟嵌入, history=976, horizon=24, target=0,1,2, trainlength=300",
+            "source":   "experiments_v2/eeg/rdegpr_spatial_modeB/metrics.json",
+            "notes":    "空间集成 (无 delay), imputed=CSDI 补值, 展示 EEG 上 delay variant 关键",
         })
 
     # PM25 pm25_CSDIimpute_after-RDEgpr.py 不带 delay → RDE-GPR (空间集成)
@@ -164,6 +183,68 @@ def collect_rde_mode_B():
             "notes":    "空间集成, split_ratio=0.5, horizon=24, 全36站, trainlength=500",
         })
 
+    return rows
+
+
+def collect_track_B():
+    """Track-B: 基线直接用原始稀疏/缺失数据 (展示 CSDI 补值的价值)"""
+    rows = []
+    # Lorenz63/96 Sparse 基线 (trainlength=30, horizon=20, data=sparse_50)
+    for ds in ["lorenz63", "lorenz96"]:
+        for sub, label in [("neuralcde_sparse", "NeuralCDE"),
+                           ("gruodebayes_sparse", "GRU-ODE-Bayes"),
+                           ("sssd_sparse", "SSSD")]:
+            m = load_json(f"{EXP_BASE}/{ds}/{sub}/metrics.json")
+            o = extract_overall(m)
+            if o is None:
+                continue
+            rows.append({
+                "dataset":  DATASET_LABELS[ds],
+                "method":   label,
+                "mode":     "Track-B (原始稀疏)",
+                "rmse":     o["rmse"],
+                "mae":      o.get("mae", np.nan),
+                "source":   f"experiments_v2/{ds}/{sub}/metrics.json",
+                "notes":    "基线直接吃 sparse_50 (trainlength=30, horizon=20)",
+            })
+    # EEG Track-B: naive fill / mask 版
+    for sub, label, note in [
+        ("neuralcde_naive",   "NeuralCDE",     "基线 + forward-fill (naive)"),
+        ("neuralcde_mask",    "NeuralCDE",     "基线 + NaN mask (论文机制)"),
+        ("gruodebayes_naive", "GRU-ODE-Bayes", "基线 + forward-fill"),
+        ("gruodebayes_mask",  "GRU-ODE-Bayes", "基线 + NaN mask (原论文)"),
+    ]:
+        m = load_json(f"{EXP_BASE}/eeg/{sub}/metrics.json")
+        o = extract_overall(m)
+        if o is None or (isinstance(o.get("rmse"), float) and np.isnan(o["rmse"])):
+            continue
+        rows.append({
+            "dataset":  "EEG",
+            "method":   label,
+            "mode":     "Track-B (原始缺失)",
+            "rmse":     o["rmse"],
+            "mae":      o.get("mae", np.nan),
+            "source":   f"experiments_v2/eeg/{sub}/metrics.json",
+            "notes":    note,
+        })
+    # PM25 Track-B: mask 版
+    for sub, label, note in [
+        ("neuralcde_mask",   "NeuralCDE",     "基线 + NaN mask"),
+        ("gruodebayes_mask", "GRU-ODE-Bayes", "基线 + NaN mask"),
+    ]:
+        m = load_json(f"{EXP_BASE}/pm25/{sub}/metrics.json")
+        o = extract_overall(m)
+        if o is None or (isinstance(o.get("rmse"), float) and np.isnan(o["rmse"])):
+            continue
+        rows.append({
+            "dataset":  "PM2.5",
+            "method":   label,
+            "mode":     "Track-B (原始缺失)",
+            "rmse":     o["rmse"],
+            "mae":      o.get("mae", np.nan),
+            "source":   f"experiments_v2/pm25/{sub}/metrics.json",
+            "notes":    note,
+        })
     return rows
 
 
@@ -460,16 +541,22 @@ def main():
     rows_b = collect_baselines_mode_B()
     rows_b += collect_rde_mode_B()
     rows_a = collect_mode_A_reference()
+    rows_tb = collect_track_B()
 
-    df_all = pd.DataFrame(rows_b + rows_a)
+    df_all = pd.DataFrame(rows_b + rows_a + rows_tb)
     df_modeB = pd.DataFrame(rows_b)
+    df_trackB = pd.DataFrame(rows_tb)
 
     df_all.to_csv(os.path.join(DATA_DIR, "all_metrics.csv"), index=False)
-    df_modeB.to_csv(os.path.join(DATA_DIR, "mode_B_aligned.csv"), index=False)
+    df_modeB.to_csv(os.path.join(DATA_DIR, "track_A_aligned.csv"), index=False)
+    df_trackB.to_csv(os.path.join(DATA_DIR, "track_B_sparse_missing.csv"), index=False)
     pd.DataFrame(rows_a).to_csv(os.path.join(DATA_DIR, "mode_A_reference.csv"), index=False)
 
-    print("\nMode B aligned data:")
+    print("\nTrack-A (都 CSDI 补值, 比较预测能力):")
     print(df_modeB[["dataset", "method", "rmse", "mae"]].to_string(index=False))
+    if len(df_trackB):
+        print("\nTrack-B (基线吃稀疏/缺失, 完整 pipeline 对比):")
+        print(df_trackB[["dataset", "method", "rmse", "mae", "notes"]].to_string(index=False))
 
     plot_rmse_bar(df_modeB)
     plot_mae_bar(df_modeB)

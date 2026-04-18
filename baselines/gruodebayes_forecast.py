@@ -370,7 +370,8 @@ def main():
 
         epoch_loss /= n_used
         scheduler.step(epoch_loss)
-        if epoch_loss < best_loss:
+        # 修复: NaN/Inf loss 时不要当 'no improvement', 否则 patience 后提前 break
+        if np.isfinite(epoch_loss) and epoch_loss < best_loss:
             best_loss = epoch_loss
             best_state = {k: v.cpu().clone() for k, v in model.state_dict().items()}
             no_imp = 0

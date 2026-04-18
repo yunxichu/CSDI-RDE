@@ -186,7 +186,9 @@ def train_model(model, X_train_np, y_train_np, epochs, batch_size, lr,
         ep_loss /= N
         loss_history.append(ep_loss)
         scheduler.step(ep_loss)
-        if ep_loss < best_loss:
+        # 修复: 当 ep_loss 是 NaN/Inf 时, best_loss=inf 比较返回 False
+        # 导致 best_state 永远是 None, 且 no_imp 一直累加 → 提前 early stop
+        if np.isfinite(ep_loss) and ep_loss < best_loss:
             best_loss = ep_loss
             no_imp = 0
             best_state = {k: v.cpu().clone() for k, v in model.state_dict().items()}
