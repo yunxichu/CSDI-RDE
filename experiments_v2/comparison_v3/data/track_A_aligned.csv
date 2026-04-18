@@ -20,3 +20,4 @@ Lorenz96,RDE-GPR,Mode B (rolling+TF),0.2845,,experiments_v2/lorenz96/rde_delay/s
 Lorenz96,RDE-Delay-GPR,Mode B (rolling+TF),0.2647,,experiments_v2/lorenz96/rde_delay/summary_mean.json (5 seeds),0.1068,"延迟嵌入, dim 0, horizon 40, 5 seeds 均值"
 EEG,RDE-Delay-GPR,Mode B (rolling+TF),12.130577018421237,10.341296622536573,experiments_v2/eeg/rde_delay_gpr_modeB_redo/metrics.json,,"延迟嵌入, imputed=CSDI补值 eeg_imputed.npy, history=976, horizon=24"
 EEG,RDE-GPR,Mode B (rolling+TF),61.47131400781405,53.7702071601194,experiments_v2/eeg/rdegpr_spatial_modeB/metrics.json,,"空间集成 (无 delay), imputed=CSDI 补值, 展示 EEG 上 delay variant 关键"
+PM2.5,RDE-GPR,Mode B (rolling+TF),17.20528034854183,11.791545007934095,experiments_v2/pm25/rdegpr_modeB/metrics.json,,"空间集成, split_ratio=0.5, horizon=24, 全36站, trainlength=500"

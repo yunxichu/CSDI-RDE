@@ -20,9 +20,12 @@ Lorenz96,RDE-GPR,Mode B (rolling+TF),0.2845,,experiments_v2/lorenz96/rde_delay/s
 Lorenz96,RDE-Delay-GPR,Mode B (rolling+TF),0.2647,,experiments_v2/lorenz96/rde_delay/summary_mean.json (5 seeds),0.1068,"延迟嵌入, dim 0, horizon 40, 5 seeds 均值"
 EEG,RDE-Delay-GPR,Mode B (rolling+TF),12.130577018421237,10.341296622536573,experiments_v2/eeg/rde_delay_gpr_modeB_redo/metrics.json,,"延迟嵌入, imputed=CSDI补值 eeg_imputed.npy, history=976, horizon=24"
 EEG,RDE-GPR,Mode B (rolling+TF),61.47131400781405,53.7702071601194,experiments_v2/eeg/rdegpr_spatial_modeB/metrics.json,,"空间集成 (无 delay), imputed=CSDI 补值, 展示 EEG 上 delay variant 关键"
+PM2.5,RDE-GPR,Mode B (rolling+TF),17.20528034854183,11.791545007934095,experiments_v2/pm25/rdegpr_modeB/metrics.json,,"空间集成, split_ratio=0.5, horizon=24, 全36站, trainlength=500"
 EEG,RDE-GPR,Mode A (feed-forward direct),91.06183445033139,68.1044201331368,experiments_v2/eeg/rdegpr_aligned/metrics.json,,--multi_step --multi_step_mode direct
 Lorenz63,NeuralCDE,Track-B (原始稀疏),6.887076541583071,5.229918633471295,experiments_v2/lorenz63/neuralcde_sparse/metrics.json,,"基线直接吃 sparse_50 (trainlength=30, horizon=20)"
 Lorenz63,GRU-ODE-Bayes,Track-B (原始稀疏),2.692481944027993,2.0856317062310366,experiments_v2/lorenz63/gruodebayes_sparse/metrics.json,,"基线直接吃 sparse_50 (trainlength=30, horizon=20)"
 Lorenz96,NeuralCDE,Track-B (原始稀疏),3.53294029633342,2.6309602742028293,experiments_v2/lorenz96/neuralcde_sparse/metrics.json,,"基线直接吃 sparse_50 (trainlength=30, horizon=20)"
 Lorenz96,GRU-ODE-Bayes,Track-B (原始稀疏),1.1404107971603208,0.6088952243584892,experiments_v2/lorenz96/gruodebayes_sparse/metrics.json,,"基线直接吃 sparse_50 (trainlength=30, horizon=20)"
 EEG,NeuralCDE,Track-B (原始缺失),52.384556688819934,44.4183559225709,experiments_v2/eeg/neuralcde_naive/metrics.json,,基线 + forward-fill (naive)
+EEG,GRU-ODE-Bayes,Track-B (原始缺失),7.670061708137457,6.135425024033895,experiments_v2/eeg/gruodebayes_mask/metrics.json,,基线 + NaN mask (原论文)
+PM2.5,NeuralCDE,Track-B (原始缺失),27.797814358293007,20.911634734256733,experiments_v2/pm25/neuralcde_mask/metrics.json,,基线 + NaN mask

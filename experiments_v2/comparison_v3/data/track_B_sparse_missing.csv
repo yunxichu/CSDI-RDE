@@ -4,3 +4,5 @@ Lorenz63,GRU-ODE-Bayes,Track-B (原始稀疏),2.692481944027993,2.08563170623103
 Lorenz96,NeuralCDE,Track-B (原始稀疏),3.53294029633342,2.6309602742028293,experiments_v2/lorenz96/neuralcde_sparse/metrics.json,"基线直接吃 sparse_50 (trainlength=30, horizon=20)"
 Lorenz96,GRU-ODE-Bayes,Track-B (原始稀疏),1.1404107971603208,0.6088952243584892,experiments_v2/lorenz96/gruodebayes_sparse/metrics.json,"基线直接吃 sparse_50 (trainlength=30, horizon=20)"
 EEG,NeuralCDE,Track-B (原始缺失),52.384556688819934,44.4183559225709,experiments_v2/eeg/neuralcde_naive/metrics.json,基线 + forward-fill (naive)
+EEG,GRU-ODE-Bayes,Track-B (原始缺失),7.670061708137457,6.135425024033895,experiments_v2/eeg/gruodebayes_mask/metrics.json,基线 + NaN mask (原论文)
+PM2.5,NeuralCDE,Track-B (原始缺失),27.797814358293007,20.911634734256733,experiments_v2/pm25/neuralcde_mask/metrics.json,基线 + NaN mask

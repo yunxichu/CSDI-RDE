@@ -1,0 +1,23 @@
+{
+    "imputed_history_path": "/home/rhl/Github/save/pm25_history_imputed_split0.5_seed42_20260324_154400/history_imputed.csv",
+    "ground_path": "/home/rhl/Github/data/pm25/Code/STMVL/SampleData/pm25_ground.txt",
+    "split_ratio": 0.5,
+    "seed": 42,
+    "horizon_days": 0.0,
+    "horizon_steps": 24,
+    "trainlength": 200,
+    "L": 4,
+    "s": 50,
+    "steps_ahead": 1,
+    "n_jobs": 2,
+    "noise_strength": 0.0,
+    "no_optimize_hyp": false,
+    "target_indices": "",
+    "plot_dim": 0,
+    "skip_metrics": false,
+    "out_dir": "/home/rhl/Github/experiments_v2/pm25/rdegpr_modeB",
+    "missing_positions_path": "",
+    "history_timesteps": 72,
+    "debug": false,
+    "debug_steps": 3
+}
