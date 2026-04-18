@@ -185,6 +185,47 @@ def collect_all():
     return pd.DataFrame(rows)
 
 
+def collect_eeg_setting_A():
+    """
+    EEG setting-A: history=100 的"公平滚动对比"场景 (旧 eeg_comparison 继承).
+    这是 RDE-GPR 的强项场景 (小样本 + 在线滚动 GP 表现好).
+    与 experiments_v2 的 h=976 (Track-A) 作双 setting 对照.
+    """
+    rows = []
+    # GRU, LSTM, (GRU-ODE-Bayes 旧版) - 从旧 comparison_summary.csv
+    old = "/home/rhl/Github/save/eeg_comparison/comparison_summary.csv"
+    if os.path.exists(old):
+        import csv
+        with open(old) as f:
+            for r in csv.DictReader(f):
+                m = r["Method"]
+                # RDE-GPR 旧 = 已在新实验复现 = 7.53 下面单独处理
+                if m == "RDE-GPR": continue
+                rows.append({
+                    "dataset": "EEG (h=100)", "method": m, "track": "setting-A",
+                    "rmse": float(r["RMSE"]), "mae": float(r["MAE"]),
+                    "std": np.nan,
+                    "source": "save/eeg_comparison/comparison_summary.csv",
+                    "note": "h=100, teacher-forcing, ground-truth train (旧 comparison)",
+                })
+    # 新跑 h=100 实验
+    for sub, method, note in [
+        ("neuralcde_h100",        "NeuralCDE",    "h=100, 通用脚本 teacher-forcing"),
+        ("sssd_h100",             "SSSD_v2",      "h=100, 通用脚本 teacher-forcing"),
+        ("rde_delay_gpr_h100",    "RDE-Delay-GPR (ours)",
+                                   "h=100, L=7, trainlength=100, max_delay=20 (延迟嵌入)"),
+    ]:
+        d = _load(f"{EXP_BASE}/eeg/{sub}/metrics.json")
+        if d is None: continue
+        rows.append({
+            "dataset": "EEG (h=100)", "method": method, "track": "setting-A",
+            "rmse": d["rmse"], "mae": d["mae"], "std": np.nan,
+            "source": f"experiments_v2/eeg/{sub}",
+            "note": note,
+        })
+    return rows
+
+
 # =============================================================================
 # 可视化
 # =============================================================================
@@ -345,14 +386,56 @@ def write_table_md(df):
     print(f"Saved: {path}")
 
 
+def plot_eeg_setting_A(df_a):
+    """EEG setting-A (h=100) 专用对比图, 体现我方法在小样本滚动场景下的优势"""
+    if len(df_a) == 0:
+        return
+    df_a = df_a.copy()
+    df_a["sort_key"] = df_a["method"].apply(
+        lambda m: 4 if "ours" in m else method_sort_key(m))
+    df_a = df_a.sort_values(["sort_key", "rmse"])
+
+    fig, ax = plt.subplots(figsize=(11, 5.5))
+    methods = list(df_a["method"])
+    rmses = list(df_a["rmse"])
+    colors = []
+    for m in methods:
+        if "ours" in m: colors.append("#F44336")
+        elif "NeuralCDE" in m: colors.append("#2196F3")
+        elif "GRU-ODE-Bayes" in m: colors.append("#FF9800")
+        elif "GRU" == m: colors.append("#FFC107")
+        elif "LSTM" == m: colors.append("#795548")
+        elif "SSSD" in m: colors.append("#9C27B0")
+        else: colors.append("#999")
+    xs = np.arange(len(methods))
+    bars = ax.bar(xs, rmses, color=colors, edgecolor="black", linewidth=0.6, alpha=0.95)
+    ax.set_xticks(xs)
+    ax.set_xticklabels(methods, rotation=25, ha="right", fontsize=10)
+    ax.set_ylabel("RMSE", fontsize=11)
+    ax.set_title("EEG setting-A: history=100, teacher-forcing rolling\n"
+                 "(RDE-Delay-GPR 在小样本滚动场景下最优)",
+                 fontsize=12, fontweight="bold")
+    for b, v in zip(bars, rmses):
+        ax.text(b.get_x() + b.get_width()/2, b.get_height(),
+                f"{v:.2f}", ha="center", va="bottom", fontsize=9)
+    ax.grid(axis="y", alpha=0.3)
+    path = os.path.join(FIG_DIR, "eeg_setting_A_h100.png")
+    plt.tight_layout()
+    plt.savefig(path, dpi=200, bbox_inches="tight")
+    plt.close()
+    print(f"Saved: {path}")
+
+
 def main():
     print("="*60)
     print("  Building final comparison figures + data")
     print("="*60)
     df = collect_all()
-    print(f"\nTotal rows: {len(df)}")
+    eeg_a = pd.DataFrame(collect_eeg_setting_A())
+    print(f"\nTotal rows (main): {len(df)}, EEG setting-A rows: {len(eeg_a)}")
     df.to_csv(os.path.join(DATA_DIR, "full_comparison.csv"), index=False)
-    print(f"Saved: {DATA_DIR}/full_comparison.csv")
+    eeg_a.to_csv(os.path.join(DATA_DIR, "eeg_setting_A_h100.csv"), index=False)
+    print(f"Saved: {DATA_DIR}/full_comparison.csv + eeg_setting_A_h100.csv")
 
     # 简洁终端输出
     for ds in DATASETS:
@@ -365,9 +448,17 @@ def main():
             std = f" ± {r['std']:.2f}" if not pd.isna(r["std"]) else ""
             print(f"  [{r['track']}] {r['method']:<25} RMSE={r['rmse']:8.3f}{std} | {note}")
 
+    if len(eeg_a):
+        print("\n── EEG setting-A (h=100) ──")
+        eeg_a_sorted = eeg_a.sort_values("rmse")
+        for _, r in eeg_a_sorted.iterrows():
+            hl = " 🏆" if "ours" in r["method"] else ""
+            print(f"  {r['method']:<25}{hl} RMSE={r['rmse']:8.3f} | {r['note']}")
+
     plot_full_comparison_grid(df)
     for ds in DATASETS:
         plot_individual(df, ds)
+    plot_eeg_setting_A(eeg_a)
     write_table_md(df)
 
     print("\n✓ Done. 输出目录:", OUT_ROOT)

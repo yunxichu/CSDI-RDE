@@ -1,0 +1,7 @@
+dataset,method,track,rmse,mae,std,source,note
+EEG (h=100),GRU,setting-A,11.24977039593645,9.302284505208238,,save/eeg_comparison/comparison_summary.csv,"h=100, teacher-forcing, ground-truth train (旧 comparison)"
+EEG (h=100),LSTM,setting-A,11.209287279195498,9.39750390625002,,save/eeg_comparison/comparison_summary.csv,"h=100, teacher-forcing, ground-truth train (旧 comparison)"
+EEG (h=100),GRU-ODE-Bayes,setting-A,9.621935368590536,8.076078342013968,,save/eeg_comparison/comparison_summary.csv,"h=100, teacher-forcing, ground-truth train (旧 comparison)"
+EEG (h=100),NeuralCDE,setting-A,20.254722685097406,16.16988451828651,,experiments_v2/eeg/neuralcde_h100,"h=100, 通用脚本 teacher-forcing"
+EEG (h=100),SSSD_v2,setting-A,99.98380508951949,86.26734754774306,,experiments_v2/eeg/sssd_h100,"h=100, 通用脚本 teacher-forcing"
+EEG (h=100),RDE-Delay-GPR (ours),setting-A,7.525951089660472,6.230959350156506,,experiments_v2/eeg/rde_delay_gpr_h100,"h=100, L=7, trainlength=100, max_delay=20 (延迟嵌入)"
