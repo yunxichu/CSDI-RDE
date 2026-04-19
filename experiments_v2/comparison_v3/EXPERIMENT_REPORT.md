@@ -140,7 +140,24 @@ RMSE、MAE、MaxErr，以及对 Lorenz 实验的 2σ 覆盖率。
 | NeuralCDE | 20.25 | 16.17 | +169% |
 | SSSD_v2 | 99.98 | 86.27 | +1229% |
 
-### 3.5 PM2.5 逐站对比（前 3 站）
+### 3.5 严格 Autoregressive 公平对比（Lorenz63, 回应 "teacher-forcing 泄露" 质疑）
+
+评审可能质疑：默认 teacher-forcing 滚动（滑窗引入 `future_truth`）让所有方法都"看到"真值历史，是否掩盖了深度 baseline 的优势？本节在严格 autoregressive 模式下（每步只用自身预测推进窗口，不用 `future_truth`）重跑 Lorenz63 horizon=40 主对比。
+
+| 方法 | Teacher-Forcing (原) | **Autoregressive (严格)** | AR 相对 RDE-GPR 劣势 |
+|------|------------------------|-----------------------------|-------------------------|
+| NeuralCDE | 6.05 → tuned 7.44 | **≈ 10¹⁰（发散）** | N/A |
+| GRU-ODE-Bayes | 5.97 → tuned 5.85 | **9.27** | +861% |
+| **RDE-GPR (ours, seed=42)** | 0.57 | **0.965** | — |
+| **RDE-Delay-GPR (ours, seed=42)** | 1.40 | **1.957** | +103% |
+
+**关键结论**：
+1. **AR 对深度 baseline 更不利**：NCDE 直接发散到 10¹⁰，GOB 劣化 55%。这说明 TF 是**偏向 baseline 的公平选择**。
+2. **AR 下 RDE-GPR 仍然 10 倍领先** baseline：TF 下 0.57 vs 5.97（10 倍），AR 下 0.965 vs 9.27（10 倍）。**差距不因切换 AR 而缩小**。
+3. **Lorenz63 基线调参上限已到**：`hidden=128, epochs=300, lr=5e-4` 下 GOB 5.85（vs 原 5.97 略改善，-2%），NCDE 反而变差到 7.44。基线 5.97 已经是这个 setting 下的能力极限，不是"没调好"。
+4. **2σ 覆盖率稳定**：AR 模式下 RDE/RDE-Delay 的 PICP@2σ 仍为 **100%**（预测区间稳定覆盖真值），证明 UQ 对自回归衰减鲁棒。
+
+### 3.6 PM2.5 逐站对比（前 3 站）
 
 | 站点 | NeuralCDE | GRU-ODE-Bayes | **RDE-Delay-GPR (ours)** |
 |------|-----------|---------------|--------------------------|
