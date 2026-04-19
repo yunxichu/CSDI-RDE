@@ -230,6 +230,8 @@ def load_csv_data(args):
 
 def main():
     pa = argparse.ArgumentParser(description="SSSD Forecast (Universal)")
+    pa.add_argument("--autoregressive", action="store_true",
+                    help="严格公平对比模式: 每步用自己的预测作下一步输入, 不看 future_truth")
     pa.add_argument("--dataset", type=str, required=True,
                     choices=["pm25", "eeg", "lorenz63", "lorenz96"])
     pa.add_argument("--seed", type=int, default=42)
@@ -341,14 +343,20 @@ def main():
             fut_true_scaled_clean[:, j] = col
     cur = hist_s[-a.window_size:].copy()
     preds = []
-    for i in tqdm(range(horizon), desc="Forecast"):
+    desc = "Forecast [autoregressive]" if getattr(a, "autoregressive", False) else "Forecast [teacher-forcing]"
+    for i in tqdm(range(horizon), desc=desc):
         x = torch.tensor(cur[np.newaxis], dtype=torch.float32, device=dev).transpose(1,2)
         mask = torch.zeros_like(x); mask[:,:,-1] = 1
         cond = x.clone(); cond[:,:,-1] = 0
         with torch.no_grad():
             pred = sample(net, cond, mask, dh, dev)[:,:, -1].cpu().numpy()[0]
         preds.append(pred)
-        cur = np.vstack([cur[1:], fut_true_scaled_clean[i][np.newaxis]])
+        # autoregressive: 用自己的 pred 推进窗口 (公平对比, 不看 future_truth)
+        # teacher-forcing: 用 fut_true 推进窗口 (默认, 与原实验一致)
+        if getattr(a, "autoregressive", False):
+            cur = np.vstack([cur[1:], pred[np.newaxis]])
+        else:
+            cur = np.vstack([cur[1:], fut_true_scaled_clean[i][np.newaxis]])
 
     preds = sc.inverse_transform(np.array(preds))
     print(f"Done in {time.time()-t1:.1f}s")

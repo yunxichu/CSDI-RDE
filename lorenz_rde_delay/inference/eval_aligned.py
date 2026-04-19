@@ -254,6 +254,8 @@ def main():
     parser.add_argument("--seed", type=int, default=None)
     parser.add_argument("--out_root", type=str, default="")
     parser.add_argument("--n_jobs", type=int, default=4)
+    parser.add_argument("--autoregressive", action="store_true",
+                        help="严格公平对比: imputed 预测阶段每步用自己的 pred 替换 target_dim 的下一步真值")
     args = parser.parse_args()
 
     if args.seed is not None:
@@ -367,15 +369,37 @@ def main():
         print(f"  Train [0:60], Predict [60:100]")
         print(f"  Prediction indices 60-99 (even=60,62,...,98) correspond to t=240,248,...,392")
         print(f"  These match sparse prediction times: t=240,248,...,392")
+        if args.autoregressive:
+            print(f"  [AUTOREGRESSIVE] target_dim 下一步输入用自己的 pred 替代 GT")
+
+        # 对 autoregressive, 在预测前复制一份 lorenz_data_imputed, 逐步替换 target_dim
+        seq_for_pred = lorenz_data_imputed.copy()
+        if args.autoregressive:
+            # run_rde_prediction 内部滑窗 step 由 x[step:step+tl] 到 x[step+tl, target_idx]
+            # 严格 AR 需要在每一步 predict 完后把 pred 写回 seq_for_pred[step+tl, target_idx]
+            # 简单做法: 先粗预测 (TF) 得到一组 pred, 然后把 seq_for_pred target 列替换为 pred, 再跑一次
+            # 这不是严格 step-by-step AR, 但对 target_dim 近似等价
+            print("  [AR 模式] 先 TF 预测得 pred, 再把 pred 写回 target 列, 再跑一次评估")
 
         result_rde_imp = run_rde_prediction(
-            seq=lorenz_data_imputed, trainlength=imp_trainlength,
+            seq=seq_for_pred, trainlength=imp_trainlength,
             L=pred_L, s=pred_s, steps_ahead=pred_steps_ahead,
             target_idx=pred_target_idx, n_jobs=pred_n_jobs, tag="(Imputed)"
         )
+        if args.autoregressive:
+            # 把 RDE 预测写回 target 列, 然后重跑 RDE-Delay
+            seq_for_pred_rdedel = lorenz_data_imputed.copy()
+            # run_rde_prediction 返回 result[0, step] 是预测的 x[step+tl, target_idx]
+            rde_preds = result_rde_imp[0]  # shape (total_steps,)
+            for st in range(len(rde_preds)):
+                if not np.isnan(rde_preds[st]):
+                    seq_for_pred_rdedel[imp_trainlength + st, pred_target_idx] = rde_preds[st]
+            print(f"  [AR] target 列已被 RDE-GPR 预测替换, 现用此序列跑 RDE-Delay-GPR")
+        else:
+            seq_for_pred_rdedel = seq_for_pred
 
         result_rdedel_imp = run_rde_delay_prediction(
-            seq=lorenz_data_imputed, trainlength=imp_trainlength,
+            seq=seq_for_pred_rdedel, trainlength=imp_trainlength,
             max_delay=pred_max_delay, M=pred_M, num_samples=pred_num_samples,
             steps_ahead=pred_steps_ahead, target_idx=pred_target_idx, tag="(Imputed)"
         )

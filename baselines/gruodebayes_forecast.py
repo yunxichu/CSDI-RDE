@@ -274,6 +274,8 @@ def main():
     parser.add_argument("--device", type=str, default="auto")
     parser.add_argument("--out_dir", type=str, default="")
     parser.add_argument("--plot_dim", type=int, default=0)
+    parser.add_argument("--autoregressive", action="store_true",
+                        help="严格公平对比: 每步用自己的预测推进窗口, 不用 future_truth")
     args = parser.parse_args()
 
     set_global_seed(args.seed)
@@ -405,10 +407,23 @@ def main():
             fut_true_scaled_clean[:, j] = col
     full = np.concatenate([history_scaled, fut_true_scaled_clean], axis=0).astype(np.float32)
     preds_list = []
+    ar_mode = getattr(args, "autoregressive", False)
+    desc = "预测 [autoregressive]" if ar_mode else "预测 [teacher-forcing]"
 
     model.eval()
-    for step in tqdm(range(horizon), desc="预测"):
-        win = full[len(history_scaled) - W + step: len(history_scaled) + step]
+    T_hist_len = len(history_scaled)
+    for step in tqdm(range(horizon), desc=desc):
+        if ar_mode:
+            # autoregressive: 用之前的自预测替代 full 里 future_truth 的位置
+            if step > 0:
+                prev_preds = np.array(preds_list[:step], dtype=np.float32)
+                # 重建 win: history + 之前 step 次预测
+                full_ar = np.concatenate([history_scaled, prev_preds], axis=0).astype(np.float32)
+                win = full_ar[T_hist_len - W + step: T_hist_len + step]
+            else:
+                win = history_scaled[-W:].astype(np.float32)
+        else:
+            win = full[T_hist_len - W + step: T_hist_len + step]
         times_i = (np.arange(W) * args.time_scale).tolist()
         win_in = win[:W]
         M_np = (~np.isnan(win_in)).astype(np.float32)

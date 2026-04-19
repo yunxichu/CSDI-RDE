@@ -206,7 +206,7 @@ def train_model(model, X_train_np, y_train_np, epochs, batch_size, lr,
 
 
 def forecast(model, history_scaled, fut_true_scaled, horizon, window_size,
-             device, scaler, batch_size=256, verbose=True):
+             device, scaler, batch_size=256, verbose=True, autoregressive=False):
     import torchcde
     T_hist = history_scaled.shape[0]
     D = history_scaled.shape[1]
@@ -226,28 +226,50 @@ def forecast(model, history_scaled, fut_true_scaled, horizon, window_size,
                         break
                 col[idx] = last_valid
             fut_clean[:, j] = col
-    full = np.concatenate([history_scaled, fut_clean], axis=0).astype(np.float32)
     W = window_size
-    windows = np.stack([full[T_hist - W + i: T_hist + i] for i in range(horizon)])
-    X_all_np = make_cde_input(windows)
-    X_all = torch.tensor(X_all_np, dtype=torch.float32)
-    x_last_np = np.nan_to_num(windows[:, -1, :].astype(np.float32), nan=0.0)
-    x_last_all = torch.tensor(x_last_np, dtype=torch.float32)
-    with torch.no_grad():
-        coeffs_all = torchcde.hermite_cubic_coefficients_with_backward_differences(X_all)
-
     model.eval()
-    preds_list = []
-    n_batches = (horizon + batch_size - 1) // batch_size
-    for b in tqdm(range(n_batches), desc="  批量推理", disable=not verbose):
-        sl = slice(b * batch_size, (b + 1) * batch_size)
-        b_coeffs = coeffs_all[sl].to(device)
-        b_x_last = x_last_all[sl].to(device)
-        with torch.no_grad():
-            p = model(b_coeffs, b_x_last).cpu().numpy()
-        preds_list.append(p)
 
-    preds_s = np.concatenate(preds_list, axis=0)
+    if autoregressive:
+        # 严格公平对比: 每步用自己的 pred 推进窗口, 不看 future_truth
+        if verbose: print("  [autoregressive] 每步用自己的预测作下一步输入")
+        preds_list = []
+        buf = history_scaled[-W - horizon + 1:].astype(np.float32).copy() if T_hist >= W + horizon - 1 \
+            else np.pad(history_scaled.astype(np.float32), ((max(0, W + horizon - 1 - T_hist), 0), (0, 0)),
+                        mode='edge')
+        # 用 hist 最后 W 行作首次 window, 之后逐步替换
+        cur = history_scaled[-W:].astype(np.float32).copy()
+        for i in tqdm(range(horizon), desc="  autoregressive", disable=not verbose):
+            X_in = make_cde_input(cur[np.newaxis])  # (1, W, 1+D)
+            X_t = torch.tensor(X_in, dtype=torch.float32)
+            x_last = torch.tensor(np.nan_to_num(cur[-1:].astype(np.float32), nan=0.0),
+                                  dtype=torch.float32)
+            with torch.no_grad():
+                coeffs = torchcde.hermite_cubic_coefficients_with_backward_differences(X_t)
+                p = model(coeffs.to(device), x_last.to(device)).cpu().numpy()[0]
+            preds_list.append(p)
+            cur = np.vstack([cur[1:], p[np.newaxis]])  # 用自己的预测推进
+        preds_s = np.array(preds_list, dtype=np.float32)
+    else:
+        # teacher-forcing (默认, 原实验行为): 滑窗引入 future_truth
+        full = np.concatenate([history_scaled, fut_clean], axis=0).astype(np.float32)
+        windows = np.stack([full[T_hist - W + i: T_hist + i] for i in range(horizon)])
+        X_all_np = make_cde_input(windows)
+        X_all = torch.tensor(X_all_np, dtype=torch.float32)
+        x_last_np = np.nan_to_num(windows[:, -1, :].astype(np.float32), nan=0.0)
+        x_last_all = torch.tensor(x_last_np, dtype=torch.float32)
+        with torch.no_grad():
+            coeffs_all = torchcde.hermite_cubic_coefficients_with_backward_differences(X_all)
+        preds_list = []
+        n_batches = (horizon + batch_size - 1) // batch_size
+        for b in tqdm(range(n_batches), desc="  批量推理 [TF]", disable=not verbose):
+            sl = slice(b * batch_size, (b + 1) * batch_size)
+            b_coeffs = coeffs_all[sl].to(device)
+            b_x_last = x_last_all[sl].to(device)
+            with torch.no_grad():
+                p = model(b_coeffs, b_x_last).cpu().numpy()
+            preds_list.append(p)
+        preds_s = np.concatenate(preds_list, axis=0)
+
     preds = scaler.inverse_transform(preds_s.astype(np.float64))
     stds = np.zeros_like(preds)
     return preds, stds
@@ -351,6 +373,8 @@ def main():
     parser.add_argument("--plot_dim", type=int, default=0)
     parser.add_argument("--skip_metrics", action="store_true")
     parser.add_argument("--no_verbose", action="store_true")
+    parser.add_argument("--autoregressive", action="store_true",
+                        help="严格公平对比: 每步用自己的预测推进窗口, 不用 future_truth")
     args = parser.parse_args()
 
     verbose = not args.no_verbose
@@ -437,7 +461,8 @@ def main():
         model, history_scaled, fut_true_scaled,
         horizon=horizon, window_size=W,
         device=device, scaler=scaler,
-        batch_size=args.batch_size, verbose=verbose)
+        batch_size=args.batch_size, verbose=verbose,
+        autoregressive=args.autoregressive)
     print(f"  耗时 {time.time()-t1:.1f}s")
 
     # Save
