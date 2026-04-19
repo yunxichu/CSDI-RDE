@@ -1,0 +1,88 @@
+{
+    "meta": {
+        "total_len": 8759,
+        "split_ratio": 0.5,
+        "split_point": 4379,
+        "hist_len": 4379,
+        "fut_len": 4380,
+        "hist_start": "2014-05-01 01:00:00",
+        "hist_end": "2014-10-30 11:00:00",
+        "fut_start": "2014-10-30 12:00:00",
+        "fut_end": "2015-04-30 23:00:00"
+    },
+    "history_stats": {
+        "name": "history_imputed",
+        "shape": [
+            4379,
+            36
+        ],
+        "nan_count": 0,
+        "inf_count": 0,
+        "min": 2.0,
+        "max": 500.0,
+        "mean": 76.87505754217668,
+        "std": 68.26555204686335
+    },
+    "history_last_row_stats": {
+        "name": "history_last_row",
+        "shape": [
+            36
+        ],
+        "nan_count": 0,
+        "inf_count": 0,
+        "min": 95.0,
+        "max": 249.0,
+        "mean": 158.900585,
+        "std": 36.09943338385048
+    },
+    "checks": {
+        "history_has_nan": false,
+        "history_has_inf": false,
+        "history_last_row_all_zero": false,
+        "final_horizon_steps": 24,
+        "target_indices": "ALL",
+        "D": 36,
+        "L": 7,
+        "s": 50,
+        "trainlength": 500,
+        "pred_all_zero": false,
+        "pred_has_nan": true
+    },
+    "pred_stats": {
+        "name": "preds",
+        "shape": [
+            24,
+            36
+        ],
+        "nan_count": 87,
+        "inf_count": 0,
+        "min": 61.0,
+        "max": 295.85495513520493,
+        "mean": 183.75556969908288,
+        "std": 35.53335274065588
+    },
+    "pred_first_row_stats": {
+        "name": "preds_first_row",
+        "shape": [
+            36
+        ],
+        "nan_count": 0,
+        "inf_count": 0,
+        "min": 113.00685474816265,
+        "max": 243.15054859675243,
+        "mean": 161.5934713737418,
+        "std": 32.66429620577633
+    },
+    "pred_last_row_stats": {
+        "name": "preds_last_row",
+        "shape": [
+            36
+        ],
+        "nan_count": 4,
+        "inf_count": 0,
+        "min": 88.23803438040295,
+        "max": 221.6105757179082,
+        "mean": 171.61735049971176,
+        "std": 35.25260333846314
+    }
+}

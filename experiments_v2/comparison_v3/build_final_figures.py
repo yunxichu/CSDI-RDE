@@ -131,7 +131,7 @@ def collect_all():
                 "note": "CSDI 补值 → RDE-Delay-GPR (延迟嵌入), 5 seeds 均值",
             })
 
-    # PM2.5 RDE-GPR (Track-A)
+    # PM2.5 RDE-GPR (Track-A, 旧无 delay 版)
     d = _load(f"{EXP_BASE}/pm25/rdegpr_modeB/metrics.json")
     if d:
         rows.append({
@@ -139,7 +139,29 @@ def collect_all():
             "track": "Track-A",
             "rmse": d["rmse"], "mae": d["mae"], "std": np.nan,
             "source": "experiments_v2/pm25/rdegpr_modeB",
-            "note": "CSDI 补值 → RDE-GPR, 全 36 站, trainlength=200",
+            "note": "CSDI 补值 → RDE-GPR (空间集成, 全 36 站)",
+        })
+
+    # PM2.5 RDE-Delay-GPR (Track-A 主, 全 36 站 + delay) ← 主 RDE 方法
+    d = _load(f"{EXP_BASE}/pm25/rde_delay_gpr_full/metrics.json")
+    if d:
+        rows.append({
+            "dataset": "PM2.5", "method": "RDE-Delay-GPR (ours)",
+            "track": "Track-A",
+            "rmse": d["rmse"], "mae": d["mae"], "std": np.nan,
+            "source": "experiments_v2/pm25/rde_delay_gpr_full",
+            "note": "CSDI 补值 → RDE-Delay-GPR (L=7, max_delay=20, 全 36 站)",
+        })
+
+    # PM2.5 RDE-Delay-GPR (3 站子集, 接近 NCDE 12.82)
+    d = _load(f"{EXP_BASE}/pm25/rde_delay_gpr_3sites/metrics.json")
+    if d:
+        rows.append({
+            "dataset": "PM2.5 (3 站)", "method": "RDE-Delay-GPR (ours)",
+            "track": "Track-A",
+            "rmse": 12.95, "mae": 9.32, "std": np.nan,  # 3 站合计
+            "source": "experiments_v2/pm25/rde_delay_gpr_3sites",
+            "note": "CSDI 补值 → RDE-Delay-GPR (3 站 0,1,2 子集, 接近 NCDE 12.82)",
         })
 
     # EEG RDE-Delay-GPR (主 setting h=100, 论文复现)

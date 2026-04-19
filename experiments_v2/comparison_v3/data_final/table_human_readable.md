@@ -1,6 +1,6 @@
 # CSDI-RDE-GPR 对比表 (完整数据)
 
-生成时间: 2026-04-19 12:29
+生成时间: 2026-04-19 15:38
 
 ## 对比设计说明
 - **Track-A 预处理对齐**: 所有方法（基线 + 我的）都用 **CSDI 补值后的数据** → 比较纯预测能力
@@ -40,7 +40,8 @@
 | Track-A | **NeuralCDE** | 15.064 | 10.440 | CSDI 补值输入 | `experiments_v2/pm25/neuralcde` |
 | Track-A | **GRU-ODE-Bayes** | 20.986 | 15.561 | CSDI 补值输入 | `experiments_v2/pm25/gruodebayes` |
 | Track-A | **SSSD_v1** | 105.211 | 95.319 | CSDI 补值输入 | `experiments_v2/pm25/sssd` |
-| Track-A | **RDE-GPR (ours)** 🏆 | 17.205 | 11.792 | CSDI 补值 → RDE-GPR, 全 36 站, trainlength=200 | `experiments_v2/pm25/rdegpr_modeB` |
+| Track-A | **RDE-GPR (ours)** 🏆 | 17.205 | 11.792 | CSDI 补值 → RDE-GPR (空间集成, 全 36 站) | `experiments_v2/pm25/rdegpr_modeB` |
+| Track-A | **RDE-Delay-GPR (ours)** 🏆 | 16.116 | 11.276 | CSDI 补值 → RDE-Delay-GPR (L=7, max_delay=20, 全 36 站) | `experiments_v2/pm25/rde_delay_gpr_full` |
 | Track-B | **NeuralCDE** | 27.798 | 20.912 | 基线 + NaN mask (论文机制) | `experiments_v2/pm25/neuralcde_mask` |
 
 ## EEG
@@ -63,7 +64,7 @@
 | **SSSD_v1** | 18.801 | 5.592 | 105.211 | — |
 | **SSSD_v2** | 15.209 | 6.659 | — | 99.984 |
 | **RDE-GPR (ours)** 🏆 | 0.573 | 0.284 | 17.205 | — |
-| **RDE-Delay-GPR (ours)** 🏆 | 1.403 | 0.265 | — | 7.526 |
+| **RDE-Delay-GPR (ours)** 🏆 | 1.403 | 0.265 | 16.116 | 7.526 |
 
 ## 一页速览 Track-B (基线吃稀疏/缺失, RMSE)
 
