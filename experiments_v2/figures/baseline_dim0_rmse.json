@@ -1,0 +1,20 @@
+{
+  "note": "Baseline RMSE/MAE computed on dim 0 only, to align with RDE/RDE-Delay that predicts target_idx=0",
+  "source": "future_pred.npy in each experiments_v2/<dataset>/<method>/",
+  "gt_source": {
+    "lorenz63": "lorenz_rde_delay/results/gt_100_20260320_110418.csv (last 40 rows)",
+    "lorenz96": "lorenz96_rde_delay/results/gt_100_20260323_192045.csv (last 40 rows)"
+  },
+  "lorenz63": {
+    "neuralcde":     {"rmse": 2.7505, "mae": 1.8463, "rmse_all_dims": 6.0479},
+    "gruodebayes":   {"rmse": 6.7753, "mae": 4.4072, "rmse_all_dims": 5.9694},
+    "sssd":          {"rmse": 16.9175, "mae": 13.2158, "rmse_all_dims": 18.8009, "note": "v1 mask 错误版"},
+    "sssd_v2":       {"rmse": 15.1851, "mae": 12.2225, "rmse_all_dims": 15.2092, "note": "v2 mask 修复版"}
+  },
+  "lorenz96": {
+    "neuralcde":     {"rmse": 7.0635, "mae": 5.4729, "rmse_all_dims": 9.9390},
+    "gruodebayes":   {"rmse": 2.6974, "mae": 2.1749, "rmse_all_dims": 4.1047},
+    "sssd":          {"rmse": 4.0532, "mae": 3.4269, "rmse_all_dims": 5.5916, "note": "v1"},
+    "sssd_v2":       {"rmse": 3.5447, "mae": 2.9287, "rmse_all_dims": 6.6587, "note": "v2 全维 RMSE 反而比 v1 差 (6.66 vs 5.59)，但 dim 0 更好"}
+  }
+}
