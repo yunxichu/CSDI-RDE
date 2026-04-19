@@ -1,6 +1,6 @@
 # CSDI-RDE-GPR 对比表 (完整数据)
 
-生成时间: 2026-04-19 03:01
+生成时间: 2026-04-19 12:29
 
 ## 对比设计说明
 - **Track-A 预处理对齐**: 所有方法（基线 + 我的）都用 **CSDI 补值后的数据** → 比较纯预测能力
@@ -47,12 +47,10 @@
 
 | Track | Method | RMSE | MAE | 说明 | 来源 |
 |-------|--------|------|-----|------|------|
-| Track-A | **NeuralCDE** | 17.042 | 12.273 | CSDI 补值输入 | `experiments_v2/eeg/neuralcde` |
-| Track-A | **GRU-ODE-Bayes** | 6.236 | 5.188 | CSDI 补值输入 | `experiments_v2/eeg/gruodebayes` |
-| Track-A | **SSSD_v1** | 87.573 | 73.149 | CSDI 补值输入 | `experiments_v2/eeg/sssd` |
-| Track-A | **SSSD_v2** | 64.060 | 56.475 | CSDI 补值输入 | `experiments_v2/eeg/sssd_v2` |
-| Track-A | **RDE-GPR (ours)** 🏆 | 61.471 | 53.770 | CSDI 补值 → RDE-GPR (空间版, 对照) | `experiments_v2/eeg/rdegpr_spatial_modeB` |
-| Track-A | **RDE-Delay-GPR (ours)** 🏆 | 12.131 | 10.341 | CSDI 补值 → RDE-Delay-GPR | `experiments_v2/eeg/rde_delay_gpr_modeB_redo` |
+| Track-A | **NeuralCDE** | 20.255 | 16.170 | h=100, teacher-forcing | `experiments_v2/eeg/neuralcde_h100` |
+| Track-A | **GRU-ODE-Bayes** | 9.620 | 8.080 | h=100 旧 comparison (teacher-forcing) | `save/eeg_comparison/comparison_summary.csv` |
+| Track-A | **SSSD_v2** | 99.984 | 86.267 | h=100, teacher-forcing | `experiments_v2/eeg/sssd_h100` |
+| Track-A | **RDE-Delay-GPR (ours)** 🏆 | 7.526 | 6.231 | CSDI 补值 → RDE-Delay-GPR (h=100, L=7, 论文 setting) | `experiments_v2/eeg/rde_delay_gpr_h100` |
 | Track-B | **NeuralCDE** | 52.385 | 44.418 | 基线 + forward-fill 预处理 | `experiments_v2/eeg/neuralcde_naive` |
 | Track-B | **GRU-ODE-Bayes** | 7.670 | 6.135 | 基线 + NaN mask (论文机制) | `experiments_v2/eeg/gruodebayes_mask` |
 
@@ -60,12 +58,12 @@
 
 | Method | Lorenz63 | Lorenz96 | PM2.5 | EEG |
 |--------|------|------|------|------|
-| **NeuralCDE** | 6.048 | 9.939 | 15.064 | 17.042 |
-| **GRU-ODE-Bayes** | 5.969 | 4.105 | 20.986 | 6.236 |
-| **SSSD_v1** | 18.801 | 5.592 | 105.211 | 87.573 |
-| **SSSD_v2** | 15.209 | 6.659 | — | 64.060 |
-| **RDE-GPR (ours)** 🏆 | 0.573 | 0.284 | 17.205 | 61.471 |
-| **RDE-Delay-GPR (ours)** 🏆 | 1.403 | 0.265 | — | 12.131 |
+| **NeuralCDE** | 6.048 | 9.939 | 15.064 | 20.255 |
+| **GRU-ODE-Bayes** | 5.969 | 4.105 | 20.986 | 9.620 |
+| **SSSD_v1** | 18.801 | 5.592 | 105.211 | — |
+| **SSSD_v2** | 15.209 | 6.659 | — | 99.984 |
+| **RDE-GPR (ours)** 🏆 | 0.573 | 0.284 | 17.205 | — |
+| **RDE-Delay-GPR (ours)** 🏆 | 1.403 | 0.265 | — | 7.526 |
 
 ## 一页速览 Track-B (基线吃稀疏/缺失, RMSE)
 

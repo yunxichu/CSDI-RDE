@@ -10,17 +10,15 @@ Lorenz96,SSSD_v1,Track-A,5.591627555073574,4.432016016509644,,experiments_v2/lor
 PM2.5,NeuralCDE,Track-A,15.063878543558165,10.43950556888877,,experiments_v2/pm25/neuralcde,CSDI 补值输入
 PM2.5,GRU-ODE-Bayes,Track-A,20.985670543128577,15.560527748485946,,experiments_v2/pm25/gruodebayes,CSDI 补值输入
 PM2.5,SSSD_v1,Track-A,105.21103380289328,95.31860980143149,,experiments_v2/pm25/sssd,CSDI 补值输入
-EEG,NeuralCDE,Track-A,17.041921524175645,12.272827729562627,,experiments_v2/eeg/neuralcde,CSDI 补值输入
-EEG,GRU-ODE-Bayes,Track-A,6.236323767305315,5.188355923295806,,experiments_v2/eeg/gruodebayes,CSDI 补值输入
-EEG,SSSD_v2,Track-A,64.0600634143049,56.475124782986114,,experiments_v2/eeg/sssd_v2,CSDI 补值输入
-EEG,SSSD_v1,Track-A,87.57314388800306,73.14899359809027,,experiments_v2/eeg/sssd,CSDI 补值输入
+EEG,NeuralCDE,Track-A,20.254722685097406,16.16988451828651,,experiments_v2/eeg/neuralcde_h100,"h=100, teacher-forcing"
+EEG,GRU-ODE-Bayes,Track-A,9.62,8.08,,save/eeg_comparison/comparison_summary.csv,h=100 旧 comparison (teacher-forcing)
+EEG,SSSD_v2,Track-A,99.98380508951949,86.26734754774306,,experiments_v2/eeg/sssd_h100,"h=100, teacher-forcing"
 Lorenz63,RDE-GPR (ours),Track-A,0.5726,,0.1445,experiments_v2/lorenz63/rde_delay/summary_mean.json (5 seeds),"CSDI 补值 → RDE-GPR (空间集成), 5 seeds 均值"
 Lorenz63,RDE-Delay-GPR (ours),Track-A,1.4029,,0.4126,experiments_v2/lorenz63/rde_delay/summary_mean.json (5 seeds),"CSDI 补值 → RDE-Delay-GPR (延迟嵌入), 5 seeds 均值"
 Lorenz96,RDE-GPR (ours),Track-A,0.2845,,0.0986,experiments_v2/lorenz96/rde_delay/summary_mean.json (5 seeds),"CSDI 补值 → RDE-GPR (空间集成), 5 seeds 均值"
 Lorenz96,RDE-Delay-GPR (ours),Track-A,0.2647,,0.1068,experiments_v2/lorenz96/rde_delay/summary_mean.json (5 seeds),"CSDI 补值 → RDE-Delay-GPR (延迟嵌入), 5 seeds 均值"
 PM2.5,RDE-GPR (ours),Track-A,17.20528034854183,11.791545007934095,,experiments_v2/pm25/rdegpr_modeB,"CSDI 补值 → RDE-GPR, 全 36 站, trainlength=200"
-EEG,RDE-Delay-GPR (ours),Track-A,12.130577018421237,10.341296622536573,,experiments_v2/eeg/rde_delay_gpr_modeB_redo,CSDI 补值 → RDE-Delay-GPR
-EEG,RDE-GPR (ours),Track-A,61.47131400781405,53.7702071601194,,experiments_v2/eeg/rdegpr_spatial_modeB,"CSDI 补值 → RDE-GPR (空间版, 对照)"
+EEG,RDE-Delay-GPR (ours),Track-A,7.525951089660472,6.230959350156506,,experiments_v2/eeg/rde_delay_gpr_h100,"CSDI 补值 → RDE-Delay-GPR (h=100, L=7, 论文 setting)"
 Lorenz63,NeuralCDE,Track-B,6.887076541583071,5.229918633471295,,experiments_v2/lorenz63/neuralcde_sparse,"基线直接吃 sparse_50, h=20"
 Lorenz63,GRU-ODE-Bayes,Track-B,2.692481944027993,2.0856317062310366,,experiments_v2/lorenz63/gruodebayes_sparse,"基线直接吃 sparse_50, h=20"
 Lorenz96,NeuralCDE,Track-B,3.53294029633342,2.6309602742028293,,experiments_v2/lorenz96/neuralcde_sparse,"基线直接吃 sparse_50, h=20"

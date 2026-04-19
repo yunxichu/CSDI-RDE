@@ -58,8 +58,9 @@ def collect_all():
     rows = []
 
     # ──────── Track-A: 所有方法都用 CSDI 补值数据 ────────
+    # EEG 主 setting 用 h=100 (用户论文 setting), h=976 仅作扩展
     for ds, ds_key in [("Lorenz63", "lorenz63"), ("Lorenz96", "lorenz96"),
-                       ("PM2.5", "pm25"), ("EEG", "eeg")]:
+                       ("PM2.5", "pm25")]:
         # 基线
         for sub, label in [("neuralcde", "NeuralCDE"),
                            ("gruodebayes", "GRU-ODE-Bayes"),
@@ -74,6 +75,32 @@ def collect_all():
                 "source": f"experiments_v2/{ds_key}/{sub}",
                 "note": "CSDI 补值输入",
             })
+
+    # EEG 主 setting (h=100, 与论文一致)
+    eeg_h100 = [
+        ("neuralcde_h100",     "NeuralCDE",     "h=100, teacher-forcing"),
+        ("gruodebayes",        "GRU-ODE-Bayes", "h=100 旧 comparison (teacher-forcing)"),
+        ("sssd_h100",          "SSSD_v2",       "h=100, teacher-forcing"),
+    ]
+    for sub, label, note in eeg_h100:
+        if sub == "gruodebayes":
+            # 用旧 comparison_summary.csv 的 GOB h=100 = 9.62
+            rows.append({
+                "dataset": "EEG", "method": label, "track": "Track-A",
+                "rmse": 9.62, "mae": 8.08, "std": np.nan,
+                "source": "save/eeg_comparison/comparison_summary.csv",
+                "note": note,
+            })
+            continue
+        d = _load(f"{EXP_BASE}/eeg/{sub}/metrics.json")
+        if d is None:
+            continue
+        rows.append({
+            "dataset": "EEG", "method": label, "track": "Track-A",
+            "rmse": d["rmse"], "mae": d["mae"], "std": np.nan,
+            "source": f"experiments_v2/eeg/{sub}",
+            "note": note,
+        })
 
     # Lorenz63/96 RDE-GPR 5 seeds 均值 (Track-A)
     for ds, ds_key in [("Lorenz63", "lorenz63"), ("Lorenz96", "lorenz96")]:
@@ -115,26 +142,15 @@ def collect_all():
             "note": "CSDI 补值 → RDE-GPR, 全 36 站, trainlength=200",
         })
 
-    # EEG RDE-Delay-GPR (Track-A, 用 eeg_imputed.npy redo 版)
-    d = _load(f"{EXP_BASE}/eeg/rde_delay_gpr_modeB_redo/metrics.json")
+    # EEG RDE-Delay-GPR (主 setting h=100, 论文复现)
+    d = _load(f"{EXP_BASE}/eeg/rde_delay_gpr_h100/metrics.json")
     if d:
         rows.append({
             "dataset": "EEG", "method": "RDE-Delay-GPR (ours)",
             "track": "Track-A",
             "rmse": d["rmse"], "mae": d["mae"], "std": np.nan,
-            "source": "experiments_v2/eeg/rde_delay_gpr_modeB_redo",
-            "note": "CSDI 补值 → RDE-Delay-GPR",
-        })
-
-    # EEG RDE-GPR 空间版 (对照, 表现差说明 EEG 需要 delay)
-    d = _load(f"{EXP_BASE}/eeg/rdegpr_spatial_modeB/metrics.json")
-    if d:
-        rows.append({
-            "dataset": "EEG", "method": "RDE-GPR (ours)",
-            "track": "Track-A",
-            "rmse": d["rmse"], "mae": d["mae"], "std": np.nan,
-            "source": "experiments_v2/eeg/rdegpr_spatial_modeB",
-            "note": "CSDI 补值 → RDE-GPR (空间版, 对照)",
+            "source": "experiments_v2/eeg/rde_delay_gpr_h100",
+            "note": "CSDI 补值 → RDE-Delay-GPR (h=100, L=7, 论文 setting)",
         })
 
     # ──────── Track-B: 基线直接吃稀疏/缺失数据 ────────
