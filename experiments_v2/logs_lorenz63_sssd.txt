@@ -1,0 +1,11 @@
+/home/rhl/.config/matplotlib is not a writable directory
+Matplotlib created a temporary cache directory at /tmp/matplotlib-u_uk3hrc because there was an issue with the default path (/home/rhl/.config/matplotlib); it is highly recommended to set the MPLCONFIGDIR environment variable to a writable directory, in particular to speed up the import of Matplotlib and to better support multiprocessing.
+
+======================================================================
+LORENZ63 预测 - SSSD
+======================================================================
+history: (60, 15), future: (40, 15), horizon: 40
+SSSD params: 3,458,927
+
+[Training]
+Train:   0%|          | 0/100 [00:00<?, ?it/s]Train:   1%|          | 1/100 [01:26<2:22:39, 86.46s/it]Train:   2%|▏         | 2/100 [02:57<2:25:30, 89.08s/it]Train:   3%|▎         | 3/100 [04:20<2:19:39, 86.39s/it]Train:   4%|▍         | 4/100 [05:40<2:14:12, 83.89s/it]Train:   5%|▌         | 5/100 [06:39<1:58:40, 74.95s/it]Train:   6%|▌         | 6/100 [07:26<1:42:22, 65.34s/it]
