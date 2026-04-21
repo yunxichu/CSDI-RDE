@@ -86,12 +86,14 @@ def build_mixed_horizon_dataset(ctx_filled: np.ndarray, taus: np.ndarray, horizo
     return X.astype(np.float32), Y.astype(np.float32), H
 
 
-def run(n_seeds: int, scenario_name: str, sparsity: float, noise: float, dt: float = 0.025) -> dict:
-    print(f"=== Module-4 horizon-cal experiment:  {scenario_name} (s={sparsity}, σ={noise}) seeds=[0..{n_seeds - 1}]")
-    per_horizon_picp_lyap: dict[int, list[float]] = {h: [] for h in HORIZONS}
+def run(n_seeds: int, scenario_name: str, sparsity: float, noise: float, dt: float = 0.025,
+        growth_modes: list[str] = ["exp", "saturating", "clipped", "empirical"]) -> dict:
+    print(f"=== Module-4 horizon-cal experiment:  {scenario_name} (s={sparsity}, σ={noise}) seeds=[0..{n_seeds - 1}]"
+          f" growth_modes={growth_modes}")
     per_horizon_picp_split: dict[int, list[float]] = {h: [] for h in HORIZONS}
-    per_horizon_mpiw_lyap: dict[int, list[float]] = {h: [] for h in HORIZONS}
     per_horizon_mpiw_split: dict[int, list[float]] = {h: [] for h in HORIZONS}
+    per_horizon_picp: dict[str, dict[int, list[float]]] = {m: {h: [] for h in HORIZONS} for m in growth_modes}
+    per_horizon_mpiw: dict[str, dict[int, list[float]]] = {m: {h: [] for h in HORIZONS} for m in growth_modes}
     q_records = []
 
     for seed in range(n_seeds):
@@ -120,30 +122,34 @@ def run(n_seeds: int, scenario_name: str, sparsity: float, noise: float, dt: flo
         mu_cal, std_cal = gp.predict(X[cal], return_std=True)
         mu_te, std_te = gp.predict(X[te], return_std=True)
 
-        # Calibrate both CPs on the pooled calibration set
+        # Calibrate Split-CP + each Lyap-CP growth variant on pooled cal set
         H_cal = np.repeat(H[cal][:, None], Y.shape[1], axis=1).astype(float)
         H_te = np.repeat(H[te][:, None], Y.shape[1], axis=1).astype(float)
-
-        lyap_cp = LyapConformal(alpha=0.1, lam=lam_step, dt=1.0)  # horizons are already in steps
-        lyap_cp.calibrate(Y[cal], mu_cal, std_cal, H_cal)
-        lo_l, hi_l = lyap_cp.predict_interval(mu_te, std_te, H_te)
 
         split_cp = SplitConformal(alpha=0.1)
         split_cp.calibrate(Y[cal], mu_cal, std_cal)
         lo_s, hi_s = split_cp.predict_interval(mu_te, std_te)
+        q_record = dict(seed=seed, q_split=float(split_cp.q), lam_hat=float(lam_hat))
 
-        q_records.append(dict(seed=seed, q_lyap=float(lyap_cp.q), q_split=float(split_cp.q),
-                              lam_hat=float(lam_hat)))
+        for sel in HORIZONS:
+            mask = H[te] == sel
+            if mask.sum():
+                per_horizon_picp_split[sel].append(picp(Y[te][mask], lo_s[mask], hi_s[mask]))
+                per_horizon_mpiw_split[sel].append(mpiw(lo_s[mask], hi_s[mask]))
 
-        # per-horizon breakdown
-        for h in HORIZONS:
-            sel = H[te] == h
-            if sel.sum() == 0:
-                continue
-            per_horizon_picp_lyap[h].append(picp(Y[te][sel], lo_l[sel], hi_l[sel]))
-            per_horizon_picp_split[h].append(picp(Y[te][sel], lo_s[sel], hi_s[sel]))
-            per_horizon_mpiw_lyap[h].append(mpiw(lo_l[sel], hi_l[sel]))
-            per_horizon_mpiw_split[h].append(mpiw(lo_s[sel], hi_s[sel]))
+        for mode in growth_modes:
+            lyap_cp = LyapConformal(alpha=0.1, lam=lam_step, dt=1.0,
+                                    growth_mode=mode, growth_cap=10.0)
+            lyap_cp.calibrate(Y[cal], mu_cal, std_cal, H_cal)
+            lo_l, hi_l = lyap_cp.predict_interval(mu_te, std_te, H_te)
+            q_record[f"q_lyap_{mode}"] = float(lyap_cp.q)
+            for sel in HORIZONS:
+                mask = H[te] == sel
+                if mask.sum():
+                    per_horizon_picp[mode][sel].append(picp(Y[te][mask], lo_l[mask], hi_l[mask]))
+                    per_horizon_mpiw[mode][sel].append(mpiw(lo_l[mask], hi_l[mask]))
+
+        q_records.append(q_record)
 
     summary = dict(
         scenario=dict(name=scenario_name, sparsity=sparsity, noise=noise),

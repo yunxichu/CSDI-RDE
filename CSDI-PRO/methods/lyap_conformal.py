@@ -26,6 +26,41 @@ def _quantile_level(n: int, alpha: float) -> float:
     return float(min(k / n, 1.0))
 
 
+def lyap_growth(
+    horizons: np.ndarray,
+    lam: float,
+    dt: float,
+    mode: str = "saturating",
+    cap: float | None = None,
+) -> np.ndarray:
+    """Growth factor g(h) used to rescale conformal nonconformity scores.
+
+    Modes:
+      - ``"exp"``:        pure ``exp(λ h dt)`` — original tech.md §4.4
+      - ``"saturating"``: ``1 + (e^{λ h dt} − 1) / (1 + (e^{λ h dt} − 1) / cap)``
+                          → equals ``exp(λ h dt)`` for small h, saturates at ``cap`` for large h
+      - ``"clipped"``:    ``min(exp(λ h dt), cap)`` — hard cap
+      - ``"sqrt_exp"``:   ``sqrt(exp(2·λ h dt))`` = ``exp(λ h dt)`` (same as exp, kept as stub)
+
+    ``cap`` defaults to 10×: residual at 1/λ time unit is e ≈ 2.7, so ``cap=10``
+    corresponds to ~2.3 Lyapunov times of growth before saturation.
+    """
+    h = np.asarray(horizons, dtype=float)
+    raw = np.exp(lam * h * dt)
+    if cap is None:
+        cap = 10.0
+    if mode == "exp":
+        return raw
+    if mode == "saturating":
+        # smooth rational saturation: small-arg ≈ raw; large-arg → cap+1
+        return 1.0 + (raw - 1.0) / (1.0 + (raw - 1.0) / cap)
+    if mode == "clipped":
+        return np.minimum(raw, cap)
+    if mode == "sqrt_exp":
+        return np.sqrt(np.exp(2 * lam * h * dt))
+    raise ValueError(f"unknown growth mode {mode!r}")
+
+
 @dataclass
 class SplitConformal:
     alpha: float = 0.1
@@ -51,12 +86,39 @@ class SplitConformal:
 
 @dataclass
 class LyapConformal:
-    """Lyapunov-aware conformal: nonconformity divided by exp(lam * h * dt)."""
+    """Lyapunov-aware conformal: nonconformity rescaled by a growth model g(h).
+
+    Growth modes (see :func:`lyap_growth`):
+
+      - ``"exp"``         — original tech.md §4.4 formula; over-estimates past ~1 Λ time
+      - ``"saturating"``  — default; ``cap`` gate prevents long-h overshoot (empirically
+                             the fix for the dip-and-spike PICP curve we saw at h ≥ 16)
+      - ``"clipped"``     — hard ``min(exp(·), cap)``
+      - ``"empirical"``   — no λ; growth inferred from calibration residual scale per h bin.
+                             Useful as a λ-free ablation; loses the physics narrative.
+    """
 
     alpha: float = 0.1
-    lam: float = 1.0  # max Lyapunov
+    lam: float = 1.0  # max Lyapunov per time unit
     dt: float = 0.01
+    growth_mode: str = "saturating"
+    growth_cap: float = 10.0
     q: float = float("nan")
+    _empirical_scale: dict[int, float] | None = None
+
+    def _growth(self, horizons: np.ndarray) -> np.ndarray:
+        if self.growth_mode == "empirical":
+            assert self._empirical_scale is not None, "call calibrate() first for empirical mode"
+            arr = np.asarray(horizons, dtype=float)
+            out = np.ones_like(arr)
+            # nearest-bin lookup (robust to unseen h's)
+            keys = np.array(sorted(self._empirical_scale.keys()), dtype=float)
+            vals = np.array([self._empirical_scale[int(k)] for k in keys])
+            for i, h in enumerate(arr.ravel()):
+                idx = int(np.argmin(np.abs(keys - h)))
+                out.ravel()[i] = vals[idx]
+            return out
+        return lyap_growth(horizons, self.lam, self.dt, mode=self.growth_mode, cap=self.growth_cap)
 
     def calibrate(
         self,
@@ -66,7 +128,15 @@ class LyapConformal:
         horizons: np.ndarray,
     ) -> None:
         sigma_cal = np.maximum(sigma_cal, 1e-8)
-        growth = np.exp(self.lam * horizons * self.dt)
+        if self.growth_mode == "empirical":
+            # per-horizon empirical scale = median(|residual| / sigma)
+            h_flat = np.asarray(horizons).ravel()
+            r_flat = (np.abs(y_cal - y_pred_cal) / sigma_cal).ravel()
+            self._empirical_scale = {}
+            for h in np.unique(h_flat.astype(int)):
+                sel = h_flat.astype(int) == h
+                self._empirical_scale[int(h)] = float(np.median(r_flat[sel])) + 1e-8
+        growth = self._growth(horizons)
         scores = np.abs(y_cal - y_pred_cal) / (sigma_cal * growth)
         level = _quantile_level(scores.size, self.alpha)
         self.q = float(np.quantile(scores.ravel(), level))
@@ -78,27 +148,26 @@ class LyapConformal:
         horizons: np.ndarray,
     ) -> tuple[np.ndarray, np.ndarray]:
         sigma = np.maximum(sigma, 1e-8)
-        growth = np.exp(self.lam * horizons * self.dt)
+        growth = self._growth(horizons)
         width = self.q * sigma * growth
         return y_pred - width, y_pred + width
 
 
 @dataclass
 class AdaptiveLyapConformal:
-    """Gibbs & Candès 2021 adaptive CP, Lyapunov-rescaled.
-
-    Online update ``q_t = q_{t-1} + eta * (miss_t - alpha)``, where
-    ``miss_t`` is 1 if the last interval missed, 0 otherwise.
-    """
+    """Gibbs & Candès 2021 adaptive CP, Lyapunov-rescaled with saturating growth."""
 
     alpha: float = 0.1
     lam: float = 1.0
     dt: float = 0.01
     eta: float = 0.05
+    growth_mode: str = "saturating"
+    growth_cap: float = 10.0
     q: float = 1.0
 
     def initialise(self, y_cal: np.ndarray, y_pred_cal: np.ndarray, sigma_cal: np.ndarray, horizons: np.ndarray) -> None:
-        base = LyapConformal(alpha=self.alpha, lam=self.lam, dt=self.dt)
+        base = LyapConformal(alpha=self.alpha, lam=self.lam, dt=self.dt,
+                             growth_mode=self.growth_mode, growth_cap=self.growth_cap)
         base.calibrate(y_cal, y_pred_cal, sigma_cal, horizons)
         self.q = base.q
 
@@ -109,7 +178,7 @@ class AdaptiveLyapConformal:
         horizons: np.ndarray,
     ) -> tuple[np.ndarray, np.ndarray]:
         sigma = np.maximum(sigma, 1e-8)
-        growth = np.exp(self.lam * horizons * self.dt)
+        growth = lyap_growth(horizons, self.lam, self.dt, mode=self.growth_mode, cap=self.growth_cap)
         width = self.q * sigma * growth
         return y_pred - width, y_pred + width
 

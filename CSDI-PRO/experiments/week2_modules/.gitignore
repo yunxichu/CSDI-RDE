@@ -1,0 +1,3 @@
+# big checkpoints — regenerate from training script
+ckpts/*.pt
+# results/ is already in root .gitignore
