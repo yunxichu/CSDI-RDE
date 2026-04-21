@@ -186,6 +186,29 @@
 
 ---
 
+## 4.5 概率性 ensemble rollout（Paper Figure 3 候选）
+
+**动机**：SVGP 单点输出在 separatrix（Lorenz63 双翼分岔点）会走"平均中线"——非物理的两翼加权。我们用气象学标准的 **ensemble forecasting**（Lorenz 1965, Leith 1974）补救：K 条样本路径，各自从略微扰动的 IC 起步，chaos 以 Lyapunov 率放大扰动。
+
+**实现**：[experiments/week1/full_pipeline_rollout.py](experiments/week1/full_pipeline_rollout.py) 新增 `full_pipeline_ensemble_forecast()`
+
+**seed=4 Lorenz63 clean 的展示结果**（两次 lobe switch，h=73 与 h=104）：
+- Ensemble VPT 中位数 **1.99 Λ**（与确定性 rollout 持平，没因 ensemble 而劣化）
+- 终态 wing 判断 **30/30 正确**（全部样本命中 −x wing）
+- **Ensemble std 在 separatrix 附近突然放大**：h=40 时 std=0.09，h=60（分岔前）std=4.14，h=104（第二次分岔）std=10.5 → 模型"知道自己什么时候不确定"
+- 相位图 x-z 上 ensemble 云清晰地穿越蝴蝶两翼
+
+**Paper 叙事**："在分岔点，我们的 ensemble std 自然膨胀，反映系统的确定性混沌敏感性；point forecast 会走非物理中线，但 90% PI 覆盖两翼——只有概率性方法能正确表达 chaos 的这一基本属性。"
+
+**局限**：在高噪声（S3）场景下 ensemble 有时全部 collapse 到训练集密集 wing（GP smoothness prior 的偏置）。诚实承认：下一版可以试 mixture-density GP 或 hybrid GP-parrot（方案 B/C）。
+
+产出文件：
+- 脚本：[experiments/week1/plot_separatrix_ensemble.py](experiments/week1/plot_separatrix_ensemble.py)
+- 图：[figures/separatrix_ensemble_seed4_S0_K30_ic05.png](experiments/week1/figures/separatrix_ensemble_seed4_S0_K30_ic05.png)（paper Fig 3 候选）
+- 辅图：[figures/separatrix_ensemble_seed3_S0_K30_ic05.png](experiments/week1/figures/separatrix_ensemble_seed3_S0_K30_ic05.png)（含 3/30 样本正确 split 到 −x wing）
+
+---
+
 ## 5. 仓库结构速查
 
 ```

@@ -114,3 +114,99 @@ def full_pipeline_forecast(
         preds[h] = next_state
         history = np.vstack([history, next_state[None, :]])
     return preds
+
+
+def full_pipeline_ensemble_forecast(
+    observed: np.ndarray,
+    pred_len: int,
+    K: int = 20,
+    seed: int = 0,
+    imp_kind: str = "ar_kalman",
+    ic_perturb_scale: float = 0.15,
+    process_noise_scale: float = 0.0,
+    return_trained_gp: bool = False,
+    **kwargs,
+):
+    """Probabilistic rollout: K parallel sample paths with chaos-driven divergence.
+
+    Two sources of ensemble spread (both knobbable):
+
+    * **IC perturbation** (``ic_perturb_scale``): add ``N(0, ic_perturb_scale^2)``
+      noise to each sample's *last* state before rollout starts. For a chaotic
+      system, these tiny initial perturbations are amplified exponentially at the
+      Lyapunov rate — this is the classical ensemble-forecasting mechanism
+      (Lorenz 1965, Leith 1974). At separatrix points, different samples can
+      commit to different lobes purely from IC sensitivity, no artificial noise.
+
+    * **Process noise** (``process_noise_scale``): optional per-step Gaussian
+      injection scaled by the SVGP predictive std. Default 0 — adding it at every
+      step tends to overwhelm the deterministic dynamics on smooth trajectories.
+
+    Returns
+    -------
+    preds : np.ndarray, [K, pred_len, D]
+        Ensemble of sample paths.
+    meta (if ``return_trained_gp``) : dict with {'gp', 'taus', 'filled'}
+        For downstream diagnostics (e.g. separatrix figure).
+    """
+    cfg = {**_DEFAULTS, **kwargs}
+    rng = np.random.default_rng(seed)
+
+    filled = impute(observed, kind=imp_kind)
+
+    if cfg["fast_tau"]:
+        spec = random_tau(L=cfg["L_embed"], tau_max=cfg["tau_max"], seed=seed)
+    else:
+        try:
+            spec = mi_lyap_bayes_tau(
+                filled[:, 0], L=cfg["L_embed"], tau_max=cfg["tau_max"], horizon=1,
+                n_calls=cfg["bayes_calls"], k=4, seed=seed,
+            )
+        except Exception:
+            spec = random_tau(L=cfg["L_embed"], tau_max=cfg["tau_max"], seed=seed)
+    taus = spec.taus
+
+    X, Y, _ = _build_delay_features(filled, taus)
+    if X.shape[0] < 50:
+        preds = np.broadcast_to(filled[-1:, :], (K, pred_len, filled.shape[1])).copy()
+        if return_trained_gp:
+            return preds, dict(gp=None, taus=taus, filled=filled)
+        return preds
+
+    gp = MultiOutputSVGP(SVGPConfig(
+        m_inducing=cfg["m_inducing"], n_epochs=cfg["n_epochs"], lr=cfg["lr"], verbose=False,
+    )).fit(X, Y)
+
+    D = filled.shape[1]
+    histories = np.tile(filled, (K, 1, 1)).astype(np.float32)  # [K, T, D]
+    # IC perturbation: jitter the *last (max(taus)+1)* states so every delay-query
+    # coordinate is perturbed — otherwise the first query is nearly identical
+    # across samples and ensemble can't split early.
+    if ic_perturb_scale > 0:
+        n_ic = int(max(taus)) + 1
+        histories[:, -n_ic:, :] += (ic_perturb_scale *
+                                     rng.standard_normal((K, n_ic, D)).astype(np.float32))
+    preds = np.empty((K, pred_len, D), dtype=np.float32)
+    T = filled.shape[0]
+    n_lags = len(taus)
+    feats_per_channel = n_lags + 1
+    for h in range(pred_len):
+        t = T + h - 1
+        query = np.empty((K, feats_per_channel * D), dtype=np.float32)
+        for d in range(D):
+            cols = [histories[:, t, d]]
+            for tau in taus:
+                cols.append(histories[:, t - tau, d])
+            query[:, d * feats_per_channel:(d + 1) * feats_per_channel] = np.stack(cols, axis=1)
+        mu, sigma = gp.predict(query, return_std=True)
+        if process_noise_scale > 0:
+            eps = rng.standard_normal(mu.shape).astype(np.float32)
+            next_states = (mu + process_noise_scale * sigma * eps).astype(np.float32)
+        else:
+            next_states = mu.astype(np.float32)
+        preds[:, h, :] = next_states
+        histories = np.concatenate([histories, next_states[:, None, :]], axis=1)
+
+    if return_trained_gp:
+        return preds, dict(gp=gp, taus=taus, filled=filled)
+    return preds
