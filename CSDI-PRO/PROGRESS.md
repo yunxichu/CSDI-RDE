@@ -92,7 +92,7 @@
 - [x] **A3** `make_sparse_noisy` + 1-D mask 广播
 - [x] **A4** UQ 指标完整（CRPS、PICP、MPIW、Winkler、reliability curve、ECE）
 - [x] **A5** 混沌指标基本完整（VPT 多阈值、NRMSE）；correlation dim error 未做
-- [x] **A6** Chronos-T5 {small/base/large} 可加载推理；**Panda 需要 custom PatchTST 扩展代码，W8 补**；FIM 未接入
+- [x] **A6** Chronos-T5 {small/base/large} 可加载推理；**Panda-72M 权重已下载**（`baselines/panda-72M/`，274MB safetensors in gitignore），arch 已照 state_dict keys 手写于 [baselines/panda_model.py](baselines/panda_model.py)，71.6M params 加载 OK；**但 zero-shot 功能上失败（h=1 NRMSE ~0.80，应 < 0.1）**：layer-0 attention std 爆炸 3000×，怀疑 Panda 有 QK-norm 或其他 custom scaling，不开源无法确认——**需 `git clone https://github.com/abao1999/panda` 后续从他们代码加载权重**；FIM 未接入
 - [x] **A7** v1 的 `csdi/` / `rde_delay/` / `gpr/` 模块已原地保留，可按需 import
 - [x] **A8** 多面板对比图 + phase transition 曲线 + reliability 画板子已就绪
 
@@ -125,6 +125,12 @@
 ### D. 实验 — 5/13 完成，主结果已复现并验证
 
 - [x] **Phase Transition pilot**（D1 的预演）：Lorenz63 × 7 harshness × 3 baselines × 5 seeds；**parrot 在 S2→S3 出现 95% VPT drop**，v2 锋利 story 被证据支持；Chronos 确认"categorically brittle at chaos"
+- [x] **Phase Transition + 全 pipeline**（D1 候选正图）：加入我们的 full v2 pipeline（M1 AR-Kalman + M2 MI-Lyap + M3 SVGP 自回归 rollout），Lorenz63 × 7 harshness × 4 methods × 5 seeds
+  - Ours VPT@1.0: 1.63→1.62→**0.93→0.79→0.19**→0.13→0.06（graceful decay，S2/S3 仍有可用精度）
+  - Parrot VPT@1.0: 1.58→1.29→**0.42→0.47→0.04**→0.00→0.06（S2 处 crisp phase transition，-74%）
+  - Chronos-T5-small: 0.83→1.01→**0.67→0.36→0.05**→0.00→0.07（S0 已输 parrot / ours，S4 以上完全崩）
+  - **S2-S4 窗口是 paper 焦点**：ours 2.2×-5× 所有 baseline，所有基线都 crisp transition 过了，ours 平滑
+  - 产出：[results/pt_v2_with_ours_n5_small.json](experiments/week1/results/pt_v2_with_ours_n5_small.json) + [figures/pt_v2_with_ours_n5_small_paperfig.png](experiments/week1/figures/pt_v2_with_ours_n5_small_paperfig.png)
 - [x] **D10 4-Module 消融表 v1**：Lorenz63 S2/S3 × 3 seeds × 7 configs × 4 horizons
 - [x] **D10 4-Module 消融表 v2**（升级）：新增 Lyap-empirical + m4-lyap-exp 两个配置；使用 robust_lyapunov
   - Full NRMSE h=1 = 0.373；All-off（≈ v1）= 0.760 (**+104%**)

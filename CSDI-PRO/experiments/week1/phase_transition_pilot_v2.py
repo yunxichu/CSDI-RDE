@@ -34,6 +34,7 @@ from experiments.week1.baselines import (
     context_parroting_forecast,
     persistence_forecast,
 )
+from experiments.week1.full_pipeline_rollout import full_pipeline_forecast
 from experiments.week1.lorenz63_utils import (
     LORENZ63_ATTRACTOR_STD,
     LORENZ63_LYAP,
@@ -54,7 +55,7 @@ FIG_DIR = REPO_ROOT / "experiments" / "week1" / "figures"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 
-METHOD_ORDER = ["chronos", "parrot", "persist"]
+METHOD_ORDER = ["ours", "chronos", "parrot", "persist"]
 
 
 def load_chronos(model_name: str, device: str):
@@ -103,6 +104,11 @@ def run_pilot(
                     mean = context_parroting_forecast(ctx_filled, pred_len=pred_len)
                 elif method == "persist":
                     mean = persistence_forecast(ctx_filled, pred_len)
+                elif method == "ours":
+                    mean = full_pipeline_forecast(
+                        observed, pred_len=pred_len, seed=seed,
+                        bayes_calls=10, n_epochs=150,
+                    )
                 else:
                     raise ValueError(method)
                 t_infer = time.time() - t0
@@ -179,8 +185,8 @@ def plot_multi(summary: dict, fig_path: Path, scenario_names: list[str]) -> None
                ("vpt10_mean", "vpt10_std", "VPT (threshold=1.0)"),
                ("rmse_mean", "rmse_std", "NRMSE (first 100 steps)")]
 
-    colors = {"chronos": "C3", "parrot": "C0", "persist": "grey"}
-    markers = {"chronos": "o", "parrot": "s", "persist": "x"}
+    colors = {"ours": "#1b9e77", "chronos": "C3", "parrot": "C0", "persist": "grey"}
+    markers = {"ours": "D", "chronos": "o", "parrot": "s", "persist": "x"}
 
     for ax, (mkey, skey, title) in zip(axes, metrics):
         for method in METHOD_ORDER:
@@ -214,8 +220,8 @@ def main() -> None:
     ap.add_argument("--pred_len", type=int, default=128)
     ap.add_argument("--dt", type=float, default=0.025)
     ap.add_argument("--model", default="amazon/chronos-t5-small")
-    ap.add_argument("--methods", nargs="+", default=["chronos", "parrot", "persist"])
-    ap.add_argument("--tag", default="multibase_small")
+    ap.add_argument("--methods", nargs="+", default=["ours", "chronos", "parrot", "persist"])
+    ap.add_argument("--tag", default="with_ours")
     args = ap.parse_args()
 
     records = run_pilot(
