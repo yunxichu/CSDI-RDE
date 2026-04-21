@@ -167,8 +167,15 @@ class DynamicsAwareScoreNet(nn.Module):
             "delay_bias",
             nn.Parameter(torch.zeros(seq_len, seq_len), requires_grad=use_delay_mask),
         )
-        # gating scalar α (learnable, starts at 0 so optimisation anneals it in)
-        self.register_parameter("delay_alpha", nn.Parameter(torch.zeros(1), requires_grad=use_delay_mask))
+        # gating scalar α: start at small positive constant so the product
+        # delay_alpha * delay_bias is not identically zero at init.  When both
+        # use_noise_cond and use_delay_mask are active, a zero delay_alpha causes
+        # the product to have zero gradient through delay_bias as well, which can
+        # stall optimisation for certain random seeds.
+        self.register_parameter("delay_alpha", nn.Parameter(
+            torch.full((1,), 0.01 if use_delay_mask else 0.0),
+            requires_grad=use_delay_mask,
+        ))
 
     def set_tau(self, tau: np.ndarray) -> None:
         """Initialise the bias mask from a τ vector (MI-Lyap selection).
@@ -256,10 +263,18 @@ class DiffusionSchedule:
 class Lorenz63ImputationDataset(Dataset):
     """Generates (clean, noisy, mask, sigma) tuples on the fly for training.
 
-    For each sample:
-      1. Integrate Lorenz63 for ``seq_len`` steps with random IC and spin-up
-      2. Draw sparsity ~ U(0.2, 0.95) and noise σ/std ~ U(0, 1.5)
-      3. Produce mask + noisy observations + record the true σ
+    Two modes:
+
+    * **pool mode** (legacy): integrate one long Lorenz63 trajectory, slice at
+      ``__getitem__`` time. Fast but low IC diversity — all samples from the same
+      attractor visitation sequence.
+    * **cache mode** (preferred): load a pre-generated ``.npz`` produced by
+      ``experiments.week2_modules.make_lorenz_dataset`` — each row is an
+      independent-IC window. Provides 64K × distinct ICs in ~100 MB.
+
+    For each training sample (both modes):
+      1. Draw sparsity ~ U(0.2, 0.95) and noise σ/std ~ U(0, 1.5)
+      2. Produce mask + noisy observations + record the true σ
     """
 
     def __init__(
@@ -269,15 +284,24 @@ class Lorenz63ImputationDataset(Dataset):
         dt: float = 0.025,
         attractor_std: float = 8.51,
         seed: int = 0,
+        cache_path: str | None = None,
     ) -> None:
-        self.n_samples = n_samples
         self.seq_len = seq_len
         self.dt = dt
         self.attractor_std = attractor_std
         self.rng = np.random.default_rng(seed)
-        # pre-generate a long pool of trajectories and slice at __getitem__ time
-        # to keep cost predictable
-        self._pool = self._build_pool()
+        self._cache_path = cache_path
+        if cache_path is not None:
+            arr = np.load(cache_path)
+            self._cache = arr["clean"]  # [N, L, D]
+            if self._cache.shape[1] < seq_len:
+                raise ValueError(f"cache seq_len {self._cache.shape[1]} < requested {seq_len}")
+            self.n_samples = int(n_samples) if n_samples is not None else self._cache.shape[0]
+            self.n_samples = min(self.n_samples, self._cache.shape[0])
+        else:
+            self.n_samples = n_samples
+            self._cache = None
+            self._pool = self._build_pool()
 
     def _build_pool(self) -> np.ndarray:
         from experiments.week1.lorenz63_utils import integrate_lorenz63
@@ -291,8 +315,17 @@ class Lorenz63ImputationDataset(Dataset):
 
     def __getitem__(self, idx: int) -> dict:
         rng = np.random.default_rng(idx + 7)
-        start = rng.integers(0, self._pool.shape[0] - self.seq_len - 1)
-        clean = self._pool[start : start + self.seq_len].copy()  # (L, D)
+        if self._cache is not None:
+            # Pull the pre-integrated window; optionally crop if seq_len < cache seq_len
+            src = self._cache[idx % self._cache.shape[0]]
+            if src.shape[0] > self.seq_len:
+                start = rng.integers(0, src.shape[0] - self.seq_len + 1)
+                clean = src[start : start + self.seq_len].copy()
+            else:
+                clean = src.copy()
+        else:
+            start = rng.integers(0, self._pool.shape[0] - self.seq_len - 1)
+            clean = self._pool[start : start + self.seq_len].copy()
 
         sparsity = float(rng.uniform(0.2, 0.95))
         noise_frac = float(rng.uniform(0.0, 1.5))
@@ -302,16 +335,14 @@ class Lorenz63ImputationDataset(Dataset):
         mask_2d = np.repeat(mask[:, None], clean.shape[1], axis=1)
 
         noisy = clean + rng.normal(scale=sigma, size=clean.shape).astype(np.float32)
-        observed = noisy * mask_2d  # 0 where missing (we'll pair with mask)
+        observed = noisy * mask_2d
 
-        # Normalise by attractor_std so the signal and diffusion noise live on
-        # the same scale. Un-normalise in ``impute()``.
         scale = self.attractor_std
         return {
             "clean": torch.from_numpy(clean / scale).float(),
             "observed": torch.from_numpy(observed / scale).float(),
             "mask": torch.from_numpy(mask_2d).float(),
-            "sigma": torch.tensor(sigma / scale, dtype=torch.float32),  # normalised σ in [0, 1.5]
+            "sigma": torch.tensor(sigma / scale, dtype=torch.float32),
         }
 
 

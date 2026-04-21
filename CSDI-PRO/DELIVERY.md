@@ -65,11 +65,24 @@
 | 版本 | 实现文件 | 状态 | 备注 |
 |---|---|:-:|---|
 | **surrogate**：AR-Kalman smoother | [methods/dynamics_impute.py](methods/dynamics_impute.py) | ✅ Full 且 paper 使用 | AR(5) + RTS smoother on observed subset + MAD 噪声估计 |
-| **完整版**：Dynamics-Aware CSDI | [methods/dynamics_csdi.py](methods/dynamics_csdi.py) | ⚠️ 架构 done，训练 WIP | 500 行 self-contained DDPM，含 noise conditioning / delay mask / ensemble sampling |
+| **完整版**：Dynamics-Aware CSDI | [methods/dynamics_csdi.py](methods/dynamics_csdi.py) | ❌ 训练验证失败（见下） | 500 行 self-contained DDPM，含 noise conditioning / delay mask / ensemble sampling |
 
 **关键结果（S3 h=1 NRMSE）**：AR-Kalman 0.373 vs linear interp 0.480，**差距 +29%**。证明 M1 值得做。
 
-**CSDI 训练 WIP 原因**：smooth Lorenz63 dt=0.025 对 linear interp 过于友好；原 CSDI paper 用 500+ epochs × 35k 不规则 PM25 数据。真 CSDI 训练增益需在 long-gap + 大数据 + 长训练场景下复现，属于 Week 7+ 工作。
+**CSDI 完整训练实验结论（2026-04-22）**：
+
+| 变体 | 训练 loss | 噪声预测相关系数 | 插补 RMSE@missing | Linear baseline |
+|---|:-:|:-:|:-:|:-:|
+| vanilla (无 A/B) | 0.434 | — | ~11 | 2.2 |
+| no_noise (B only) | 0.434 | — | ~11 | 2.2 |
+| no_mask (A only, noise_cond) | 0.435 | **0.76** | ~14 | 2.2 |
+| **full (A+B)** | **1.000（stuck）** | — | ~15 | 2.2 |
+
+- 训练规模：60 epochs × 32K samples, batch=128, 1.26M params（~15K grad steps）
+- `full` variant 卡在 loss=1.0：初始化敏感性问题，`delay_alpha×delay_bias` 乘积在某些 random seed 下梯度始终为 0，导致 zero-noise prediction（已 fix：`delay_alpha` 初值改为 0.01）
+- 即使收敛的变体（no_mask, loss=0.435），噪声预测相关系数仅 0.76，std ratio=0.77（shrinkage bias）→ DDPM/DDIM 采样均无法收敛到有用估计
+- **根本原因**：DDPM 需要 100K+ grad steps 才能有效指导逆扩散过程；15K steps 下分数网络精度不足以克服混沌系统的内禀不确定性
+- **结论**：论文 M1 继续使用 AR-Kalman surrogate；CSDI 架构设计作为 future work 注明，需 300~500 epochs（约 100K steps）才能与线性插值持平
 
 ### 2.2 Module 2：MI-Lyap Delay Embedding
 

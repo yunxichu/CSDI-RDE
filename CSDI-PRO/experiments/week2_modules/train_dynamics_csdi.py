@@ -86,8 +86,11 @@ def main() -> None:
     ap.add_argument("--seq_len", type=int, default=64)
     ap.add_argument("--channels", type=int, default=64)
     ap.add_argument("--n_layers", type=int, default=4)
+    ap.add_argument("--num_diff_steps", type=int, default=50)
     ap.add_argument("--variant", choices=list(VARIANTS), default="full")
     ap.add_argument("--tag", default=None)
+    ap.add_argument("--cache_path", default=None,
+                    help="load pre-generated trajectories from this .npz")
     args = ap.parse_args()
 
     tag = args.tag or f"{args.variant}_ep{args.epochs}"
@@ -99,7 +102,7 @@ def main() -> None:
         step_dim=128,
         n_heads=4,
         n_layers=args.n_layers,
-        num_diff_steps=50,
+        num_diff_steps=args.num_diff_steps,
         device="cuda" if torch.cuda.is_available() else "cpu",
         **cfg_kwargs,
     )
@@ -111,7 +114,11 @@ def main() -> None:
     n_params = sum(p.numel() for p in model.net.parameters())
     print(f"[params] {n_params:,}")
 
-    ds = Lorenz63ImputationDataset(n_samples=args.n_samples, seq_len=args.seq_len, seed=0)
+    ds = Lorenz63ImputationDataset(
+        n_samples=args.n_samples, seq_len=args.seq_len, seed=0,
+        cache_path=args.cache_path,
+    )
+    print(f"[data] dataset size={len(ds)}  cache={'yes' if args.cache_path else 'no (on-the-fly pool)'}")
     t0 = time.time()
     model.fit(ds, epochs=args.epochs, batch_size=args.batch_size, lr=args.lr, verbose=True)
     train_time = time.time() - t0
