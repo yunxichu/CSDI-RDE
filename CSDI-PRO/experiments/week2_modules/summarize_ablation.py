@@ -20,15 +20,20 @@ FIG_DIR = REPO_ROOT / "experiments" / "week2_modules" / "figures"
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 
 
-CFG_ORDER = ["full", "m1-linear", "m2a-random", "m2b-frasersw", "m3-exactgpr", "m4-splitcp", "all-off"]
+CFG_ORDER = [
+    "full", "full-empirical", "m1-linear", "m2a-random", "m2b-frasersw",
+    "m3-exactgpr", "m4-splitcp", "m4-lyap-exp", "all-off",
+]
 CFG_LABEL = {
-    "full":          "Full (all 4 modules)",
-    "m1-linear":     "−M1 (linear imp)",
-    "m2a-random":    "−M2 (random τ)",
-    "m2b-frasersw":  "−M2 (Fraser-Swinney τ)",
-    "m3-exactgpr":   "−M3 (exact GPR)",
-    "m4-splitcp":    "−M4 (Split CP)",
-    "all-off":       "All off (v1 CSDI-RDE-GPR-ish)",
+    "full":             "Full (4 modules, Lyap-sat)",
+    "full-empirical":   "Full + Lyap-empirical",
+    "m1-linear":        "−M1 (linear imp)",
+    "m2a-random":       "−M2 (random τ)",
+    "m2b-frasersw":     "−M2 (Fraser-Swinney τ)",
+    "m3-exactgpr":      "−M3 (exact GPR)",
+    "m4-splitcp":       "−M4 (Split CP)",
+    "m4-lyap-exp":      "−M4 (Lyap-exp, no sat)",
+    "all-off":          "All off (≈ v1 CSDI-RDE-GPR)",
 }
 
 
@@ -79,15 +84,17 @@ def plot_scenario(agg: dict, horizons: list[int], scenario_name: str, fig_path: 
     metric_names = ["nrmse", "picp", "mpiw", "crps"]
     titles = ["NRMSE (lower better)", "PICP@90 (target 0.90)", "MPIW", "CRPS"]
     colors = {
-        "full":          "#1b9e77",
-        "m1-linear":     "#d95f02",
-        "m2a-random":    "#7570b3",
-        "m2b-frasersw":  "#a65628",
-        "m3-exactgpr":   "#e7298a",
-        "m4-splitcp":    "#e6ab02",
-        "all-off":       "#666666",
+        "full":             "#1b9e77",
+        "full-empirical":   "#2ca25f",
+        "m1-linear":        "#d95f02",
+        "m2a-random":       "#7570b3",
+        "m2b-frasersw":     "#a65628",
+        "m3-exactgpr":      "#e7298a",
+        "m4-splitcp":       "#e6ab02",
+        "m4-lyap-exp":      "#bbbb00",
+        "all-off":          "#666666",
     }
-    markers = {c: ("o" if c == "full" else "s") for c in CFG_ORDER}
+    markers = {c: ("o" if c.startswith("full") else "s") for c in CFG_ORDER}
 
     for ax, mkey, title in zip(axes, metric_names, titles):
         for c in CFG_ORDER:

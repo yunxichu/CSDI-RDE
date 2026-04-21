@@ -295,6 +295,84 @@ def construct_delay_dataset(
     return _build_delay(series, taus, horizon=horizon)
 
 
+# ---------------------------------------------------------------------------
+# Stage B: low-rank CMA-ES τ search for high-dimensional systems (tech.md §2.3)
+# ---------------------------------------------------------------------------
+
+def mi_lyap_cmaes_tau(
+    series: np.ndarray,
+    L: int,
+    tau_max: int,
+    horizon: int = 1,
+    beta: float = 1.0,
+    gamma: float = 0.1,
+    lam: float | None = None,
+    rank: int = 2,
+    popsize: int = 20,
+    n_iter: int = 30,
+    k: int = 4,
+    seed: int = 42,
+) -> TauSpec:
+    """Low-rank CMA-ES τ selector (tech.md Module 2.3 Stage B).
+
+    Parameterisation:  τ = round(σ(U V^T) · τ_max)
+    where ``U ∈ R^{L × r}``, ``V ∈ R^{1 × r}`` (a row vector), ``σ`` is the
+    sigmoid. The physical prior: in coupled-oscillator systems (Lorenz96, KS)
+    neighbouring dimensions share chaotic timescales, so the optimal τ matrix
+    has low-rank structure. Search space ``R^{r(L+1)}`` (continuous, low-dim)
+    instead of ``{1..τ_max}^L`` (discrete, exponential).
+
+    Returns (τ, decoded score, SVD spectrum of U V^T).
+    """
+    import cma
+
+    series = np.asarray(series).ravel()
+    if lam is None:
+        lam = global_lyapunov_rosenstein(series)
+    T = series.size
+    n_delta = L - 1  # same convention as mi_lyap_bayes_tau: L-1 delays
+    n_params = rank * (n_delta + 1)
+
+    def decode(x: np.ndarray) -> np.ndarray:
+        U = x[: n_delta * rank].reshape(n_delta, rank)
+        V = x[n_delta * rank :].reshape(1, rank)
+        raw = 1.0 / (1.0 + np.exp(-(U @ V.T).flatten()))
+        tau = np.clip(np.round(raw * tau_max), 1, tau_max).astype(int)
+        # enforce distinctness and descending order
+        tau = np.sort(tau)[::-1]
+        return tau
+
+    def objective(x: np.ndarray) -> float:
+        taus = decode(x)
+        Y, Xf = _build_delay(series, taus, horizon=horizon)
+        if Y.shape[0] < 50:
+            return 1e6
+        sub = np.random.default_rng(seed).choice(Y.shape[0], size=min(600, Y.shape[0]), replace=False)
+        mi = ksg_mi(Y[sub], Xf[sub, None], k=k)
+        lyap_pen = beta * int(taus.max()) * lam
+        sparse_pen = gamma * (taus.astype(float) ** 2).sum() / T
+        return -(mi - lyap_pen - sparse_pen)
+
+    es = cma.CMAEvolutionStrategy(
+        np.zeros(n_params), 0.5,
+        {"popsize": popsize, "maxiter": n_iter, "verbose": -9, "seed": seed},
+    )
+    es.optimize(objective)
+    xbest = es.result.xbest
+    taus = decode(xbest)
+
+    # compute τ-matrix singular-value spectrum (for the τ-low-rank figure)
+    U = xbest[: n_delta * rank].reshape(n_delta, rank)
+    V = xbest[n_delta * rank :].reshape(1, rank)
+    tau_matrix = U @ V.T  # (L-1, 1) — degenerate when V is row; compute full (L-1, L-1)
+    full_matrix = U @ U.T  # (L-1, L-1) proxy matrix
+    s = np.linalg.svd(full_matrix, compute_uv=False)
+    spec = TauSpec(taus=taus, score=-float(es.result.fbest), method="mi_lyap_cmaes")
+    spec.__dict__["singular_values"] = s.tolist()
+    spec.__dict__["rank"] = rank
+    return spec
+
+
 if __name__ == "__main__":
     # smoke test on Lorenz63
     import sys

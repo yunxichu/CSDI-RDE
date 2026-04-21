@@ -55,6 +55,7 @@ from methods.mi_lyap import (
     global_lyapunov_rosenstein,
     mi_lyap_bayes_tau,
     random_tau,
+    robust_lyapunov,
 )
 from metrics.chaos_metrics import nrmse as chaos_nrmse
 from metrics.uq_metrics import crps_gaussian, mpiw, picp
@@ -86,13 +87,16 @@ CAL_FRAC = 0.20
 # ---------------------------------------------------------------------------
 
 CONFIGS: dict[str, dict] = {
-    "full":              dict(imp="ar_kalman", tau="mi_lyap",  gp="svgp",  cp="lyap"),
-    "m1-linear":         dict(imp="linear",    tau="mi_lyap",  gp="svgp",  cp="lyap"),
-    "m2a-random":        dict(imp="ar_kalman", tau="random",   gp="svgp",  cp="lyap"),
-    "m2b-frasersw":      dict(imp="ar_kalman", tau="fraser",   gp="svgp",  cp="lyap"),
-    "m3-exactgpr":       dict(imp="ar_kalman", tau="mi_lyap",  gp="gpr",   cp="lyap"),
-    "m4-splitcp":        dict(imp="ar_kalman", tau="mi_lyap",  gp="svgp",  cp="split"),
-    "all-off":           dict(imp="linear",    tau="random",   gp="gpr",   cp="split"),
+    # "cp" is a tuple (kind, growth_mode) when kind=="lyap". For "split" no growth.
+    "full":              dict(imp="ar_kalman", tau="mi_lyap",  gp="svgp",  cp="lyap", growth="saturating"),
+    "full-empirical":    dict(imp="ar_kalman", tau="mi_lyap",  gp="svgp",  cp="lyap", growth="empirical"),
+    "m1-linear":         dict(imp="linear",    tau="mi_lyap",  gp="svgp",  cp="lyap", growth="saturating"),
+    "m2a-random":        dict(imp="ar_kalman", tau="random",   gp="svgp",  cp="lyap", growth="saturating"),
+    "m2b-frasersw":      dict(imp="ar_kalman", tau="fraser",   gp="svgp",  cp="lyap", growth="saturating"),
+    "m3-exactgpr":       dict(imp="ar_kalman", tau="mi_lyap",  gp="gpr",   cp="lyap", growth="saturating"),
+    "m4-splitcp":        dict(imp="ar_kalman", tau="mi_lyap",  gp="svgp",  cp="split", growth=None),
+    "m4-lyap-exp":       dict(imp="ar_kalman", tau="mi_lyap",  gp="svgp",  cp="lyap", growth="exp"),
+    "all-off":           dict(imp="linear",    tau="random",   gp="gpr",   cp="split", growth=None),
 }
 
 
@@ -213,6 +217,7 @@ def evaluate_horizons(
     lam_hat: float,
     dt: float,
     cp_kind: str,
+    growth: str | None = "saturating",
     alpha: float = 0.1,
 ) -> dict:
     """Evaluate NRMSE / PICP / MPIW / CRPS using the held-out test fold of the delay-coord dataset.
@@ -232,7 +237,8 @@ def evaluate_horizons(
         horizons_cal = np.full(Y_cal.shape, fill_value=h, dtype=float)
         horizons_test = np.full(Y_test.shape, fill_value=h, dtype=float)
         if cp_kind == "lyap":
-            cp = LyapConformal(alpha=alpha, lam=lam_hat, dt=dt)
+            cp = LyapConformal(alpha=alpha, lam=lam_hat, dt=dt,
+                               growth_mode=growth or "saturating", growth_cap=10.0)
             cp.calibrate(Y_cal, mu_cal, std_cal, horizons_cal)
             lo, hi = cp.predict_interval(mu_test, std_test, horizons_test)
         elif cp_kind == "split":
@@ -269,11 +275,12 @@ def run_single(cfg_name: str, cfg: dict, seed: int, scenario: HarshnessScenario,
         attractor_std=LORENZ63_ATTRACTOR_STD, seed=seed,
     )
     ctx_filled = impute(obs, kind=cfg["imp"])
-    lam_hat = global_lyapunov_rosenstein(ctx_filled[:, 0], emb_dim=5, lag=2) / dt
+    lam_hat = robust_lyapunov(ctx_filled[:, 0], dt=dt, emb_dim=5, lag=2, trajectory_len=50, prefilter=True)
 
     per_hgp, taus, tau_sec = build_pipeline(ctx_filled, cfg, lam_hat=lam_hat * dt, seed=seed)
     metrics = evaluate_horizons(per_hgp, ctx_filled, future_true, taus,
-                                lam_hat=lam_hat * dt, dt=dt, cp_kind=cfg["cp"])
+                                lam_hat=lam_hat * dt, dt=dt, cp_kind=cfg["cp"],
+                                growth=cfg.get("growth"))
     return dict(
         cfg_name=cfg_name, seed=seed, scenario=scenario.name,
         sparsity=scenario.sparsity, noise=scenario.noise_std_frac,
