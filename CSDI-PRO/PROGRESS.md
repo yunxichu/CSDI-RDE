@@ -1,169 +1,230 @@
-# CSDI-PRO v2 — 项目进度
+# CSDI-PRO v2 项目清单
 
-> 根据 [tech.md](tech.md) v2 方案执行。本文档记录已完成里程碑与关键实验结果，供快速浏览；详细会话记录在 `/home/rhl/Github/session_notes/`。
-
-**分支**：`csdi-pro` · **工作目录**：`/home/rhl/Github/CSDI-PRO/` · **当前周**：Week 2 完成，进入 Week 3
-
----
-
-## 总览
-
-| 周 | 任务 | 状态 | 关键产出 |
-|---|---|:-:|---|
-| **W1 Day 1-2** | 环境 + smoke tests | ✅ | 10 个 Python 包装齐；SVGP/dysts/Chronos smoke 全过 |
-| **W1 Day 3-5** | 5 篇必读论文精读 | ⏸ 延后到 W2 末 | — |
-| **W1 Day 6-7** | **Phase Transition pilot**（决定性） | ✅ | **v2 锋利 story 保留**；parrot 95% drop at S2→S3 |
-| **W2 (跨越式)** | **4 个技术 module 实现 + 消融实验** | ✅ | **−M1: +29% NRMSE, −M2: +28%, −M3: +26%, all-off: +104%**；Module 4 mixed-horizon mean-abs-dev 比 Split-CP 低 30% |
+> 根据 [tech.md](tech.md) v2 方案执行。本文档是扁平的"**总任务清单** + **已完成清单**"，不按 week 组织。详细会话记录见 `/home/rhl/Github/session_notes/`。
+>
+> **分支**：`csdi-pro` · **工作目录**：`/home/rhl/Github/CSDI-PRO/`
 
 ---
 
-## Week 1 Day 1-2：环境 + smoke tests ✅
+## 一、总体要做什么（完整任务清单）
 
-### 装包状态（`conda/pip`）
+### A. 基础设施
 
-| 包 | 版本 | 用途 |
+| # | 任务 | 说明 |
 |---|---|---|
-| `torch` | 2.5.1+cu124 | 底层 |
-| `gpytorch` | 1.15.2 | SVGP / GP kernel |
-| `properscoring` | 0.1 | CRPS |
-| `uncertainty_toolbox` | 0.1.1 | reliability diagram |
-| `skopt` | 0.10.2 | BayesOpt for τ (Module 2 Stage A) |
-| `nolds` | 最新 | Rosenstein Lyapunov |
-| `dysts` | 最新 | 混沌系统库 |
-| `cma` | 4.4.4 | CMA-ES (Module 2 Stage B) |
-| `transformers` | 5.5.4 | Chronos 依赖 |
-| `chronos-forecasting` | 最新 | Chronos-T5 {small,base,large} |
-| `npeet` | ❌ 未装 | PyPI/GitHub 权限拒；W5 前手写 KSG (~50 行) |
+| A1 | Python 环境与依赖 | torch / gpytorch / chronos-forecasting / nolds / dysts / cma / skopt / transformers / properscoring / uncertainty-toolbox |
+| A2 | 混沌系统数据生成器 | Lorenz63（scipy odeint）、Lorenz96（N=40/100/400）、Kuramoto-Sivashinsky |
+| A3 | sparse-noisy mask 构造工具 | 给定 sparsity + noise_std_frac 生成带 NaN 的观测 |
+| A4 | UQ 指标库 | CRPS (Gaussian & ensemble)、PICP、MPIW、Winkler、reliability curve、ECE |
+| A5 | 混沌指标库 | VPT（多阈值）、NRMSE（按 attractor std 归一化）、correlation dimension error |
+| A6 | Foundation model loaders | Chronos-T5 {small, base, large}、Panda（GilpinLab/panda-72M）、FIM（fim4science）、context parroting |
+| A7 | 现有 CSDI / GPR / RDE 模块整理 | 从 v1 CSDI-RDE-GPR 继承，按需包一层接口 |
+| A8 | 可视化 helpers | 多面板消融图、phase transition 曲线、reliability diagram、τ 奇异值谱 |
 
-### GPU 约束
-- 8 × V100-32GB 可见，仅用 `CUDA_VISIBLE_DEVICES=2`（GPU 0 被他人 97% 占用）
-- 遵守 memory：**GPU 1-2 张最多 4 张，CPU 不要开太高**
+### B. 四大技术 Module
 
-### Smoke tests 结果
-- **dysts Lorenz63**: `make_trajectory(2000)` OK，但 `resample=True` 把时间归一化掉 → 不适合算 Lyapunov 时间；已换 `scipy.integrate.odeint` 自写，见 [lorenz63_utils.py](experiments/week1/lorenz63_utils.py)
-- **GPyTorch SVGP toy**: 400 点 sin(x)+noise，20 inducing，Matern-5/2 → RMSE 0.017, 2.8s
-- **Chronos-T5-small zero-shot**: 1.3s 推理；RMSE 9.17 on 100-step Lorenz63 x（预期弱，见下）
-- **nolds `lyap_r`**: 能调通；对 resampled trajectory 返回 0.052，正常 trajectory 验证放 W5
+| # | Module | 核心机制 | tech.md 章节 |
+|---|---|---|---|
+| B1 | **M1: Dynamics-Aware CSDI** | (a) noise-level conditioning（给 denoising net 加 σ_obs embedding token）<br>(b) 延迟结构 attention mask，由 MI-Lyap 的 τ 动态驱动（co-adaptation）<br>(c) ensemble-aware sampling（保留 20 个样本不平均） | §Module 1 |
+| B2 | **M2: MI-Lyap Adaptive Delay Embedding** | (a) KSG 条件互信息 估计 I(Y_τ; X_future \| X_t)<br>(b) Rosenstein 局部 Lyapunov 作为惩罚项<br>(c) BayesOpt 搜 τ（L≤10）<br>(d) 低秩 CMA-ES（L>10，Lorenz96 场景） | §Module 2 |
+| B3 | **M3: SVGP on Delay Coordinates** | Matern-5/2 核、128-1024 inducing points、VariationalELBO 训练、每输出维独立 SVGP（或 IndependentMultitask） | §Module 3 |
+| B4 | **M4: Lyap-Conformal** | (a) 非遵从度 score = \|y-ŷ\| / (σ·exp(λh·dt))<br>(b) ψ-mixing 条件下 finite-sample coverage guarantee<br>(c) Adaptive 版本 q_t = q_{t-1} + η·(miss − α) | §Module 4 |
 
-**代码**：[smoke_test.py](experiments/week1/smoke_test.py) · [smoke_chronos.py](experiments/week1/smoke_chronos.py)
+### C. 理论（3 条论断 + 附录证明）
 
----
+| # | 论断 | 证明工具 | tech.md 章节 |
+|---|---|---|---|
+| C1 | **Proposition 1 (informal)** | ambient-dim 方法 forecasting error 下界含 D（维度诅咒）；covering number + Le Cam's two-point method | §Module 0.3 |
+| C2 | **Proposition 2 (informal)** | 我们的方法 posterior contraction rate 由 d_KY 主导；引用 Castillo 2014（GP on manifolds）+ Takens 定理 | §Module 3.6 |
+| C3 | **Theorem 1 (informal)** | Lyap-CP 在 ψ-mixing 条件下的 coverage 保证；引用 Chernozhukov et al. 2018 + Barber et al. 2023 + Bowen-Ruelle | §Module 4.5 |
 
-## Week 1 Day 6-7：Phase Transition pilot ✅（决定性实验）
+### D. 实验
 
-### 协议
-| 项目 | 值 |
-|---|---|
-| 系统 | Lorenz63 规范参数（σ=10, ρ=28, β=8/3） |
-| 积分 | `scipy.odeint`, dt=0.025, spinup=2000 步 |
-| 历史窗 | N_CTX = 512（12.8 Λ 时间） |
-| 预测窗 | PRED_LEN = 128（2.9 Λ 时间） |
-| 补值 | 线性插值（最朴素 foundation-model 用户做法） |
-| Seeds | 5 |
-| Scenarios | 7 个 sparsity × noise 递增 |
-| Baselines | chronos-t5-{small,base,large} / context parroting / persistence |
-| 指标 | VPT @ threshold=0.3/0.5/1.0；NRMSE / attractor_std (first 100 steps) |
+| # | 实验 | 目标 | 产出（论文 Figure） |
+|---|---|---|---|
+| D1 | **Phase Transition 主图** | 3 datasets × 8 harshness × 10 methods × 4 metrics，~1200 runs | **Figure 1**（主图，phase transition curves） |
+| D2 | **Coverage Across Harshness** | 同矩阵的 PICP@90 展示 | **Figure 2**（Lyap-CP 独家贴 90% 线） |
+| D3 | **Horizon × Coverage 曲线** | 固定 harshness，展示 Lyap-CP 在所有 horizon 保持覆盖 | Figure 3 |
+| D4 | **Horizon × PI Width 曲线** | Lyap 膨胀让 PI 合理扩张 | Figure 4 |
+| D5 | **Reliability Diagram** | pre/post conformal 对比 | Figure 5 |
+| D6 | **MI-Lyap τ 稳定性 vs noise** | σ ∈ [0, 0.1, 0.3, 0.5, 1.0, 2.0] × 20 seeds，τ std 对比 Fraser-Swinney | Figure 6 |
+| D7 | **τ 矩阵低秩奇异值谱** | Lorenz96 耦合振子，论文卖点图 | Figure 7 |
+| D8 | **SVGP Scaling Curve** | Lorenz96 N=40/100/400，训练时间 vs N；对应 Proposition 2 | Figure 8 |
+| D9 | **EEG Case Study** | h=100 真实数据 calibration，robustness 展示 | Figure 9 |
+| D10 | **4-Module Ablation 表** | 每 module 独立贡献 + 全 off ≈ v1 | Table 2 |
+| D11 | **dysts 20 系统 benchmark** | VPT/CRPS/PICP 主结果表 | Table 1 |
+| D12 | **Foundation model 大 PK** | Chronos / Panda / FIM / context parroting 在稀疏设定下 | 融入 Table 1 / Figure 1 |
+| D13 | **极端 harshness 下 sharp summary** | 文字版 3-table 总结 | Table 3 |
 
-### Harshness 表
+### E. 写作（约 9 页正文 + appendix）
 
-| Scenario | sparsity $s$ | noise $\sigma/\sigma_{\mathcal{A}}$ |
-|---|:-:|:-:|
-| S0 | 0.00 | 0.00 |
-| S1 | 0.20 | 0.10 |
-| S2 | 0.40 | 0.30 |
-| **S3** | 0.60 | 0.50 |
-| S4 | 0.75 | 0.80 |
-| S5 | 0.90 | 1.20 |
-| S6 | 0.95 | 1.50 |
-
-### 主结果（VPT @ threshold=1.0, Λ times, 5 seeds mean）
-
-| Method | S0 | S1 | S2 | **S3** | S4 | S5 | S6 |
-|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-| **parrot** | **1.58** | 1.40 | 0.66 | **0.08** | 0.05 | 0.02 | 0.06 |
-| chronos-t5-* | 0.83 | 0.85 | 0.43 | 0.18 | 0.53 | 0.12 | 0.02 |
-| persist | 0.20 | 0.19 | 0.19 | 0.10 | 0.04 | 0.21 | 0.02 |
-
-### Verdict
-
-1. **Context parroting 从 S2→S3 断崖 0.66→0.08（95% drop, sparsity 0.4→0.6, σ 0.3→0.5）** — 正是 v2 要的 phase transition 证据。
-2. **Chronos-{small,base,large} 在 clean 上 VPT<1**，与 Zhang & Gilpin 2025 一致 → Chronos 类别性偏弱，不是"会崩塌的强基线"。
-3. Persistence 全程 ≈0.2，作为下界基准合理。
-
-### 对 v2 故事的 framing 调整
-
-**原 framing**：foundation models (Panda/Chronos/FIM) 在 clean 好，在 sparse 崩。
-
-**调整后**（基于 pilot 证据）：
-> **Strong chaos baselines (context parroting / Panda)** exhibit **phase transition** at specific sparsity-noise boundary; **generic FMs (Chronos)** are **categorically brittle** at chaos from the start.
-
-### Paper Figure 1 预期形状
-- `parrot / Panda`：高起点（VPT ~1.5+）、在 S2-S3 处断崖
-- `Chronos`：低起点（~0.8）、缓降
-- `ours`：与 parrot 持平 on S0-S1，在 S3-S6 显著好于所有 baseline
-
-### 产出物
-
-| 文件 | 用途 |
-|---|---|
-| [experiments/week1/lorenz63_utils.py](experiments/week1/lorenz63_utils.py) | Lorenz63 积分 + sparse-noisy mask + VPT |
-| [experiments/week1/baselines.py](experiments/week1/baselines.py) | chronos / parrot / persist 三 forecaster |
-| [experiments/week1/phase_transition_pilot_v2.py](experiments/week1/phase_transition_pilot_v2.py) | 多 baseline pilot 主脚本 |
-| [experiments/week1/figures/pt_v2_multibase_n5_small.png](experiments/week1/figures/pt_v2_multibase_n5_small.png) | **主图**（3-panel: VPT@0.3 / VPT@1.0 / NRMSE） |
-| [experiments/week1/results/pt_v2_multibase_n5_small.json](experiments/week1/results/pt_v2_multibase_n5_small.json) | 105 runs 原始记录 |
-| `experiments/week1/results/phase_transition_{small,base,large}_dt025.json` | Chronos-only 早期探索 |
-
-会话笔记：[../session_notes/2026-04-21_csdi_pro_v2_week1.md](../session_notes/2026-04-21_csdi_pro_v2_week1.md)
-
-Git 提交：`4a493ea exp: CSDI-PRO v2 Week 1 — Phase Transition pilot 验证 v2 锋利 story 可行`
-
----
-
-## 风险更新（对应 tech.md Part IV）
-
-| 风险 | 原评估 | W1 后 |
-|---|:-:|:-:|
-| Phase transition pilot 失败（tech.md 风险 0） | 未知 | **已消解** ✅ |
-| Panda 在 sparse 下没崩 | 30% | ≤20%（parrot 已崩，同类方法应同命运） |
-| Chronos 不够锋利做 baseline | 未评估 | **存在**：W8 主对比要加 Panda，不能单靠 Chronos |
-| 需要 Panda checkpoint | 未评估 | 中等：W8 前要搞定 `GilpinLab/panda-72M` |
-| MI-Lyap 不如 Fraser-Swinney 明显好 | 40% | 不变 |
-| Dynamics-Aware CSDI 训练不稳定 | 30% | 不变 |
-| 理论证不出严格版 | 70% | 不变 |
-
----
-
-## 下一步：Week 2 Roadmap
-
-按 tech.md Part II Week 2：
-
-1. **Day 8-9 SVGP 化** 🚧
-   - 把 [gpr/gpr_module.py](gpr/gpr_module.py)（self-impl exact GPR）换成 GPyTorch SVGP
-   - 接口保持兼容：`fit(X, y) / predict(X) → (mean, std)`
-   - 验证：Lorenz63 RMSE 与原 GPR 差 <10%；时间在 n=500 时 <1 分钟
-2. **Day 10-11 UQ metrics 库** `metrics/uq_metrics.py`
-   - `crps_gaussian`, `crps_ensemble`, `picp`, `mpiw`, `reliability_diagram`, `winkler_score`
-3. **Day 12-14 Reliability diagram 首图** — Lorenz63 上 SVGP calibration 基线
-4. **末尾补**：5 篇必读论文精读（Zhang&Gilpin / Panda / FIM / Angelopoulos&Bates / Hersbach）
-
-Week 2 末里程碑：SVGP pipeline 跑通 + UQ 指标齐全 + 第 1 张论文用图（reliability）。
-
----
-
-## 投稿时间线
-
-| 目标 | Deadline | 状态 |
+| # | 章节 | 页数 |
 |---|---|:-:|
-| NeurIPS 2026（primary） | 2026-05-?? | 12 周 + 2 buffer 对齐 |
-| UAI 2026（safety） | 2026-05-?? | 同窗 |
-| ICLR 2027（secondary） | 2026-09-?? | 时间宽 |
-| AISTATS 2026 | 2026-10-?? | 兜底 |
+| E1 | Abstract + Introduction | 2 |
+| E2 | Related Work | 1.5 |
+| E3 | Method（4 modules） | 2–3 |
+| E4 | Theory（Prop 1/2 + Thm 1） | 1.5 |
+| E5 | Experiments | 3 |
+| E6 | Discussion & Limitations | 1 |
+| E7 | Conclusion | 0.5 |
+| E8 | Appendix（证明 sketch + 超参数 + 补充实验） | — |
 
-基于 W1 pilot 结果，三大会接收概率估计（tech.md Part VIII 表）：
+### F. 投稿
 
-| Target | 原 v1 | v2（transition 成立）| **v2 当前** |
+| # | 目标 | Deadline | 作用 |
+|---|---|---|---|
+| F1 | **NeurIPS 2026** | 2026-05 | **primary** |
+| F2 | **UAI 2026** | 2026-05 | safety net（同窗可 resubmit） |
+| F3 | **ICLR 2027** | 2026-09 | secondary |
+| F4 | **AISTATS 2026** | 2026-10 | 兜底 |
+| F5 | Workshop（ICLR AI for science / NeurIPS ML&PhysSci） | 滚动 | 降级策略 |
+
+---
+
+## 二、现在做了什么（已完成清单）
+
+> 截至 2026-04-21。commit 范围：`d9a7c6c`（CSDI-PRO 初始化）→ `5aa329a`（W2 跨越式消融）。
+
+### A. 基础设施 — 大部分完成
+
+- [x] **A1** Python 环境全装齐（10+ 个包）；`npeet` 因权限装不上，已用手写 KSG MI/CMI 代替
+- [x] **A2** Lorenz63 积分器（scipy odeint，dt 可配，spinup）；Lorenz96/KS 未做
+- [x] **A3** `make_sparse_noisy`：给定 sparsity + σ 生成带 NaN 观测（含 mask）
+- [x] **A4** UQ 指标完整（CRPS、PICP、MPIW、Winkler、reliability curve、ECE）
+- [x] **A5** 混沌指标基本完整（VPT 多阈值、NRMSE）；correlation dim error 未做
+- [x] **A6** Chronos-T5 {small/base/large} 可加载推理；**Panda、FIM 未接入**
+- [x] **A7** v1 的 `csdi/` / `rde_delay/` / `gpr/` 模块已原地保留，可按需 import
+- [x] **A8** 多面板对比图 + phase transition 曲线 + reliability 画板子已就绪
+
+### B. 四大 Module — 3 full + 1 轻量
+
+- [x] **B3 M3 SVGP** — **full**：[models/svgp.py](models/svgp.py)，GPyTorch Matern-5/2，SVGPConfig 可调 m_inducing / epochs / lr，MultiOutputSVGP 支持 D 维独立 GP
+- [x] **B4 M4 Lyap-CP** — **full**：[methods/lyap_conformal.py](methods/lyap_conformal.py)，SplitConformal / LyapConformal / AdaptiveLyapConformal 三件套，CQR-style non-conformity
+- [x] **B2 M2 MI-Lyap** — **full**（BayesOpt 版）：[methods/mi_lyap.py](methods/mi_lyap.py)，手写 KSG MI/CMI（Kraskov 2004 + Frenzel-Pompe 2007），Rosenstein λ（nolds 封装），BayesOpt τ 搜索带 cumulative-δ 参数化防重复；Fraser-Swinney 和 random_tau 两个 baseline；**低秩 CMA-ES 未做**（Lorenz96 阶段再补）
+- [~] **B1 M1 Dynamics-Aware CSDI** — **轻量 surrogate**：[methods/dynamics_impute.py](methods/dynamics_impute.py)，AR-Kalman smoother + 2 阶差 MAD 噪声估计，捕捉"model-based + noise-aware"两个核心想法；**真正的 CSDI-Transformer 带 noise conditioning + 动态 delay mask 训练未做**（留待后期完成）
+
+### C. 理论 — 未做
+
+- [ ] **C1** Proposition 1 formal 证明
+- [ ] **C2** Proposition 2 formal 证明
+- [ ] **C3** Theorem 1 formal 证明
+
+### D. 实验 — 3/13 完成，主结果已初步验证
+
+- [x] **Phase Transition pilot**（D1 的预演）：Lorenz63 × 7 harshness × 3 baselines × 5 seeds；**parrot 在 S2→S3 出现 95% VPT drop**，v2 锋利 story 被证据支持；Chronos 确认"categorically brittle at chaos"
+- [x] **D10 4-Module 消融表**：Lorenz63 S2/S3 × 3 seeds × 7 configs × 4 horizons；关键数字：
+  - Full NRMSE h=1 = 0.373；All-off（≈ v1）= 0.760 (**+104%**)
+  - −M1: +29% / −M2: +28% / −M3: +24%（每 module 独立贡献 ≥24%）
+  - −M3 在 h=64 +26% — SVGP 长 horizon 优势显著
+  - MPIW：Full 8.9 vs All-off 20.4 → 模块协同使 PI 宽 2.3× 更紧
+- [x] **Module 4 专项 mixed-horizon calibration**：horizons [1..48] (~1.1 Λ times)，mean \|PICP − 0.90\|：Lyap 0.052 vs Split 0.074 (**30% 改善**)，Split 呈 0.99→0.82 单调 undercover 漂移
+- [ ] **D1** 正式 Phase Transition 主图（Lorenz96 + KS + 更多 methods）
+- [ ] **D2** Coverage Across Harshness（Figure 2）
+- [ ] **D3** Horizon × Coverage 曲线
+- [ ] **D4** Horizon × PI Width 曲线
+- [ ] **D5** Reliability diagram pre/post conformal
+- [ ] **D6** MI-Lyap τ 稳定性 vs noise 扫描
+- [ ] **D7** τ 矩阵低秩奇异值谱图
+- [ ] **D8** SVGP scaling curve
+- [ ] **D9** EEG case study
+- [ ] **D11** dysts 20 系统 benchmark
+- [ ] **D12** Foundation model 大 PK（Panda / FIM 需接入）
+- [ ] **D13** 极端 harshness sharp summary
+
+### E. 写作 — 基础文档已有，论文正文未写
+
+- [x] [tech.md](tech.md)：v2 完整方案 1047 行
+- [x] [PROGRESS.md](PROGRESS.md)：本文件，扁平任务清单
+- [x] [ABLATION.md](experiments/week2_modules/ABLATION.md)：4-Module 消融汇总
+- [x] 3 份 session_notes 归档日志（`2026-04-21_*`）
+- [ ] Paper Introduction
+- [ ] Paper Related Work
+- [ ] Paper Method
+- [ ] Paper Theory section
+- [ ] Paper Experiments
+- [ ] Paper Discussion
+- [ ] Paper Appendix
+
+### F. 投稿 — 未到阶段
+
+所有 F 项（NeurIPS/UAI/ICLR/AISTATS/Workshop）均为结稿后动作，目前未到时间点。
+
+---
+
+## 三、累计关键数字（可直接引用）
+
+| 指标 | 数值 | 证据文件 |
+|---|---|---|
+| Phase transition drop（parrot, Lorenz63 S2→S3） | **95%**（VPT 1.58→0.08 Λ times） | [results/pt_v2_multibase_n5_small.json](experiments/week1/results/pt_v2_multibase_n5_small.json) |
+| Chronos-T5 在 clean Lorenz63 上 VPT 上限 | 0.83 Λ times（categorically weak） | 同上 |
+| Full pipeline vs v1-like baseline NRMSE 差距（S3 h=1） | **+104%**（0.760 vs 0.373） | [results/ablation_S3_n3.json](experiments/week2_modules/results/ablation_S3_n3.json) |
+| MPIW 改善（S3 h=1） | **2.3×**（20.4 → 8.9） | 同上 |
+| Lyap-CP vs Split-CP miscalibration 改善 | **30% 低** mean \|PICP − 0.90\| | [results/module4_horizon_cal_S3_n3.json](experiments/week2_modules/results/module4_horizon_cal_S3_n3.json) |
+
+---
+
+## 四、已识别限制 & 待修
+
+| 问题 | 影响 | 解决方案 |
+|---|---|---|
+| Lyap-CP 的 `exp(λh·dt)` 在 h > 1 Λ 时 over-predict | Module 4 在长 horizon 出现 overcoverage | 改 saturating growth：`min(exp(λh·dt), C_max)` 或 `sqrt(exp(·))` |
+| `nolds.lyap_r` 在噪声数据上估 λ 过高 4× | 会让 Lyap-CP 失准（需用真 λ 做 demo） | 写一个 noise-robust λ 估计（local Lyap 的中位数 + 带宽调整） |
+| M1 目前只是 AR-Kalman surrogate | 真 CSDI 训练的增益未体现 | 走 CSDI Transformer 改造（给 denoising net 加 σ embedding + delay-aware mask），diffusion 训 4–8 小时 |
+| MI-Lyap 未做低秩 CMA-ES 版 | Lorenz96 高维场景缺方法 | tech.md Module 2.3 Stage B 代码已列，实现 <200 行 |
+| Panda / FIM foundation models 未接入 | Phase Transition 主图缺关键 baseline | HuggingFace load；Panda 从 GilpinLab repo 或自训 |
+| Lorenz96 / KS 数据生成器未写 | 高维 + 偏微分场景缺基础 | `dysts` 现成；KS 用 `scipy.integrate.solve_ivp` |
+| Theorem 1 / Proposition 1,2 formal 证明 | 理论章节空缺 | 写论文时按 tech.md 附录 sketch 展开 |
+| VPT 在长 horizon saturate 到 0 | 长 h 下指标失效 | 改用 NRMSE 或 correlation-dim error 作为长 h 指标 |
+
+---
+
+## 五、风险 & 概率评估（基于已做工作更新）
+
+| 风险 | tech.md 原评估 | 当前评估 |
+|---|:-:|:-:|
+| Phase transition pilot 失败 | 未知 | **已消解**（parrot 95% drop 已复现） |
+| Panda 在 sparse 下没崩 | 30% | ≤20%（parrot 已崩 → 同类方法应同命运） |
+| MI-Lyap 没明显优于 Fraser-Swinney | 40% | 有轻微优势（S3 h=1 NRMSE 0.373 vs 0.491，24% 差距），但需更多场景验证 |
+| Dynamics-Aware CSDI 训练不稳定 | 30% | 不变（未训） |
+| 理论证不出严格版 | 70% | 不变（未写） |
+| 时间不够 | 50% | 降：已完成约 30% 实验工作量 |
+| Chronos 不够锋利做 baseline（新增） | — | **存在**：必须接 Panda 做主对比 |
+| Lyap-CP 在长 h 过度保守（新增） | — | **已识别**：saturating growth 是直接 fix |
+
+---
+
+## 六、投稿可能性估计（Phase transition 成立后）
+
+基于 W1 pilot 证据保留 v2 锋利 story 的前提下：
+
+| 目标 | 原 v1 概率 | v2 目标 | 当前估计 |
 |---|:-:|:-:|:-:|
-| NeurIPS/ICLR | 25-35% | 40-50% | **40-50%** |
-| ICML | 25-35% | 35-45% | 35-45% |
-| UAI | 50-60% | 60-70% | 60-70% |
+| NeurIPS / ICLR main | 25–35% | 40–50% | **40–50%** |
+| ICML | 25–35% | 35–45% | 35–45% |
+| UAI | 50–60% | 60–70% | 60–70% |
 | AISTATS | 60% | 60% | 60% |
+| Workshop（至少一个） | 90% | 95% | **95%** |
+
+---
+
+## 附录：Git 提交里程碑
+
+```
+5aa329a  W2 跨越式 — 四大技术 module 实现 + 消融实验（当前）
+14228c0  新增 CSDI-PRO/PROGRESS.md 项目进度总览
+4a493ea  W1 Phase Transition pilot 验证 v2 锋利 story 可行
+d9a7c6c  CSDI-PRO 工作空间初始化
+```
+
+## 附录：关键会话记录
+
+```
+session_notes/2026-04-21_csdi_pro_v2_week1.md
+    W1 Day 1-2 环境 + Day 6-7 Phase Transition pilot 全细节
+
+session_notes/2026-04-21_csdi_pro_v2_week2_modules_ablation.md
+    W2 四 module 实现 + 消融实验完整归档
+
+session_notes/2026-04-21_innovation_directions_survey.md
+    v1→v2 之前的文献调研（推荐路径 1-3）
+```
