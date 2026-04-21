@@ -28,13 +28,14 @@ FIG_DIR = REPO_ROOT / "experiments" / "week1" / "figures"
 
 METHOD_LABEL = {
     "ours":    "Ours (full v2 pipeline)",
+    "panda":   "Panda-72M (zero-shot)",
     "parrot":  "Context parroting (2025)",
     "chronos": "Chronos-T5-small (zero-shot)",
     "persist": "Persist-last",
 }
-COLORS = {"ours": "#1b9e77", "parrot": "#0868ac", "chronos": "#d95f02", "persist": "#999999"}
-LW = {"ours": 2.6, "parrot": 1.8, "chronos": 1.5, "persist": 1.2}
-MARKERS = {"ours": "D", "parrot": "s", "chronos": "o", "persist": "x"}
+COLORS = {"ours": "#1b9e77", "panda": "#9467bd", "parrot": "#0868ac", "chronos": "#d95f02", "persist": "#999999"}
+LW = {"ours": 2.6, "panda": 2.0, "parrot": 1.8, "chronos": 1.5, "persist": 1.2}
+MARKERS = {"ours": "D", "panda": "^", "parrot": "s", "chronos": "o", "persist": "x"}
 
 
 def find_phase_transition_scenario(summary: dict, method: str = "parrot") -> str | None:
@@ -63,7 +64,7 @@ def make_table(records: list[dict], scenario_order: list[str]) -> str:
         per_cell[k]["vpt03"].append(r["vpt03"])
         per_cell[k]["rmse"].append(r["rmse_norm_first100"])
 
-    methods = ["ours", "parrot", "chronos", "persist"]
+    methods = ["ours", "panda", "parrot", "chronos", "persist"]
     lines = ["| Method | " + " | ".join(scenario_order) + " |"]
     lines.append("| --- | " + " | ".join("---" for _ in scenario_order) + " |")
     for m in methods:
@@ -79,7 +80,7 @@ def make_table(records: list[dict], scenario_order: list[str]) -> str:
 
 
 def plot_phase_transition(summary: dict, scenario_order: list[str], fig_path: Path) -> None:
-    methods = [m for m in ["ours", "parrot", "chronos", "persist"] if m in summary]
+    methods = [m for m in ["ours", "panda", "parrot", "chronos", "persist"] if m in summary]
     keep_fracs = [summary[methods[0]][s]["keep_mean"] for s in scenario_order]
     noise_fracs = [summary[methods[0]][s]["noise_std_frac"] for s in scenario_order]
     pt_scenario = find_phase_transition_scenario(summary, method="parrot")
@@ -168,7 +169,7 @@ def main():
         ours_min = min(summary["ours"][s]["vpt10_mean"] for s in scenario_order)
         others_max_crash = max(
             summary[m][scenario_order[-1]]["vpt10_mean"]
-            for m in ["parrot", "chronos", "persist"] if m in summary
+            for m in ["panda", "parrot", "chronos", "persist"] if m in summary
         )
         print(f"[verdict] ours min VPT@1.0 across all scenarios: {ours_min:.2f}")
         print(f"[verdict] others at hardest scenario: max={others_max_crash:.2f}")

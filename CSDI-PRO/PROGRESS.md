@@ -92,7 +92,7 @@
 - [x] **A3** `make_sparse_noisy` + 1-D mask 广播
 - [x] **A4** UQ 指标完整（CRPS、PICP、MPIW、Winkler、reliability curve、ECE）
 - [x] **A5** 混沌指标基本完整（VPT 多阈值、NRMSE）；correlation dim error 未做
-- [x] **A6** Chronos-T5 {small/base/large} 可加载推理；**Panda-72M 权重已下载**（`baselines/panda-72M/`，274MB safetensors in gitignore），arch 已照 state_dict keys 手写于 [baselines/panda_model.py](baselines/panda_model.py)，71.6M params 加载 OK；**但 zero-shot 功能上失败（h=1 NRMSE ~0.80，应 < 0.1）**：layer-0 attention std 爆炸 3000×，怀疑 Panda 有 QK-norm 或其他 custom scaling，不开源无法确认——**需 `git clone https://github.com/abao1999/panda` 后续从他们代码加载权重**；FIM 未接入
+- [x] **A6** Chronos-T5 {small/base/large} + **Panda-72M（zero-shot）已接入**：用户 clone 了 `github.com/abao1999/panda` 到 `/home/rhl/Github/panda-src`，用 [baselines/panda_adapter.py](baselines/panda_adapter.py) 通过 `sys.path` import（不 pip install，避开 transformers==4.40.2 锁）。clean Lorenz63 h=1 NRMSE **0.022**（之前自写 reimpl 失败的 0.80 → 0.022，36× 改善）。FIM 未接入
 - [x] **A7** v1 的 `csdi/` / `rde_delay/` / `gpr/` 模块已原地保留，可按需 import
 - [x] **A8** 多面板对比图 + phase transition 曲线 + reliability 画板子已就绪
 
@@ -131,6 +131,14 @@
   - Chronos-T5-small: 0.83→1.01→**0.67→0.36→0.05**→0.00→0.07（S0 已输 parrot / ours，S4 以上完全崩）
   - **S2-S4 窗口是 paper 焦点**：ours 2.2×-5× 所有 baseline，所有基线都 crisp transition 过了，ours 平滑
   - 产出：[results/pt_v2_with_ours_n5_small.json](experiments/week1/results/pt_v2_with_ours_n5_small.json) + [figures/pt_v2_with_ours_n5_small_paperfig.png](experiments/week1/figures/pt_v2_with_ours_n5_small_paperfig.png)
+- [x] **Phase Transition + Panda-72M**（D1 候选正图 + Foundation model PK）：加入 Panda zero-shot，Lorenz63 × 7 harshness × **5 methods** × 5 seeds，**paper 主图候选**
+  - S0-S1（干净）：Panda 2.90 / 1.67 领先（foundation model home turf），ours 1.73 / 1.11 紧随
+  - S2（转换边界）：parrot 0.97 ≈ ours 0.94 ≈ panda 0.80，三强相持
+  - **S3（sparsity 0.6 + σ=0.5）**：ours **0.92**，panda 0.42（**-85%** vs S0），parrot 0.13（-92%），chronos 0.47——**foundation models 和 parrot 全部 phase-transition，ours 几乎不降**
+  - S4-S5：ours 0.26 / 0.17 独一档，所有 baseline ≤ 0.07
+  - S6：全员归零（σ=1.5 的 noise floor）
+  - **最锋利的比较点 S3**：ours 比 panda 高 2.2×，比 parrot 高 **7×**——v2 的 "graceful vs phase transition" story 在 panda 面前仍然成立
+  - 产出：[results/pt_v2_with_panda_n5_small.{json,md}](experiments/week1/results/) + [figures/pt_v2_with_panda_n5_small_paperfig.png](experiments/week1/figures/pt_v2_with_panda_n5_small_paperfig.png)
 - [x] **D10 4-Module 消融表 v1**：Lorenz63 S2/S3 × 3 seeds × 7 configs × 4 horizons
 - [x] **D10 4-Module 消融表 v2**（升级）：新增 Lyap-empirical + m4-lyap-exp 两个配置；使用 robust_lyapunov
   - Full NRMSE h=1 = 0.373；All-off（≈ v1）= 0.760 (**+104%**)

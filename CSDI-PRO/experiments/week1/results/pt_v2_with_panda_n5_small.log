@@ -1,0 +1,294 @@
+[pilot] device=cuda model=amazon/chronos-t5-small n_seeds=5 n_ctx=512 pred_len=128 dt=0.025 methods=['ours', 'panda', 'chronos', 'parrot', 'persist']
+  seed=0 S0 ours     keep=1.00 σ=0.00  VPT@0.3= 1.00  VPT@1.0= 2.31  rmse/std=0.282  t=13.0s
+/home/rhl/miniconda3/lib/python3.12/site-packages/gluonts/json.py:102: UserWarning: Using `json`-module for json-handling. Consider installing one of `orjson`, `ujson` to speed up serialization and deserialization.
+  warnings.warn(
+  seed=0 S0 panda    keep=1.00 σ=0.00  VPT@0.3= 2.90  VPT@1.0= 2.90  rmse/std=0.069  t=0.9s
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+  seed=0 S0 chronos  keep=1.00 σ=0.00  VPT@0.3= 0.25  VPT@1.0= 1.04  rmse/std=0.986  t=3.2s
+  seed=0 S0 parrot   keep=1.00 σ=0.00  VPT@0.3= 0.97  VPT@1.0= 1.11  rmse/std=0.649  t=0.0s
+  seed=0 S0 persist  keep=1.00 σ=0.00  VPT@0.3= 0.07  VPT@1.0= 0.29  rmse/std=0.973  t=0.0s
+  seed=0 S1 ours     keep=0.82 σ=0.10  VPT@0.3= 0.93  VPT@1.0= 1.11  rmse/std=0.398  t=13.2s
+  seed=0 S1 panda    keep=0.82 σ=0.10  VPT@0.3= 0.95  VPT@1.0= 2.38  rmse/std=0.351  t=0.0s
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+  seed=0 S1 chronos  keep=0.82 σ=0.10  VPT@0.3= 0.18  VPT@1.0= 0.39  rmse/std=0.924  t=3.1s
+  seed=0 S1 parrot   keep=0.82 σ=0.10  VPT@0.3= 0.11  VPT@1.0= 1.11  rmse/std=0.767  t=0.0s
+  seed=0 S1 persist  keep=0.82 σ=0.10  VPT@0.3= 0.02  VPT@1.0= 0.25  rmse/std=0.994  t=0.0s
+  seed=0 S2 ours     keep=0.61 σ=0.30  VPT@0.3= 0.84  VPT@1.0= 0.97  rmse/std=0.656  t=13.5s
+  seed=0 S2 panda    keep=0.61 σ=0.30  VPT@0.3= 0.00  VPT@1.0= 0.93  rmse/std=0.908  t=0.0s
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+  seed=0 S2 chronos  keep=0.61 σ=0.30  VPT@0.3= 0.00  VPT@1.0= 0.23  rmse/std=0.987  t=3.0s
+  seed=0 S2 parrot   keep=0.61 σ=0.30  VPT@0.3= 0.00  VPT@1.0= 1.06  rmse/std=1.044  t=0.0s
+  seed=0 S2 persist  keep=0.61 σ=0.30  VPT@0.3= 0.00  VPT@1.0= 0.20  rmse/std=1.071  t=0.0s
+  seed=0 S3 ours     keep=0.41 σ=0.50  VPT@0.3= 0.23  VPT@1.0= 1.06  rmse/std=0.489  t=13.7s
+  seed=0 S3 panda    keep=0.41 σ=0.50  VPT@0.3= 0.25  VPT@1.0= 0.36  rmse/std=0.882  t=0.0s
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+  seed=0 S3 chronos  keep=0.41 σ=0.50  VPT@0.3= 0.00  VPT@1.0= 0.09  rmse/std=1.131  t=3.0s
+  seed=0 S3 parrot   keep=0.41 σ=0.50  VPT@0.3= 0.00  VPT@1.0= 0.09  rmse/std=1.309  t=0.0s
+  seed=0 S3 persist  keep=0.41 σ=0.50  VPT@0.3= 0.00  VPT@1.0= 0.23  rmse/std=1.059  t=0.0s
+  seed=0 S4 ours     keep=0.23 σ=0.80  VPT@0.3= 0.00  VPT@1.0= 0.18  rmse/std=1.107  t=13.7s
+  seed=0 S4 panda    keep=0.23 σ=0.80  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=0.923  t=0.0s
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+  seed=0 S4 chronos  keep=0.23 σ=0.80  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=1.158  t=3.0s
+  seed=0 S4 parrot   keep=0.23 σ=0.80  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=1.795  t=0.0s
+  seed=0 S4 persist  keep=0.23 σ=0.80  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=1.293  t=0.0s
+  seed=0 S5 ours     keep=0.09 σ=1.20  VPT@0.3= 0.11  VPT@1.0= 0.34  rmse/std=0.977  t=13.6s
+  seed=0 S5 panda    keep=0.09 σ=1.20  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=1.031  t=0.0s
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+  seed=0 S5 chronos  keep=0.09 σ=1.20  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=1.283  t=3.0s
+  seed=0 S5 parrot   keep=0.09 σ=1.20  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=1.502  t=0.0s
+  seed=0 S5 persist  keep=0.09 σ=1.20  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=1.584  t=0.0s
+  seed=0 S6 ours     keep=0.05 σ=1.50  VPT@0.3= 0.00  VPT@1.0= 0.29  rmse/std=1.171  t=13.4s
+  seed=0 S6 panda    keep=0.05 σ=1.50  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=1.311  t=0.0s
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+  seed=0 S6 chronos  keep=0.05 σ=1.50  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=1.460  t=3.0s
+  seed=0 S6 parrot   keep=0.05 σ=1.50  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=1.511  t=0.0s
+  seed=0 S6 persist  keep=0.05 σ=1.50  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=1.389  t=0.0s
+  seed=1 S0 ours     keep=1.00 σ=0.00  VPT@0.3= 0.95  VPT@1.0= 1.68  rmse/std=0.974  t=12.6s
+  seed=1 S0 panda    keep=1.00 σ=0.00  VPT@0.3= 2.56  VPT@1.0= 2.90  rmse/std=0.070  t=0.0s
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+  seed=1 S0 chronos  keep=1.00 σ=0.00  VPT@0.3= 0.27  VPT@1.0= 0.43  rmse/std=0.857  t=3.0s
+  seed=1 S0 parrot   keep=1.00 σ=0.00  VPT@0.3= 0.36  VPT@1.0= 0.52  rmse/std=0.483  t=0.0s
+  seed=1 S0 persist  keep=1.00 σ=0.00  VPT@0.3= 0.05  VPT@1.0= 0.27  rmse/std=1.021  t=0.0s
+  seed=1 S1 ours     keep=0.79 σ=0.10  VPT@0.3= 0.39  VPT@1.0= 0.54  rmse/std=1.172  t=12.9s
+  seed=1 S1 panda    keep=0.79 σ=0.10  VPT@0.3= 0.36  VPT@1.0= 0.48  rmse/std=0.493  t=0.0s
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+  seed=1 S1 chronos  keep=0.79 σ=0.10  VPT@0.3= 0.23  VPT@1.0= 0.39  rmse/std=0.899  t=3.0s
+  seed=1 S1 parrot   keep=0.79 σ=0.10  VPT@0.3= 0.23  VPT@1.0= 0.36  rmse/std=1.625  t=0.0s
+  seed=1 S1 persist  keep=0.79 σ=0.10  VPT@0.3= 0.05  VPT@1.0= 0.29  rmse/std=1.037  t=0.0s
+  seed=1 S2 ours     keep=0.60 σ=0.30  VPT@0.3= 0.82  VPT@1.0= 1.09  rmse/std=1.005  t=13.5s
+  seed=1 S2 panda    keep=0.60 σ=0.30  VPT@0.3= 0.16  VPT@1.0= 0.36  rmse/std=1.086  t=0.0s
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+  seed=1 S2 chronos  keep=0.60 σ=0.30  VPT@0.3= 0.20  VPT@1.0= 0.29  rmse/std=1.042  t=3.0s
+  seed=1 S2 parrot   keep=0.60 σ=0.30  VPT@0.3= 0.00  VPT@1.0= 0.25  rmse/std=1.153  t=0.0s
+  seed=1 S2 persist  keep=0.60 σ=0.30  VPT@0.3= 0.00  VPT@1.0= 0.18  rmse/std=1.105  t=0.0s
+  seed=1 S3 ours     keep=0.40 σ=0.50  VPT@0.3= 0.09  VPT@1.0= 0.34  rmse/std=1.087  t=13.0s
+  seed=1 S3 panda    keep=0.40 σ=0.50  VPT@0.3= 0.00  VPT@1.0= 0.36  rmse/std=0.940  t=0.0s
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+  seed=1 S3 chronos  keep=0.40 σ=0.50  VPT@0.3= 0.00  VPT@1.0= 0.34  rmse/std=0.966  t=3.2s
+  seed=1 S3 parrot   keep=0.40 σ=0.50  VPT@0.3= 0.00  VPT@1.0= 0.32  rmse/std=1.204  t=0.0s
+  seed=1 S3 persist  keep=0.40 σ=0.50  VPT@0.3= 0.00  VPT@1.0= 0.48  rmse/std=1.203  t=0.0s
+  seed=1 S4 ours     keep=0.23 σ=0.80  VPT@0.3= 0.07  VPT@1.0= 0.45  rmse/std=1.091  t=13.8s
+  seed=1 S4 panda    keep=0.23 σ=0.80  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=1.007  t=0.0s
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+  seed=1 S4 chronos  keep=0.23 σ=0.80  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=1.184  t=3.0s
+  seed=1 S4 parrot   keep=0.23 σ=0.80  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=1.518  t=0.0s
+  seed=1 S4 persist  keep=0.23 σ=0.80  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=1.703  t=0.0s
+  seed=1 S5 ours     keep=0.11 σ=1.20  VPT@0.3= 0.07  VPT@1.0= 0.39  rmse/std=1.080  t=13.8s
+  seed=1 S5 panda    keep=0.11 σ=1.20  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=1.162  t=0.0s
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+  seed=1 S5 chronos  keep=0.11 σ=1.20  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=1.315  t=3.0s
+  seed=1 S5 parrot   keep=0.11 σ=1.20  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=1.630  t=0.0s
+  seed=1 S5 persist  keep=0.11 σ=1.20  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=2.151  t=0.0s
+  seed=1 S6 ours     keep=0.06 σ=1.50  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=1.827  t=12.7s
+  seed=1 S6 panda    keep=0.06 σ=1.50  VPT@0.3= 0.00  VPT@1.0= 0.43  rmse/std=0.889  t=0.0s
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+  seed=1 S6 chronos  keep=0.06 σ=1.50  VPT@0.3= 0.00  VPT@1.0= 0.29  rmse/std=1.156  t=3.0s
+  seed=1 S6 parrot   keep=0.06 σ=1.50  VPT@0.3= 0.00  VPT@1.0= 0.48  rmse/std=1.690  t=0.0s
+  seed=1 S6 persist  keep=0.06 σ=1.50  VPT@0.3= 0.00  VPT@1.0= 0.25  rmse/std=1.267  t=0.0s
+  seed=2 S0 ours     keep=1.00 σ=0.00  VPT@0.3= 0.05  VPT@1.0= 0.63  rmse/std=1.312  t=13.1s
+  seed=2 S0 panda    keep=1.00 σ=0.00  VPT@0.3= 2.83  VPT@1.0= 2.90  rmse/std=0.089  t=0.0s
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+  seed=2 S0 chronos  keep=1.00 σ=0.00  VPT@0.3= 0.07  VPT@1.0= 0.16  rmse/std=0.980  t=3.0s
+  seed=2 S0 parrot   keep=1.00 σ=0.00  VPT@0.3= 0.16  VPT@1.0= 0.75  rmse/std=1.054  t=0.0s
+  seed=2 S0 persist  keep=1.00 σ=0.00  VPT@0.3= 0.05  VPT@1.0= 0.11  rmse/std=1.463  t=0.0s
+  seed=2 S1 ours     keep=0.76 σ=0.10  VPT@0.3= 0.05  VPT@1.0= 0.59  rmse/std=1.373  t=13.7s
+  seed=2 S1 panda    keep=0.76 σ=0.10  VPT@0.3= 0.14  VPT@1.0= 1.43  rmse/std=0.689  t=0.0s
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+  seed=2 S1 chronos  keep=0.76 σ=0.10  VPT@0.3= 0.05  VPT@1.0= 0.11  rmse/std=1.268  t=3.0s
+  seed=2 S1 parrot   keep=0.76 σ=0.10  VPT@0.3= 0.11  VPT@1.0= 0.70  rmse/std=1.186  t=0.0s
+  seed=2 S1 persist  keep=0.76 σ=0.10  VPT@0.3= 0.05  VPT@1.0= 0.11  rmse/std=1.479  t=0.0s
+  seed=2 S2 ours     keep=0.57 σ=0.30  VPT@0.3= 0.05  VPT@1.0= 0.14  rmse/std=1.416  t=13.6s
+  seed=2 S2 panda    keep=0.57 σ=0.30  VPT@0.3= 0.11  VPT@1.0= 0.77  rmse/std=0.877  t=0.0s
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+  seed=2 S2 chronos  keep=0.57 σ=0.30  VPT@0.3= 0.02  VPT@1.0= 0.09  rmse/std=1.256  t=3.2s
+  seed=2 S2 parrot   keep=0.57 σ=0.30  VPT@0.3= 0.07  VPT@1.0= 0.72  rmse/std=1.091  t=0.0s
+  seed=2 S2 persist  keep=0.57 σ=0.30  VPT@0.3= 0.05  VPT@1.0= 0.11  rmse/std=1.443  t=0.0s
+  seed=2 S3 ours     keep=0.41 σ=0.50  VPT@0.3= 0.00  VPT@1.0= 0.05  rmse/std=1.531  t=12.5s
+  seed=2 S3 panda    keep=0.41 σ=0.50  VPT@0.3= 0.00  VPT@1.0= 0.05  rmse/std=1.170  t=0.0s
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+  seed=2 S3 chronos  keep=0.41 σ=0.50  VPT@0.3= 0.00  VPT@1.0= 0.02  rmse/std=1.103  t=3.0s
+  seed=2 S3 parrot   keep=0.41 σ=0.50  VPT@0.3= 0.00  VPT@1.0= 0.02  rmse/std=1.597  t=0.0s
+  seed=2 S3 persist  keep=0.41 σ=0.50  VPT@0.3= 0.00  VPT@1.0= 0.02  rmse/std=1.271  t=0.0s
+  seed=2 S4 ours     keep=0.24 σ=0.80  VPT@0.3= 0.00  VPT@1.0= 0.14  rmse/std=1.261  t=13.7s
+  seed=2 S4 panda    keep=0.24 σ=0.80  VPT@0.3= 0.00  VPT@1.0= 0.11  rmse/std=1.021  t=0.0s
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+  seed=2 S4 chronos  keep=0.24 σ=0.80  VPT@0.3= 0.00  VPT@1.0= 0.11  rmse/std=1.065  t=3.0s
+  seed=2 S4 parrot   keep=0.24 σ=0.80  VPT@0.3= 0.00  VPT@1.0= 0.11  rmse/std=1.534  t=0.0s
+  seed=2 S4 persist  keep=0.24 σ=0.80  VPT@0.3= 0.00  VPT@1.0= 0.14  rmse/std=1.303  t=0.0s
+  seed=2 S5 ours     keep=0.11 σ=1.20  VPT@0.3= 0.00  VPT@1.0= 0.07  rmse/std=1.139  t=12.9s
+  seed=2 S5 panda    keep=0.11 σ=1.20  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=1.104  t=0.0s
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+  seed=2 S5 chronos  keep=0.11 σ=1.20  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=1.061  t=3.0s
+  seed=2 S5 parrot   keep=0.11 σ=1.20  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=1.533  t=0.0s
+  seed=2 S5 persist  keep=0.11 σ=1.20  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=1.232  t=0.0s
+  seed=2 S6 ours     keep=0.03 σ=1.50  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=1.579  t=12.3s
+  seed=2 S6 panda    keep=0.03 σ=1.50  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=2.500  t=0.0s
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+  seed=2 S6 chronos  keep=0.03 σ=1.50  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=2.514  t=3.0s
+  seed=2 S6 parrot   keep=0.03 σ=1.50  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=2.251  t=0.0s
+  seed=2 S6 persist  keep=0.03 σ=1.50  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=2.915  t=0.0s
+  seed=3 S0 ours     keep=1.00 σ=0.00  VPT@0.3= 2.58  VPT@1.0= 2.72  rmse/std=0.077  t=13.1s
+  seed=3 S0 panda    keep=1.00 σ=0.00  VPT@0.3= 2.88  VPT@1.0= 2.90  rmse/std=0.049  t=0.0s
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+  seed=3 S0 chronos  keep=1.00 σ=0.00  VPT@0.3= 0.18  VPT@1.0= 1.29  rmse/std=0.888  t=3.0s
+  seed=3 S0 parrot   keep=1.00 σ=0.00  VPT@0.3= 1.93  VPT@1.0= 2.90  rmse/std=0.265  t=0.0s
+  seed=3 S0 persist  keep=1.00 σ=0.00  VPT@0.3= 0.05  VPT@1.0= 0.16  rmse/std=0.827  t=0.0s
+  seed=3 S1 ours     keep=0.80 σ=0.10  VPT@0.3= 1.95  VPT@1.0= 2.08  rmse/std=0.332  t=13.1s
+  seed=3 S1 panda    keep=0.80 σ=0.10  VPT@0.3= 1.38  VPT@1.0= 2.79  rmse/std=0.261  t=0.0s
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+  seed=3 S1 chronos  keep=0.80 σ=0.10  VPT@0.3= 0.59  VPT@1.0= 1.34  rmse/std=1.006  t=3.0s
+  seed=3 S1 parrot   keep=0.80 σ=0.10  VPT@0.3= 0.02  VPT@1.0= 2.06  rmse/std=0.547  t=0.0s
+  seed=3 S1 persist  keep=0.80 σ=0.10  VPT@0.3= 0.02  VPT@1.0= 0.14  rmse/std=0.836  t=0.0s
+  seed=3 S2 ours     keep=0.61 σ=0.30  VPT@0.3= 0.11  VPT@1.0= 1.29  rmse/std=1.038  t=13.8s
+  seed=3 S2 panda    keep=0.61 σ=0.30  VPT@0.3= 0.00  VPT@1.0= 0.66  rmse/std=0.957  t=0.0s
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+  seed=3 S2 chronos  keep=0.61 σ=0.30  VPT@0.3= 0.00  VPT@1.0= 0.70  rmse/std=0.860  t=3.0s
+  seed=3 S2 parrot   keep=0.61 σ=0.30  VPT@0.3= 0.00  VPT@1.0= 2.06  rmse/std=0.707  t=0.0s
+  seed=3 S2 persist  keep=0.61 σ=0.30  VPT@0.3= 0.00  VPT@1.0= 0.11  rmse/std=0.829  t=0.0s
+  seed=3 S3 ours     keep=0.39 σ=0.50  VPT@0.3= 0.00  VPT@1.0= 1.34  rmse/std=0.940  t=9.6s
+  seed=3 S3 panda    keep=0.39 σ=0.50  VPT@0.3= 0.00  VPT@1.0= 0.72  rmse/std=0.768  t=0.0s
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+  seed=3 S3 chronos  keep=0.39 σ=0.50  VPT@0.3= 0.00  VPT@1.0= 1.34  rmse/std=0.958  t=3.0s
+  seed=3 S3 parrot   keep=0.39 σ=0.50  VPT@0.3= 0.00  VPT@1.0= 0.11  rmse/std=1.485  t=0.0s
+  seed=3 S3 persist  keep=0.39 σ=0.50  VPT@0.3= 0.00  VPT@1.0= 0.86  rmse/std=0.905  t=0.0s
+  seed=3 S4 ours     keep=0.31 σ=0.80  VPT@0.3= 0.00  VPT@1.0= 0.54  rmse/std=0.873  t=12.0s
+  seed=3 S4 panda    keep=0.31 σ=0.80  VPT@0.3= 0.00  VPT@1.0= 0.18  rmse/std=0.905  t=0.0s
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+  seed=3 S4 chronos  keep=0.31 σ=0.80  VPT@0.3= 0.00  VPT@1.0= 0.18  rmse/std=0.955  t=3.0s
+  seed=3 S4 parrot   keep=0.31 σ=0.80  VPT@0.3= 0.00  VPT@1.0= 0.23  rmse/std=1.477  t=0.0s
+  seed=3 S4 persist  keep=0.31 σ=0.80  VPT@0.3= 0.00  VPT@1.0= 2.08  rmse/std=0.743  t=0.0s
+  seed=3 S5 ours     keep=0.11 σ=1.20  VPT@0.3= 0.00  VPT@1.0= 0.05  rmse/std=0.918  t=13.8s
+  seed=3 S5 panda    keep=0.11 σ=1.20  VPT@0.3= 0.00  VPT@1.0= 0.11  rmse/std=1.135  t=0.0s
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+  seed=3 S5 chronos  keep=0.11 σ=1.20  VPT@0.3= 0.00  VPT@1.0= 0.11  rmse/std=1.034  t=3.0s
+  seed=3 S5 parrot   keep=0.11 σ=1.20  VPT@0.3= 0.00  VPT@1.0= 0.09  rmse/std=1.394  t=0.0s
+  seed=3 S5 persist  keep=0.11 σ=1.20  VPT@0.3= 0.00  VPT@1.0= 0.11  rmse/std=0.987  t=0.0s
+  seed=3 S6 ours     keep=0.05 σ=1.50  VPT@0.3= 0.00  VPT@1.0= 0.05  rmse/std=1.265  t=13.8s
+  seed=3 S6 panda    keep=0.05 σ=1.50  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=1.109  t=0.0s
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+  seed=3 S6 chronos  keep=0.05 σ=1.50  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=0.970  t=3.0s
+  seed=3 S6 parrot   keep=0.05 σ=1.50  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=1.866  t=0.0s
+  seed=3 S6 persist  keep=0.05 σ=1.50  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=1.286  t=0.0s
+  seed=4 S0 ours     keep=1.00 σ=0.00  VPT@0.3= 1.16  VPT@1.0= 1.31  rmse/std=0.845  t=13.0s
+  seed=4 S0 panda    keep=1.00 σ=0.00  VPT@0.3= 2.90  VPT@1.0= 2.90  rmse/std=0.043  t=0.0s
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+  seed=4 S0 chronos  keep=1.00 σ=0.00  VPT@0.3= 1.06  VPT@1.0= 1.25  rmse/std=1.000  t=3.0s
+  seed=4 S0 parrot   keep=1.00 σ=0.00  VPT@0.3= 0.50  VPT@1.0= 2.60  rmse/std=0.373  t=0.0s
+  seed=4 S0 persist  keep=1.00 σ=0.00  VPT@0.3= 0.02  VPT@1.0= 0.16  rmse/std=1.489  t=0.0s
+  seed=4 S1 ours     keep=0.82 σ=0.10  VPT@0.3= 1.09  VPT@1.0= 1.25  rmse/std=1.254  t=13.1s
+  seed=4 S1 panda    keep=0.82 σ=0.10  VPT@0.3= 1.13  VPT@1.0= 1.27  rmse/std=0.634  t=0.0s
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+  seed=4 S1 chronos  keep=0.82 σ=0.10  VPT@0.3= 0.50  VPT@1.0= 1.20  rmse/std=1.042  t=3.1s
+  seed=4 S1 parrot   keep=0.82 σ=0.10  VPT@0.3= 0.20  VPT@1.0= 1.20  rmse/std=1.349  t=0.0s
+  seed=4 S1 persist  keep=0.82 σ=0.10  VPT@0.3= 0.02  VPT@1.0= 0.18  rmse/std=1.482  t=0.0s
+  seed=4 S2 ours     keep=0.58 σ=0.30  VPT@0.3= 0.48  VPT@1.0= 1.20  rmse/std=1.319  t=13.9s
+  seed=4 S2 panda    keep=0.58 σ=0.30  VPT@0.3= 0.09  VPT@1.0= 1.27  rmse/std=0.812  t=0.0s
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+  seed=4 S2 chronos  keep=0.58 σ=0.30  VPT@0.3= 0.00  VPT@1.0= 0.57  rmse/std=0.962  t=3.2s
+  seed=4 S2 parrot   keep=0.58 σ=0.30  VPT@0.3= 0.00  VPT@1.0= 0.77  rmse/std=1.159  t=0.0s
+  seed=4 S2 persist  keep=0.58 σ=0.30  VPT@0.3= 0.00  VPT@1.0= 0.09  rmse/std=1.444  t=0.0s
+  seed=4 S3 ours     keep=0.40 σ=0.50  VPT@0.3= 0.48  VPT@1.0= 1.83  rmse/std=0.921  t=8.0s
+  seed=4 S3 panda    keep=0.40 σ=0.50  VPT@0.3= 0.00  VPT@1.0= 0.59  rmse/std=0.864  t=0.1s
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+  seed=4 S3 chronos  keep=0.40 σ=0.50  VPT@0.3= 0.00  VPT@1.0= 0.57  rmse/std=0.960  t=6.7s
+  seed=4 S3 parrot   keep=0.40 σ=0.50  VPT@0.3= 0.00  VPT@1.0= 0.09  rmse/std=1.531  t=0.0s
+  seed=4 S3 persist  keep=0.40 σ=0.50  VPT@0.3= 0.00  VPT@1.0= 0.09  rmse/std=1.875  t=0.0s
+  seed=4 S4 ours     keep=0.28 σ=0.80  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=1.063  t=8.7s
+  seed=4 S4 panda    keep=0.28 σ=0.80  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=0.938  t=0.0s
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+  seed=4 S4 chronos  keep=0.28 σ=0.80  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=0.998  t=4.4s
+  seed=4 S4 parrot   keep=0.28 σ=0.80  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=1.524  t=0.0s
+  seed=4 S4 persist  keep=0.28 σ=0.80  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=1.427  t=0.0s
+  seed=4 S5 ours     keep=0.12 σ=1.20  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=1.040  t=10.3s
+  seed=4 S5 panda    keep=0.12 σ=1.20  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=1.242  t=0.0s
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+  seed=4 S5 chronos  keep=0.12 σ=1.20  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=1.231  t=4.3s
+  seed=4 S5 parrot   keep=0.12 σ=1.20  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=1.923  t=0.0s
+  seed=4 S5 persist  keep=0.12 σ=1.20  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=1.457  t=0.0s
+  seed=4 S6 ours     keep=0.05 σ=1.50  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=1.046  t=7.9s
+  seed=4 S6 panda    keep=0.05 σ=1.50  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=1.626  t=0.0s
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+We recommend keeping prediction length <= 64. The quality of longer predictions may degrade since the model is not optimized for it. 
+  seed=4 S6 chronos  keep=0.05 σ=1.50  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=1.850  t=5.7s
+  seed=4 S6 parrot   keep=0.05 σ=1.50  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=2.168  t=0.0s
+  seed=4 S6 persist  keep=0.05 σ=1.50  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=1.885  t=0.0s
+[pilot] records saved to /home/rhl/Github/CSDI-PRO/experiments/week1/results/pt_v2_with_panda_n5_small.json
+[pilot] figure saved to /home/rhl/Github/CSDI-PRO/experiments/week1/figures/pt_v2_with_panda_n5_small.png
+
+[verdict] VPT@1.0 by (method, scenario):
+  ours      S0=1.73  S1=1.11  S2=0.94  S3=0.92  S4=0.26  S5=0.17  S6=0.07
+  panda     S0=2.90  S1=1.67  S2=0.80  S3=0.42  S4=0.06  S5=0.02  S6=0.09
+  chronos   S0=0.83  S1=0.68  S2=0.38  S3=0.47  S4=0.06  S5=0.02  S6=0.06
+  parrot    S0=1.58  S1=1.09  S2=0.97  S3=0.13  S4=0.07  S5=0.02  S6=0.10
+  persist   S0=0.20  S1=0.19  S2=0.14  S3=0.34  S4=0.44  S5=0.02  S6=0.05
+
+  -> PARROT phase transition: S0=1.58 → S3=0.13 (92% drop). v2 sharp story PLAUSIBLE via tough-to-beat baseline.
