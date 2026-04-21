@@ -154,9 +154,9 @@ class DynamicsAwareScoreNet(nn.Module):
             nn.Linear(step_dim, step_dim),
         ) if use_noise_cond else None
 
-        # inputs: data + mask + noisy value; all projected to channels
-        # layout: (B, L, 2*data_dim) -> (B, L, C)
-        self.in_proj = nn.Linear(2 * data_dim, channels)
+        # inputs: cond_part + noise_part + explicit mask; all projected to channels
+        # layout: (B, L, 3*data_dim) -> (B, L, C)
+        self.in_proj = nn.Linear(3 * data_dim, channels)
         self.blocks = nn.ModuleList([ResidualBlock(channels, step_dim, n_heads) for _ in range(n_layers)])
         self.out_norm = nn.LayerNorm(channels)
         self.out_proj = nn.Linear(channels, data_dim)
@@ -210,10 +210,10 @@ class DynamicsAwareScoreNet(nn.Module):
         sigma_obs: torch.Tensor | None = None,  # (B,)
     ) -> torch.Tensor:
         B, L, D = noisy_x.shape
-        # (B, L, 2D) input: [cond_obs * cond_mask, (1-cond_mask)*noisy_x]
+        # (B, L, 3D) input: [cond_obs * cond_mask, (locked) noisy_x, explicit cond_mask]
         cond_part = cond_obs * cond_mask
         noise_part = noisy_x * (1 - cond_mask) + cond_obs * cond_mask  # observed positions locked to obs
-        inp = torch.cat([cond_part, noise_part], dim=-1)
+        inp = torch.cat([cond_part, noise_part, cond_mask], dim=-1)
         h = self.in_proj(inp)  # (B, L, C)
 
         step_e = self.step_emb(diffusion_step)  # (B, step_dim)
@@ -444,11 +444,18 @@ class DynamicsCSDI:
         sigma_t = torch.tensor([sigma_norm], dtype=torch.float32, device=self.device)
 
         samples = torch.zeros(n_samples, T, D, device=self.device)
+        obs_mask_b = mask_t.unsqueeze(0)
+        obs_val_b = obs_t.unsqueeze(0)
         for s in range(n_samples):
+            # initialise x at ALL positions from noise, but **re-impose observed at every step**
+            # so the score network's inputs are consistent with training (noise_part at
+            # observed is always cond_obs).
             x = torch.randn_like(obs_t).unsqueeze(0)  # (1, L, D)
+            x = obs_mask_b * obs_val_b + (1 - obs_mask_b) * x  # start observed anchored
             for t in range(self.schedule.num_steps - 1, -1, -1):
                 t_t = torch.tensor([t], device=self.device)
-                pred_noise = self.net(x, obs_t.unsqueeze(0), mask_t.unsqueeze(0), t_t, sigma_obs=sigma_t if self.cfg.use_noise_cond else None)
+                pred_noise = self.net(x, obs_val_b, obs_mask_b, t_t,
+                                      sigma_obs=sigma_t if self.cfg.use_noise_cond else None)
                 alpha_hat_t = self._alpha_hat[t]
                 alpha_t = self._alpha[t]
                 coeff1 = 1.0 / alpha_hat_t.sqrt()
@@ -458,9 +465,18 @@ class DynamicsCSDI:
                     prev_alpha = self._alpha[t - 1]
                     sd = (((1 - prev_alpha) / (1 - alpha_t)) * self._beta[t]).sqrt()
                     x = x + sd * torch.randn_like(x)
-            # merge: observed positions stay fixed
-            out = mask_t * obs_t + (1 - mask_t) * x.squeeze(0)
-            samples[s] = out
+                # re-impose observed at this t: compute forward-diffused cond_obs and
+                # blend so that observed positions follow the known trajectory instead
+                # of drifting.
+                if t > 0:
+                    alpha_tm1 = self._alpha[t - 1]
+                    anchor_noise = torch.randn_like(obs_val_b)
+                    obs_at_tm1 = (alpha_tm1.sqrt() * obs_val_b
+                                  + (1 - alpha_tm1).sqrt() * anchor_noise)
+                    x = obs_mask_b * obs_at_tm1 + (1 - obs_mask_b) * x
+                else:
+                    x = obs_mask_b * obs_val_b + (1 - obs_mask_b) * x
+            samples[s] = x.squeeze(0)
         # Un-normalise back to raw attractor scale
         return (samples * scale).cpu().numpy()
 

@@ -73,10 +73,18 @@ def _impute_column(col: np.ndarray, kind: str, ar_order: int = 5) -> np.ndarray:
 
 
 def _ar_kalman_smooth(col: np.ndarray, known: np.ndarray, p: int = 5) -> np.ndarray:
-    """AR(p) estimated from observed subset → RTS smoother over full grid."""
+    """AR(p) estimated from observed subset → RTS smoother over full grid. Falls back to linear on ill-conditioning."""
     y = col[known]
     if y.size < 2 * p + 10:
         return np.interp(np.arange(col.size), np.where(known)[0], y)
+    try:
+        return _ar_kalman_smooth_impl(col, known, p)
+    except np.linalg.LinAlgError:
+        return np.interp(np.arange(col.size), np.where(known)[0], y)
+
+
+def _ar_kalman_smooth_impl(col: np.ndarray, known: np.ndarray, p: int = 5) -> np.ndarray:
+    y = col[known]
 
     # estimate AR(p) via least squares on observed subset (ignoring gaps)
     Y = y[p:]
@@ -126,7 +134,7 @@ def _ar_kalman_smooth(col: np.ndarray, known: np.ndarray, p: int = 5) -> np.ndar
     for t in range(T - 2, -1, -1):
         mu_pred = F @ mus[t]
         P_pred = F @ Ps[t] @ F.T + Q
-        G = Ps[t] @ F.T @ np.linalg.inv(P_pred + 1e-9 * np.eye(p))
+        G = Ps[t] @ F.T @ np.linalg.inv(P_pred + 1e-6 * np.eye(p))
         mu_s = mus[t] + G @ (mus_s[0] - mu_pred)
         mus_s.insert(0, mu_s)
 
