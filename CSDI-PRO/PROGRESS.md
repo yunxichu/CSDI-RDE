@@ -2,7 +2,7 @@
 
 > 根据 [tech.md](tech.md) v2 方案执行。本文档记录已完成里程碑与关键实验结果，供快速浏览；详细会话记录在 `/home/rhl/Github/session_notes/`。
 
-**分支**：`csdi-pro` · **工作目录**：`/home/rhl/Github/CSDI-PRO/` · **当前周**：Week 2（进行中）
+**分支**：`csdi-pro` · **工作目录**：`/home/rhl/Github/CSDI-PRO/` · **当前周**：Week 2 完成，进入 Week 3
 
 ---
 
@@ -13,9 +13,7 @@
 | **W1 Day 1-2** | 环境 + smoke tests | ✅ | 10 个 Python 包装齐；SVGP/dysts/Chronos smoke 全过 |
 | **W1 Day 3-5** | 5 篇必读论文精读 | ⏸ 延后到 W2 末 | — |
 | **W1 Day 6-7** | **Phase Transition pilot**（决定性） | ✅ | **v2 锋利 story 保留**；parrot 95% drop at S2→S3 |
-| W2 Day 8-9 | SVGP 化 | 🚧 进行中 | — |
-| W2 Day 10-11 | UQ metrics 库 | ⏳ | — |
-| W2 Day 12-14 | Reliability diagram 首图 | ⏳ | — |
+| **W2 (跨越式)** | **4 个技术 module 实现 + 消融实验** | ✅ | **−M1: +29% NRMSE, −M2: +28%, −M3: +26%, all-off: +104%**；Module 4 mixed-horizon mean-abs-dev 比 Split-CP 低 30% |
 
 ---
 

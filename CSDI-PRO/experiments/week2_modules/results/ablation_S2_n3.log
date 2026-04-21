@@ -1,0 +1,24 @@
+=== W2 ablation: scenario=S2 sparsity=0.4 σ=0.3 seeds=[0..2] configs=['full', 'm1-linear', 'm2a-random', 'm2b-frasersw', 'm3-exactgpr', 'm4-splitcp', 'all-off']
+  [full           ] seed=0 τ=[4, 3, 2, 1]  τ_sec=  2.9  total= 26.4  h=1 nrmse=0.290 picp=0.91
+  [full           ] seed=1 τ=[4, 3, 2, 1]  τ_sec=  2.1  total= 23.8  h=1 nrmse=0.224 picp=0.93
+  [full           ] seed=2 τ=[4, 3, 2, 1]  τ_sec=  2.1  total= 24.6  h=1 nrmse=0.352 picp=0.87
+  [m1-linear      ] seed=0 τ=[4, 3, 2, 1]  τ_sec=  2.6  total= 25.0  h=1 nrmse=0.346 picp=0.92
+  [m1-linear      ] seed=1 τ=[4, 3, 2, 1]  τ_sec=  2.0  total= 25.5  h=1 nrmse=0.322 picp=0.90
+  [m1-linear      ] seed=2 τ=[4, 3, 2, 1]  τ_sec=  2.0  total= 25.7  h=1 nrmse=0.413 picp=0.90
+  [m2a-random     ] seed=0 τ=[26, 20, 16, 9]  τ_sec=  0.0  total= 23.1  h=1 nrmse=0.410 picp=0.88
+  [m2a-random     ] seed=1 τ=[29, 23, 16, 15]  τ_sec=  0.0  total= 22.8  h=1 nrmse=0.344 picp=0.93
+  [m2a-random     ] seed=2 τ=[26, 9, 8, 4]  τ_sec=  0.0  total= 22.2  h=1 nrmse=0.444 picp=0.86
+  [m2b-frasersw   ] seed=0 τ=[30, 24, 16, 8]  τ_sec=  0.1  total= 24.6  h=1 nrmse=0.437 picp=0.91
+  [m2b-frasersw   ] seed=1 τ=[24, 18, 12, 6]  τ_sec=  0.1  total= 24.5  h=1 nrmse=0.303 picp=0.92
+  [m2b-frasersw   ] seed=2 τ=[30, 27, 18, 9]  τ_sec=  0.2  total= 22.9  h=1 nrmse=0.494 picp=0.89
+  [m3-exactgpr    ] seed=0 τ=[4, 3, 2, 1]  τ_sec=  2.3  total=  2.8  h=1 nrmse=0.330 picp=0.91
+  [m3-exactgpr    ] seed=1 τ=[4, 3, 2, 1]  τ_sec=  1.7  total=  2.4  h=1 nrmse=0.258 picp=0.91
+  [m3-exactgpr    ] seed=2 τ=[4, 3, 2, 1]  τ_sec=  2.0  total=  2.7  h=1 nrmse=0.380 picp=0.85
+  [m4-splitcp     ] seed=0 τ=[4, 3, 2, 1]  τ_sec=  2.0  total= 27.3  h=1 nrmse=0.296 picp=0.91
+  [m4-splitcp     ] seed=1 τ=[4, 3, 2, 1]  τ_sec=  1.8  total= 25.2  h=1 nrmse=0.225 picp=0.92
+  [m4-splitcp     ] seed=2 τ=[4, 3, 2, 1]  τ_sec=  1.9  total= 26.4  h=1 nrmse=0.351 picp=0.87
+  [all-off        ] seed=0 τ=[26, 20, 16, 9]  τ_sec=  0.0  total=  0.4  h=1 nrmse=0.541 picp=0.92
+  [all-off        ] seed=1 τ=[29, 23, 16, 15]  τ_sec=  0.0  total=  0.5  h=1 nrmse=0.481 picp=0.92
+  [all-off        ] seed=2 τ=[26, 9, 8, 4]  τ_sec=  0.0  total=  0.4  h=1 nrmse=0.650 picp=0.85
+
+[ablation] records saved to /home/rhl/Github/CSDI-PRO/experiments/week2_modules/results/ablation_S2_n3.json
