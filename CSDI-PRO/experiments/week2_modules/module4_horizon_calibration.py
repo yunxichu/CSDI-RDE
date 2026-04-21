@@ -100,16 +100,19 @@ def run(n_seeds: int, scenario_name: str, sparsity: float, noise: float, dt: flo
         traj = integrate_lorenz63(N_CTX, dt=dt, seed=seed, spinup=2000)
         obs, mask = make_sparse_noisy(traj, sparsity=sparsity, noise_std_frac=noise, seed=seed)
         ctx_filled = impute(obs, kind="ar_kalman")
-        # Use theoretical Lyapunov for this calibration study; robustness to
-        # noisy nolds estimates is a separate ablation (future work).
-        lam_true = LORENZ63_LYAP
-        lam_step = lam_true * dt
+        # Estimate λ from data with the noise-robust estimator (falls back to
+        # clipped [0.1, 2.5] range); compare against true 0.906.
+        from methods.mi_lyap import robust_lyapunov
+        lam_est = robust_lyapunov(ctx_filled[:, 0], dt=dt, emb_dim=5, lag=2,
+                                   trajectory_len=50, prefilter=True)
+        lam_step = lam_est * dt
 
         spec = mi_lyap_bayes_tau(ctx_filled[:, 0], L=L_EMBED, tau_max=TAU_MAX, horizon=1,
                                  lam=lam_step, n_calls=15, k=4, seed=seed)
         taus = spec.taus
-        lam_hat = lam_true
-        print(f"  seed={seed}  lam(true)={lam_true:.3f} lam_step={lam_step:.4f}  τ={taus.tolist()}")
+        lam_hat = lam_est
+        print(f"  seed={seed}  lam_true={LORENZ63_LYAP:.3f} lam_est={lam_est:.3f} "
+              f"(err {(lam_est - LORENZ63_LYAP) / LORENZ63_LYAP * 100:+.0f}%)  τ={taus.tolist()}")
 
         X, Y, H = build_mixed_horizon_dataset(ctx_filled, taus, HORIZONS)
         # split 60/20/20
@@ -154,10 +157,17 @@ def run(n_seeds: int, scenario_name: str, sparsity: float, noise: float, dt: flo
     summary = dict(
         scenario=dict(name=scenario_name, sparsity=sparsity, noise=noise),
         horizons=HORIZONS,
-        picp=dict(lyap={h: (float(np.mean(v)), float(np.std(v))) for h, v in per_horizon_picp_lyap.items() if v},
-                  split={h: (float(np.mean(v)), float(np.std(v))) for h, v in per_horizon_picp_split.items() if v}),
-        mpiw=dict(lyap={h: (float(np.mean(v)), float(np.std(v))) for h, v in per_horizon_mpiw_lyap.items() if v},
-                  split={h: (float(np.mean(v)), float(np.std(v))) for h, v in per_horizon_mpiw_split.items() if v}),
+        growth_modes=growth_modes,
+        picp=dict(
+            split={h: (float(np.mean(v)), float(np.std(v))) for h, v in per_horizon_picp_split.items() if v},
+            **{f"lyap_{m}": {h: (float(np.mean(v)), float(np.std(v))) for h, v in per_horizon_picp[m].items() if v}
+               for m in growth_modes},
+        ),
+        mpiw=dict(
+            split={h: (float(np.mean(v)), float(np.std(v))) for h, v in per_horizon_mpiw_split.items() if v},
+            **{f"lyap_{m}": {h: (float(np.mean(v)), float(np.std(v))) for h, v in per_horizon_mpiw[m].items() if v}
+               for m in growth_modes},
+        ),
         q_records=q_records,
     )
     return summary
@@ -165,34 +175,46 @@ def run(n_seeds: int, scenario_name: str, sparsity: float, noise: float, dt: flo
 
 def plot(summary: dict, fig_path: Path) -> None:
     horizons = summary["horizons"]
-    picp_lyap = [summary["picp"]["lyap"].get(h, (np.nan, 0))[0] for h in horizons]
+    growth_modes = summary.get("growth_modes", ["saturating"])
+
+    colors = {"exp": "#d95f02", "saturating": "#1b9e77", "clipped": "#7570b3", "empirical": "#e7298a"}
+    markers = {"exp": "o", "saturating": "s", "clipped": "^", "empirical": "D"}
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 4.4))
+
+    # Split-CP as baseline
     picp_split = [summary["picp"]["split"].get(h, (np.nan, 0))[0] for h in horizons]
-    picp_lyap_std = [summary["picp"]["lyap"].get(h, (np.nan, 0))[1] for h in horizons]
     picp_split_std = [summary["picp"]["split"].get(h, (np.nan, 0))[1] for h in horizons]
-
-    mpiw_lyap = [summary["mpiw"]["lyap"].get(h, (np.nan, 0))[0] for h in horizons]
     mpiw_split = [summary["mpiw"]["split"].get(h, (np.nan, 0))[0] for h in horizons]
+    ax1.errorbar(horizons, picp_split, yerr=picp_split_std, marker="x", color="grey",
+                 label="Split CP (baseline)", linewidth=2, capsize=3, linestyle="--")
+    ax2.plot(horizons, mpiw_split, marker="x", color="grey", label="Split CP", linewidth=1.5, linestyle="--")
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4.2))
-    ax1.errorbar(horizons, picp_lyap, yerr=picp_lyap_std, marker="o", color="#1b9e77",
-                 label="Lyap-CP", linewidth=2, capsize=3)
-    ax1.errorbar(horizons, picp_split, yerr=picp_split_std, marker="s", color="#d95f02",
-                 label="Split CP", linewidth=2, capsize=3)
+    for mode in growth_modes:
+        key = f"lyap_{mode}"
+        if key not in summary["picp"]:
+            continue
+        picp_v = [summary["picp"][key].get(h, (np.nan, 0))[0] for h in horizons]
+        picp_std = [summary["picp"][key].get(h, (np.nan, 0))[1] for h in horizons]
+        mpiw_v = [summary["mpiw"][key].get(h, (np.nan, 0))[0] for h in horizons]
+        ax1.errorbar(horizons, picp_v, yerr=picp_std, marker=markers.get(mode, "o"),
+                     color=colors.get(mode, "C0"), label=f"Lyap-{mode}", linewidth=2, capsize=3)
+        ax2.plot(horizons, mpiw_v, marker=markers.get(mode, "o"), color=colors.get(mode, "C0"),
+                 label=f"Lyap-{mode}", linewidth=2)
+
     ax1.axhline(0.9, color="red", linestyle=":", label="target 0.90")
     ax1.set_xscale("log"); ax1.set_xlabel("Forecast horizon (steps)")
     ax1.set_ylabel("Per-horizon PICP (target 0.90)")
-    ax1.set_title("Calibration under mixed-horizon conformal")
-    ax1.grid(True, alpha=0.3); ax1.legend()
+    ax1.set_title("Calibration across horizons")
+    ax1.grid(True, alpha=0.3); ax1.legend(fontsize=9)
 
-    ax2.plot(horizons, mpiw_lyap, marker="o", color="#1b9e77", label="Lyap-CP", linewidth=2)
-    ax2.plot(horizons, mpiw_split, marker="s", color="#d95f02", label="Split CP", linewidth=2)
     ax2.set_xscale("log"); ax2.set_xlabel("Forecast horizon (steps)")
     ax2.set_ylabel("MPIW")
-    ax2.set_title("Interval width grows with horizon")
-    ax2.grid(True, alpha=0.3); ax2.legend()
+    ax2.set_title("Interval width")
+    ax2.grid(True, alpha=0.3); ax2.legend(fontsize=9)
 
     sc = summary["scenario"]
-    fig.suptitle(f"Lorenz63 ({sc['name']}, sparsity={sc['sparsity']}, σ={sc['noise']}) — pooled-horizon CP",
+    fig.suptitle(f"Lorenz63 ({sc['name']}, s={sc['sparsity']}, σ={sc['noise']}) — pooled-horizon CP, robust λ",
                  y=1.03, fontsize=12)
     fig.tight_layout()
     fig.savefig(fig_path, dpi=150, bbox_inches="tight")
@@ -213,18 +235,28 @@ def main() -> None:
     print(f"[saved] {out}")
     plot(summary, FIG_DIR / f"module4_horizon_cal_{args.scenario}.png")
 
-    # Verdict
-    print("\n[verdict]  per-horizon PICP:")
-    print(f"  {'h':>5}  {'Lyap':>12}  {'Split':>12}")
+    # Verdict — per-horizon PICP + aggregate deviations
+    print("\n[verdict] per-horizon PICP (target 0.90):")
     target = 0.9
-    dev_lyap = []; dev_split = []
+    growth_modes = summary.get("growth_modes", ["saturating"])
+    headers = ["h", "Split"] + [f"Lyap-{m}" for m in growth_modes]
+    print("  " + "  ".join(f"{h:>12}" for h in headers))
+    devs: dict[str, list[float]] = {"Split": []}
+    for m in growth_modes:
+        devs[f"Lyap-{m}"] = []
     for h in HORIZONS:
-        l = summary["picp"]["lyap"].get(h, (np.nan, 0))
-        s = summary["picp"]["split"].get(h, (np.nan, 0))
-        print(f"  {h:>5}  {l[0]:>6.3f}±{l[1]:.2f}  {s[0]:>6.3f}±{s[1]:.2f}")
-        dev_lyap.append(abs(l[0] - target)); dev_split.append(abs(s[0] - target))
-    print(f"\n  mean |PICP - 0.90|:  Lyap={np.mean(dev_lyap):.3f}   Split={np.mean(dev_split):.3f}")
-    print(f"  max  |PICP - 0.90|:  Lyap={np.max(dev_lyap):.3f}   Split={np.max(dev_split):.3f}")
+        row = [f"{h:>12}"]
+        s_val = summary["picp"]["split"].get(h, (np.nan, 0))
+        row.append(f"{s_val[0]:>6.3f}±{s_val[1]:.2f}")
+        devs["Split"].append(abs(s_val[0] - target))
+        for m in growth_modes:
+            v = summary["picp"][f"lyap_{m}"].get(h, (np.nan, 0))
+            row.append(f"{v[0]:>6.3f}±{v[1]:.2f}")
+            devs[f"Lyap-{m}"].append(abs(v[0] - target))
+        print("  " + "  ".join(row))
+    print("\n  aggregate |PICP − 0.90| (lower is better):")
+    for k, v in devs.items():
+        print(f"    {k:<20}  mean={np.mean(v):.3f}  max={np.max(v):.3f}")
 
 
 if __name__ == "__main__":

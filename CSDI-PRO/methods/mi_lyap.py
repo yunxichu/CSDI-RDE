@@ -95,7 +95,12 @@ def ksg_cmi(X: np.ndarray, Y: np.ndarray, Z: np.ndarray, k: int = 4) -> float:
 # ---------------------------------------------------------------------------
 
 def global_lyapunov_rosenstein(series: np.ndarray, emb_dim: int = 5, lag: int = 2) -> float:
-    """Wrap ``nolds.lyap_r``; returns largest Lyapunov exponent (per sample step)."""
+    """Wrap ``nolds.lyap_r``; returns largest Lyapunov exponent (per sample step).
+
+    Under noise this tends to **over-estimate** (nolds fits the divergence
+    slope on noise-dominated short times, inflating λ). For a noise-robust
+    estimate use :func:`robust_lyapunov`.
+    """
     import nolds
 
     try:
@@ -104,6 +109,58 @@ def global_lyapunov_rosenstein(series: np.ndarray, emb_dim: int = 5, lag: int = 
         return lam
     except Exception:
         return 0.5
+
+
+def robust_lyapunov(
+    series: np.ndarray,
+    dt: float = 0.025,
+    emb_dim: int = 5,
+    lag: int = 2,
+    trajectory_len: int = 50,
+    prefilter: bool = True,
+    lam_min: float = 0.1,
+    lam_max: float = 2.5,
+    seed: int = 0,
+) -> float:
+    """Noise-robust Lyapunov estimate: pre-denoise → Rosenstein with mid-range tl → clip.
+
+    Strategy:
+      1. (optional) Pre-filter the series with an AR-Kalman smoother to reduce
+         noise-induced short-time divergence (which inflates λ).
+      2. Run ``nolds.lyap_r`` with ``trajectory_len=50`` — long enough to
+         dilute the noise-dominated first steps, short enough to stay in the
+         linear Lyapunov regime before attractor bounds kick in.
+      3. Clip to ``[lam_min, lam_max]`` so pathological (noise-collapsed or
+         over-inflated) estimates fall back to reasonable defaults.
+
+    Returns the Lyapunov exponent in **per time unit** (divides by dt).
+
+    Empirical note on noise handling: Rosenstein on raw noisy Lorenz63 can
+    over- or under-estimate by factors of 2-4×. For rescaling residuals in
+    conformal prediction, prefer the **empirical growth mode** of
+    :class:`~methods.lyap_conformal.LyapConformal` (growth_mode="empirical")
+    which avoids λ entirely.
+    """
+    import nolds
+
+    series = np.asarray(series).ravel()
+    if prefilter:
+        from methods.dynamics_impute import _ar_kalman_smooth
+        known = np.ones_like(series, dtype=bool)
+        try:
+            series = _ar_kalman_smooth(series.copy(), known, p=5)
+        except Exception:
+            pass  # keep raw
+    try:
+        lam_step = float(nolds.lyap_r(
+            series, emb_dim=emb_dim, lag=lag,
+            min_tsep=max(emb_dim * lag + 5, 10),
+            trajectory_len=trajectory_len, fit="poly",
+        ))
+    except Exception:
+        lam_step = (lam_min + lam_max) / 2 * dt
+    lam_per_unit = lam_step / dt
+    return float(np.clip(lam_per_unit, lam_min, lam_max))
 
 
 def local_lyapunov(trajectory: np.ndarray, x_query: np.ndarray, k: int = 10, horizon: int = 10) -> float:

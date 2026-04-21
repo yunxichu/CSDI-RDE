@@ -44,38 +44,58 @@ Each row flips **one** module relative to the full pipeline. 3 seeds each; delay
 | All off (v1 CSDI-RDE-GPR-ish) | 0.557±0.070 | 0.589±0.077 | 0.767±0.093 | 1.016±0.034 | 0.897±0.033 | 0.896±0.017 | 0.917±0.011 | 0.916±0.027 | 13.594±0.661 | 15.118±1.435 | 23.485±3.095 | 30.749±1.582 | 2.635±0.234 | 2.783±0.283 | 3.534±0.462 | 4.868±0.172 |
 ---
 
-## Module-4 focused experiment — mixed-horizon conformal calibration
+## Module-4 — 4 growth modes + robust λ
 
-Setup: pool delay-coord samples across horizons h ∈ {1, 2, 4, 8, 16, 24, 32, 48}
-(up to ~1.1 Lyapunov times at dt=0.025). Train one SVGP on the pool (with
-log-horizon as a feature); calibrate **once** on the pooled cal split; evaluate
-per-horizon PICP on the test fold.
+Iteration of the mixed-horizon CP study. Three upgrades vs the initial pass:
 
-Scenario S3 (sparsity=0.60, σ=0.50), 3 seeds, target coverage 0.90:
+1. **Saturating growth**: ``1 + (e^{λh dt}−1)/(1 + (e^{λh dt}−1)/cap)``
+   (smooth rational cap at ``cap``; default cap=10)
+2. **Clipped growth**: hard ``min(exp(λh dt), cap)``
+3. **Empirical growth**: no λ; per-horizon-bin scale inferred from calibration residuals
+4. **Robust λ estimator** (pre-filter with AR-Kalman + Rosenstein ``tl=50`` + clip to ``[0.1, 2.5]``):
+   - σ=0.3: nolds err +174% → robust err **+18%**
+   - σ=0.5: nolds err +152% → robust err **−1%**
 
-| h | Lyap-CP | Split-CP |
-|:-:|:-:|:-:|
-|  1 | 0.949±0.01 | **0.989±0.01** (overcover) |
-|  2 | 0.943±0.01 | 0.988±0.00 |
-|  4 | 0.902±0.02 | 0.976±0.01 |
-|  8 | 0.830±0.00 | 0.924±0.01 |
-| 16 | 0.794±0.02 | 0.843±0.01 |
-| 24 | 0.845±0.02 | 0.819±0.02 |
-| 32 | **0.906±0.01** | 0.798±0.02 (undercover) |
-| 48 | 0.986±0.01 | **0.822±0.01** (undercover) |
+### S3 (sparsity=0.60, σ=0.50), 3 seeds, λ_est ≈ 1.11 (+22% vs true 0.906)
 
-| Aggregate deviation from 0.90 | Lyap-CP | Split CP |
-|---|:-:|:-:|
-| mean |PICP − 0.90| | **0.052** | 0.074 (+42%) |
-| max |PICP − 0.90| | 0.106 | 0.102 |
+Per-horizon PICP (target 0.90):
 
-**Take-away**: Split CP shows the expected monotonic drift from 0.99 (overcover at h=1)
-to 0.80 (undercover at h=48) — textbook exchangeability violation under growing
-chaotic residuals. Lyap-CP has lower aggregate deviation (30% better on mean-abs-dev)
-though not strictly flat; a dip at h=16 reflects residual saturation at ~1 Lyapunov time
-(pure ``exp(λh dt)`` over-predicts; a saturating growth model is a Week-3 refinement).
+| h  | Split | Lyap-exp | Lyap-sat | Lyap-clipped | **Lyap-empirical** |
+|:-:|:-:|:-:|:-:|:-:|:-:|
+|  1 | 0.988 | 0.937 | 0.942 | 0.937 | **0.876** |
+|  2 | 0.991 | 0.936 | 0.941 | 0.936 | **0.890** |
+|  4 | 0.977 | 0.885 | 0.897 | 0.885 | **0.882** |
+|  8 | 0.925 | 0.822 | 0.833 | 0.822 | **0.895** |
+| 16 | 0.847 | 0.801 | 0.805 | 0.801 | **0.913** |
+| 24 | 0.822 | 0.866 | 0.861 | 0.866 | **0.891** |
+| 32 | 0.807 | 0.936 | 0.919 | 0.936 | **0.920** |
+| 48 | 0.827 | 0.996 | 0.987 | 0.996 | **0.904** |
 
-Files:
-- code: [`module4_horizon_calibration.py`](module4_horizon_calibration.py)
-- figure: [`figures/module4_horizon_cal_S3.png`](figures/module4_horizon_cal_S3.png)
-- data: [`results/module4_horizon_cal_S3_n3.json`](results/module4_horizon_cal_S3_n3.json)
+Aggregate \|PICP − 0.90\|:
+
+| scenario | Split | Lyap-exp | Lyap-sat | **Lyap-empirical** |
+|---|:-:|:-:|:-:|:-:|
+| S3 mean | 0.072 | 0.054 | 0.049 | **0.013 (5.5× < Split)** |
+| S3 max  | 0.093 | 0.099 | 0.095 | **0.024** |
+| S2 mean | 0.084 | 0.061 | 0.056 | **0.018 (4.7× < Split)** |
+| S2 max  | 0.127 | 0.127 | 0.120 | **0.039** |
+
+### Take-aways
+
+1. **Split CP monotonically drifts** 0.99 → 0.80 (textbook exchangeability violation under
+   growing chaotic residuals).
+2. **Saturating/clipped** shapes the pure-exp Lyap-CP at long horizons but only
+   marginally improves aggregate metrics (~5-10% reduction in mean deviation).
+3. **Lyap-empirical** — the **λ-free, data-driven growth** — achieves **4.7-5.5×
+   lower aggregate miscalibration** than Split CP, with all per-horizon PICP
+   within 0.04 of the 0.90 target. This is the recommended default.
+4. Robust λ estimator brings nolds's 170% over-estimate under noise down to ~20%,
+   making exp/saturating/clipped modes usable in real pipelines.
+
+### Files
+
+- code: [`module4_horizon_calibration.py`](module4_horizon_calibration.py) (4-mode sweep)
+- λ estimator: [`methods/mi_lyap.py::robust_lyapunov`](../../methods/mi_lyap.py)
+- growth functions: [`methods/lyap_conformal.py::lyap_growth`](../../methods/lyap_conformal.py)
+- figures: [`figures/module4_horizon_cal_S{2,3}.png`](figures/) (5-curve overlay)
+- data: [`results/module4_horizon_cal_S{2,3}_n3.json`](results/)
