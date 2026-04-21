@@ -84,3 +84,55 @@ Aggregate \|PICP − 0.90\|:
 - growth fn: [`methods/lyap_conformal.py::lyap_growth`](../../methods/lyap_conformal.py)
 - figures: [`figures/module4_horizon_cal_S{2,3}.png`](figures/)
 - data: [`results/module4_horizon_cal_S{2,3}_n3.json`](results/)
+
+---
+
+## Lorenz96 SVGP scaling + τ-search comparison
+
+High-dim validation on Lorenz96 (F=8, λ₁ ≈ 1.68 / unit, d_KY ≈ 0.4·N).
+
+### Part 1: SVGP scaling vs ambient dim N
+
+| N  | n_train | SVGP train time | NRMSE |
+|:-:|:-:|:-:|:-:|
+| 10 | 1393 | **25.6 ± 0.9 s** | 0.847 ± 0.045 |
+| 20 | 1393 | 42.4 ± 3.9 s | 0.916 ± 0.014 |
+| 40 | 1393 | 92.1 ± 2.1 s | 1.001 ± 0.013 |
+
+**Finding**: SVGP training time scales **linearly in N** (MultiOutputSVGP trains one
+GP per output dim). NRMSE degrades smoothly from 0.85 (N=10) to 1.00 (N=40), consistent
+with tech.md Proposition 2 (rate ∝ n^{−ν/(2ν + d_KY)}, d_KY ∝ N).
+
+Exact GPR by contrast would cost O(N³ × N) per fit and OOM at N=20+; our 92 s at N=40
+is directly enabled by SVGP.
+
+### Part 2: τ-search scaling on N=40, L_embed=7 (six lags)
+
+2 seeds, each method evaluated by downstream SVGP NRMSE on test split:
+
+| Method | τ-search time | NRMSE | note |
+|---|:-:|:-:|---|
+| random (Takahashi 2021) | **0.00 s** | 0.995 | reference baseline |
+| Fraser-Swinney | 0.51 s | 0.997 | first-minimum of MI |
+| **MI-Lyap BO** (Stage A) | 2.45 s | **0.990** | best |
+| **MI-Lyap CMA-ES** (Stage B, rank=2) | 1.34 s | 0.991 | 1.8× faster than BO |
+
+**Findings**:
+1. At L=7 (6-dim search space), MI-Lyap methods improve NRMSE by ~0.4-0.7% over random / F-S.
+   Modest at this dimensionality — **d_KY ≈ 16 is already larger than L**, so τ selection
+   is not the bottleneck here (regressor capacity is).
+2. **Stage B (low-rank CMA-ES) is 1.8× faster than Stage A (BO)** with essentially tied
+   quality, validating the tech.md §2.3 design. At larger L (e.g., L=15 for Lorenz96 N=100),
+   this gap should grow exponentially since BO scales O(L!) worst-case while CMA-ES scales
+   O(r(L+1)) = O(L).
+3. τ matrix singular-value spectrum (rank-2 CMA-ES solution) saved to
+   [`figures/tau_low_rank_spectrum.png`](figures/tau_low_rank_spectrum.png) — the
+   "coupled-oscillator timescales" Figure 7 candidate.
+
+### Files
+
+- code: [`lorenz96_scaling.py`](lorenz96_scaling.py) + [`../../experiments/week1/lorenz96_utils.py`](../../experiments/week1/lorenz96_utils.py)
+- Lorenz96 integrator: [`../week1/lorenz96_utils.py::integrate_lorenz96`](../week1/lorenz96_utils.py)
+- CMA-ES τ selector: [`../../methods/mi_lyap.py::mi_lyap_cmaes_tau`](../../methods/mi_lyap.py)
+- figures: [`figures/lorenz96_svgp_scaling.png`](figures/lorenz96_svgp_scaling.png), [`figures/tau_low_rank_spectrum.png`](figures/tau_low_rank_spectrum.png)
+- data: [`results/lorenz96_scaling_N10_20_40.json`](results/lorenz96_scaling_N10_20_40.json)

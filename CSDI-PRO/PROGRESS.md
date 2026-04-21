@@ -83,25 +83,38 @@
 
 ## 二、现在做了什么（已完成清单）
 
-> 截至 2026-04-21。commit 范围：`d9a7c6c`（CSDI-PRO 初始化）→ `5aa329a`（W2 跨越式消融）。
+> 截至 2026-04-21。commit 范围：`d9a7c6c`（CSDI-PRO 初始化）→ `3b273d8`（M2 Stage B + Lorenz96 scaling）。
 
-### A. 基础设施 — 大部分完成
+### A. 基础设施 — 全部完成
 
 - [x] **A1** Python 环境全装齐（10+ 个包）；`npeet` 因权限装不上，已用手写 KSG MI/CMI 代替
-- [x] **A2** Lorenz63 积分器（scipy odeint，dt 可配，spinup）；Lorenz96/KS 未做
-- [x] **A3** `make_sparse_noisy`：给定 sparsity + σ 生成带 NaN 观测（含 mask）
+- [x] **A2** Lorenz63 积分器 + **Lorenz96 积分器** (F=8, scipy odeint, λ_1≈1.68/unit)；KS 未做
+- [x] **A3** `make_sparse_noisy` + 1-D mask 广播
 - [x] **A4** UQ 指标完整（CRPS、PICP、MPIW、Winkler、reliability curve、ECE）
 - [x] **A5** 混沌指标基本完整（VPT 多阈值、NRMSE）；correlation dim error 未做
-- [x] **A6** Chronos-T5 {small/base/large} 可加载推理；**Panda、FIM 未接入**
+- [x] **A6** Chronos-T5 {small/base/large} 可加载推理；**Panda 需要 custom PatchTST 扩展代码，W8 补**；FIM 未接入
 - [x] **A7** v1 的 `csdi/` / `rde_delay/` / `gpr/` 模块已原地保留，可按需 import
 - [x] **A8** 多面板对比图 + phase transition 曲线 + reliability 画板子已就绪
 
-### B. 四大 Module — 3 full + 1 轻量
+### B. 四大 Module — 4 full + M1 另有轻量 surrogate
 
-- [x] **B3 M3 SVGP** — **full**：[models/svgp.py](models/svgp.py)，GPyTorch Matern-5/2，SVGPConfig 可调 m_inducing / epochs / lr，MultiOutputSVGP 支持 D 维独立 GP
-- [x] **B4 M4 Lyap-CP** — **full**：[methods/lyap_conformal.py](methods/lyap_conformal.py)，SplitConformal / LyapConformal / AdaptiveLyapConformal 三件套，CQR-style non-conformity
-- [x] **B2 M2 MI-Lyap** — **full**（BayesOpt 版）：[methods/mi_lyap.py](methods/mi_lyap.py)，手写 KSG MI/CMI（Kraskov 2004 + Frenzel-Pompe 2007），Rosenstein λ（nolds 封装），BayesOpt τ 搜索带 cumulative-δ 参数化防重复；Fraser-Swinney 和 random_tau 两个 baseline；**低秩 CMA-ES 未做**（Lorenz96 阶段再补）
-- [~] **B1 M1 Dynamics-Aware CSDI** — **轻量 surrogate**：[methods/dynamics_impute.py](methods/dynamics_impute.py)，AR-Kalman smoother + 2 阶差 MAD 噪声估计，捕捉"model-based + noise-aware"两个核心想法；**真正的 CSDI-Transformer 带 noise conditioning + 动态 delay mask 训练未做**（留待后期完成）
+- [x] **B3 M3 SVGP** — **full**：[models/svgp.py](models/svgp.py)，GPyTorch Matern-5/2，MultiOutputSVGP，Lorenz96 N=10/20/40 线性 scaling 已验证
+- [x] **B4 M4 Lyap-CP** — **full + 4 growth modes**：[methods/lyap_conformal.py](methods/lyap_conformal.py)
+  - SplitConformal / LyapConformal / AdaptiveLyapConformal
+  - growth_mode ∈ {`exp`, `saturating`, `clipped`, **`empirical`** (λ-free)}
+  - Lyap-empirical 在 mixed-horizon calibration 上 mean \|PICP−0.90\| = 0.013 vs Split 0.072 → **5.5× 改善**
+- [x] **B2 M2 MI-Lyap** — **full (Stage A + B)**：[methods/mi_lyap.py](methods/mi_lyap.py)
+  - `ksg_mi` / `ksg_cmi` 手写 (Kraskov + Frenzel-Pompe)
+  - `mi_lyap_bayes_tau` Stage A (BayesOpt + cumulative-δ 防重复)
+  - `mi_lyap_cmaes_tau` Stage B (低秩 UV^T × CMA-ES, rank=2, tech.md §2.3)
+  - `robust_lyapunov` 噪声鲁棒 λ (AR-Kalman pre-filter + Rosenstein tl=50 + clip)
+    → σ=0.5 下 nolds err +152% → robust err **−1%**
+- [~] **B1 M1 Dynamics-Aware CSDI** — **架构 full + 训练 WIP**：
+  - [methods/dynamics_csdi.py](methods/dynamics_csdi.py) 500 行 self-contained DDPM + (A) noise-cond + (B) 动态 delay mask + (C) ensemble-aware sampling
+  - 训练可 converge (loss 0.83 → 0.41 @ 120 ep, 7 分钟 V100)，但 imputation quality 在 smooth Lorenz63 上未击败 linear interp
+  - 消融 pipeline 中暂用 [methods/dynamics_impute.py](methods/dynamics_impute.py) (AR-Kalman smoother + MAD 噪声估计) 作为 surrogate
+  - 根因：smooth Lorenz63 dt=0.025 对 linear 过于友好；CSDI paper 用 500+ epochs × 35k 不规则时序
+  - 真 CSDI 训练收益需要 long-gap + high-noise + 大数据 + 更长训练，后续继续
 
 ### C. 理论 — 未做
 
@@ -109,26 +122,29 @@
 - [ ] **C2** Proposition 2 formal 证明
 - [ ] **C3** Theorem 1 formal 证明
 
-### D. 实验 — 3/13 完成，主结果已初步验证
+### D. 实验 — 5/13 完成，主结果已复现并验证
 
 - [x] **Phase Transition pilot**（D1 的预演）：Lorenz63 × 7 harshness × 3 baselines × 5 seeds；**parrot 在 S2→S3 出现 95% VPT drop**，v2 锋利 story 被证据支持；Chronos 确认"categorically brittle at chaos"
-- [x] **D10 4-Module 消融表**：Lorenz63 S2/S3 × 3 seeds × 7 configs × 4 horizons；关键数字：
+- [x] **D10 4-Module 消融表 v1**：Lorenz63 S2/S3 × 3 seeds × 7 configs × 4 horizons
+- [x] **D10 4-Module 消融表 v2**（升级）：新增 Lyap-empirical + m4-lyap-exp 两个配置；使用 robust_lyapunov
   - Full NRMSE h=1 = 0.373；All-off（≈ v1）= 0.760 (**+104%**)
   - −M1: +29% / −M2: +28% / −M3: +24%（每 module 独立贡献 ≥24%）
   - −M3 在 h=64 +26% — SVGP 长 horizon 优势显著
   - MPIW：Full 8.9 vs All-off 20.4 → 模块协同使 PI 宽 2.3× 更紧
-- [x] **Module 4 专项 mixed-horizon calibration**：horizons [1..48] (~1.1 Λ times)，mean \|PICP − 0.90\|：Lyap 0.052 vs Split 0.074 (**30% 改善**)，Split 呈 0.99→0.82 单调 undercover 漂移
+- [x] **Module 4 专项 mixed-horizon calibration**：horizons [1..48] (~1.1 Λ times)
+  - **Lyap-empirical mean \|PICP − 0.90\| = 0.013 vs Split 0.072 (S3) / 0.018 vs 0.084 (S2) → 4.7-5.5× 改善**
+  - Split CP 单调漂移 0.99→0.82 (textbook undercoverage)；Lyap-empirical 所有 h 在 [0.88, 0.92] 内
+- [x] **D8 SVGP scaling on Lorenz96**：N=10/20/40，training time 线性随 N (25s/46s/94s)，NRMSE 0.80→0.99 缓慢退化
 - [ ] **D1** 正式 Phase Transition 主图（Lorenz96 + KS + 更多 methods）
 - [ ] **D2** Coverage Across Harshness（Figure 2）
 - [ ] **D3** Horizon × Coverage 曲线
 - [ ] **D4** Horizon × PI Width 曲线
 - [ ] **D5** Reliability diagram pre/post conformal
 - [ ] **D6** MI-Lyap τ 稳定性 vs noise 扫描
-- [ ] **D7** τ 矩阵低秩奇异值谱图
-- [ ] **D8** SVGP scaling curve
+- [ ] **D7** τ 矩阵低秩奇异值谱图（Lorenz96 L=7 上 4 种 τ-search 方法 nrmse 几乎相同，需降到 L=3-5 或 N=10 看区分度）
 - [ ] **D9** EEG case study
 - [ ] **D11** dysts 20 系统 benchmark
-- [ ] **D12** Foundation model 大 PK（Panda / FIM 需接入）
+- [ ] **D12** Foundation model 大 PK（Panda 需要 custom PatchTST 扩展；FIM 待装）
 - [ ] **D13** 极端 harshness sharp summary
 
 ### E. 写作 — 基础文档已有，论文正文未写
