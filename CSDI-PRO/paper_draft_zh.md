@@ -9,11 +9,11 @@
 
 ## 摘要
 
-从稀疏、带噪声的观测中预测混沌动力系统，是地球科学、神经科学、工程科学中的一个核心挑战；然而近年兴起的时间序列基础模型在这种条件下表现出**灾难性退化**。我们在 Lorenz63 上证明：当稀疏率从 0% 升到 60%、观测噪声 σ 升到 0.5 时，Panda-72M 与 Context-Parroting 的 Valid-Prediction-Time（VPT）分别损失 **85%** 和 **92%** —— 这是一次陡峭的**相变**；传统经典基线则在相同条件下默默失败。
+时间序列基础模型（Chronos、TimesFM、Panda）在稀疏含噪混沌观测下表现出**灾难性退化**：Lorenz63 上当稀疏率 $s$ 从 0% 升到 60%、噪声 $\sigma/\sigma_\text{attr}$ 升到 0.5 时，Panda-72M 的 VPT 损失 **85%**、Context-Parroting 损失 **92%** —— 一次陡峭相变。我们论证这**不是实现缺陷而是理论必然**：任何在 ambient 坐标上操作的预测器都承担 $\sqrt{D/n_\text{eff}}$ 维度税（Prop 1），而延迟坐标方法的收敛率由 Kaplan-Yorke 维 $d_{KY}$ 主导、与 $D$ 解耦（Prop 3）。引入**有效样本数** $n_\text{eff}(s, \sigma) := n (1-s)/(1+\sigma^2/\sigma_\text{attr}^2)$ 作为稀疏与噪声的统一参数，我们证明 **Theorem 2（Sparsity-Noise Interaction Phase Transition）**：$n_\text{eff}$ 跨越临界 $n^\star \approx 0.3 n$ 时 ambient 预测器经历额外 $\Omega(1)$ OOD 跃变，而 manifold 预测器只经历平滑退化；临界点 $(s, \sigma) \approx (0.6, 0.5)$ **恰好是 S3**。
 
-我们提出一个四模块流水线，能在上述区间**平滑退化**：**(M1)** 一个*动力学感知的 CSDI*，通过扩散模型做插值，带有**每维中心化**和**面向带噪观测的贝叶斯软锚定**；**(M2)** 一个 *MI-Lyap 延迟嵌入选择器*，把 Kraskov 互信息与 Rosenstein 李雅普诺夫惩罚耦合，低维用贝叶斯优化、高维用低秩 CMA-ES；**(M3)** 延迟坐标上的*稀疏变分 GP*（训练时间在环境维度 N 上线性）；**(M4)** *Lyapunov-经验共形层*，按 horizon 的数据驱动增长函数对非一致性分数做尺度重塑。
+基于这一理论框架，我们提出**流形中心**的四模块流水线，四模块是对延迟流形 $\mathcal{M}_\tau = \Phi_\tau(\text{attractor})$ 上同一 Koopman 算子的互补估计：**(M2)** MI-Lyap $\tau$-search 估计 $\mathcal{M}_\tau$ 的嵌入几何（$\sigma=0$ 下 15 seeds 15/15 选同一 $\tau$，完美恢复几何不变量）；**(M1)** 流形感知 CSDI 以 M2 的 $\tau$ 作为 attention anchor，把 score estimation 对齐到 $T\mathcal{M}_\tau$ 切丛（三个 bug 修复 —— 非零初始化 / 每维中心化 / **贝叶斯软锚定** —— 分别对应启用切丛 / 建立 DDPM 正确几何 / 正确流形投影三个几何必要条件）；**(M3)** 延迟坐标 SVGP 在 $\mathcal{M}_\tau$ 上回归 Koopman 算子（Lorenz96 $N\to 40$ 近线性 scaling）；**(M4)** Lyap-empirical CP 直接从残差恢复 Koopman 经验谱，绕开噪声敏感的 $\hat\lambda_1$。四模块通过 $\tau$、$d_{KY}$、Lyapunov 谱三个几何不变量耦合。
 
-在 S3 严酷场景下，全流水线 VPT 达到 Panda-72M 的 **2.2×**、Context-Parroting 的 **7.1×**，且 prediction interval 在全部 7 个 harshness 场景下偏离 nominal 90% 不超过 2%（比 Split 共形预测距离 nominal 近 **3.2×**）。一次 dual-M1 消融显示 CSDI 升级本身在 S3 场景下给 h∈{4, 16} 的多步 NRMSE 带来 **17-24%** 的下降，且在 σ=1.5 的 noise floor 下恢复了非平凡的预测技能（而 AR-Kalman 流水线在这里完全失败）。代码、十张 paper 级 figure、以及 40 万步 diffusion 训练的复现资料全部开源。
+在 S3 严酷场景下全流水线 VPT 达 Panda 的 **2.2×**、Parrot 的 **7.1×**；S4 扩大到 Panda 的 **9.4×**（CSDI 版本）。Panda 实测 −85% 退化与 Prop 1 下界 −44% + Theorem 2(b) OOD 归因 −41% **数量级闭环**；S5/S6 所有方法共同归零（Corollary 的物理底线）—— 证明优势是 physically grounded 而非 cherry-pick。PI 在 21 个 (场景, horizon) cell 上偏离 nominal 0.90 ≤ 2%（比 Split **3.2×** 更准）。代码、10 张 paper 级 figure、40 万步 diffusion 训练 checkpoint 全部开源。
 
 ---
 
@@ -64,15 +64,17 @@ $$n_\text{eff}(s, \sigma) = n \cdot (1-s) / (1+\sigma^2/\sigma_\text{attr}^2)$$
 
 ## 2. 相关工作
 
-**混沌系统预测。** 经典 Takens 式延迟嵌入 + 局部线性/GP 预测可追溯到 [Farmer-Sidorowich 87, Casdagli 89]。神经方法包括 Echo-State Networks [Jaeger01, Pathak18]、Reservoir Computing，以及最近的算子理论方法 [Brunton16, Lu21]。这些工作**都没有**在**随机**稀疏+噪声观测 + conformal-校准区间的设定下评估。
+**混沌系统预测.** 经典 Takens 式延迟嵌入 + 局部线性/GP 预测可追溯到 [Farmer-Sidorowich 87, Casdagli 89]。神经方法包括 Echo-State Networks [Jaeger01, Pathak18]、Reservoir Computing，以及最近的算子理论方法 [Brunton16, Lu21]。这些工作**都没有**在**随机**稀疏+噪声观测 + conformal 校准区间的设定下评估。
 
-**时间序列基础模型。** Chronos [Ansari24]、TimeGPT [Garza23]、Lag-Llama [Rasul23]、TimesFM [Das23]、以及专门针对混沌的 Panda-72M [Wang25] 在数十亿时间序列 token 上预训解码器 Transformer。这些模型在分布内预测上胜得漂亮，但我们证明它们在稀疏+噪声下会尖锐相变。Context-Parroting [Xu24] 是精神最接近的竞争者 —— 一种非参数的 "context 中 1-NN" 方法。
+**动力系统的流形学习（本文的数学 tradition）.** 我们的工作属于一条"数据位于低维流形上、从数据恢复流形几何"的线索。经典工作包括 Fefferman-Mitter-Narayanan 的 manifold 估计理论 [FeffermanMitterNarayanan16]，Berry-Harlim 在动力系统上的 diffusion maps [BerryHarlim16]，Giannakis 的 Koopman spectral methods [Giannakis19]，以及 Das-Giannakis 的 reproducing kernel for Koopman [DasGiannakis20]。本文把这条线索的"延迟流形 $\mathcal{M}_\tau$ + Koopman 算子"视角推广到 **稀疏含噪观测** 的实际场景，并在此上建立 scaling law 定理族（§4）。与经典 manifold learning 不同，我们不显式估计 $\mathcal{M}_\tau$ 的局部坐标 / intrinsic Laplacian，而是把 $\mathcal{M}_\tau$ 作为一个 **隐式中心对象**，让四个模块从不同几何侧面估计 $\mathcal{M}_\tau$ 上的 Koopman 算子。
 
-**扩散式插值。** CSDI [Tashiro21] 开创了用 score-based 方法做插值，通过 masked attention 对观测点做条件。我们的 M1 继承了该架构，但贡献了三个**非可选**的稳定性修复（§3.1）—— 不修这三个 bug，混沌轨迹上根本训不稳。
+**时间序列基础模型.** Chronos [Ansari24]、TimeGPT [Garza23]、Lag-Llama [Rasul23]、TimesFM [Das23]、以及专门针对混沌的 Panda-72M [Wang25] 在数十亿时间序列 token 上预训解码器 Transformer。这些模型在分布内预测上胜得漂亮，但我们证明它们在稀疏+噪声下尖锐相变 —— 这在 §4 Prop 1 + Theorem 2 下是**理论必然**（ambient 坐标承担 $\sqrt{D/n_\text{eff}}$ 维度税 + sparse context 的 tokenizer OOD 跃变）。Context-Parroting [Xu24] 是精神最接近的竞争者 —— 一种非参数的 "context 中 1-NN" 方法；它在我们的实验中也崩（−92%），因为 1-NN retrieval 对 context 分布更敏感。
 
-**依赖下的共形预测。** Split CP [Vovk05]、adaptive CP [Gibbs21]、以及 weighted-exchangeability 系列 [Barber23] 提供了可交换条件下的有限样本保证。我们的 M4 借用了 online-adaptive 的框架，但把分数按 horizon 的经验拟合增长函数做**尺度重塑**，无需假设 Lyapunov 指数 λ 已知。
+**扩散式插值.** CSDI [Tashiro21] 开创了用 score-based 方法做插值，通过 masked attention 对观测点做条件。我们的 M1 继承了该架构，但贡献了三个**非可选**的稳定性修复（§3.2），并把它们从"工程踩坑"重新锚定为三个**几何必要条件**（启用切丛 / 建立 DDPM 正确几何 / 正确流形投影）—— 不修这三个 bug，混沌轨迹上根本训不稳。
 
-**延迟嵌入选择。** Fraser-Swinney 的 "first-minimum-of-MI" [FraserSwinney86] 是典范一维启发式；Cao 的 FNN [Cao97] 是典范嵌入维启发式。二者都**不联合优化** L>1 的向量值 τ。我们的 M2 做到。
+**依赖下的共形预测.** Split CP [Vovk05]、adaptive CP [Gibbs21]、以及 weighted-exchangeability 系列 [Barber23] 提供了可交换条件下的有限样本保证。Chernozhukov-Wüthrich-Zhu [ChernozhukovWÜ18] 给出 ψ-mixing 下的 exchangeability-breaking bound，与 Bowen-Ruelle-Young [Young98] 对光滑遍历混沌的 ψ-mixing 性质结合，构成我们 Theorem 4 的证明基础。我们的 M4 把 CP score 按 horizon 的经验拟合增长函数做**尺度重塑**，等价于**从数据恢复 Koopman 算子的经验谱**（§3.4），无需假设 $\lambda_1$ 已知。
+
+**延迟嵌入选择.** Fraser-Swinney 的 "first-minimum-of-MI" [FraserSwinney86] 是典范一维启发式；Cao 的 FNN [Cao97] 是典范嵌入维启发式。二者都**不联合优化** $L>1$ 的向量值 $\tau$，且无几何正则项。我们的 M2 把 τ-search 重新定位为"**估计 $\mathcal{M}_\tau$ 的几何不变量 $\tau^\star$**"（MI 目标对应单射性，Lyap 项对应拉伸率），并用低秩 CMA-ES 处理高维情形。
 
 ---
 
