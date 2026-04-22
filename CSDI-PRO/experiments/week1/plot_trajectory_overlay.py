@@ -40,24 +40,29 @@ FIG_DIR = REPO_ROOT / "experiments" / "week1" / "figures"
 METHOD_COLORS = {
     "truth":   "black",
     "ours":    "#1b9e77",
+    "ours_csdi": "#e7298a",
     "panda":   "#9467bd",
     "parrot":  "#0868ac",
     "chronos": "#d95f02",
     "persist": "#999999",
 }
 METHOD_LABEL = {
-    "ours": "Ours (v2)", "panda": "Panda-72M", "parrot": "Parrot",
+    "ours": "Ours (AR-K M1)", "ours_csdi": "Ours (CSDI M1)",
+    "panda": "Panda-72M", "parrot": "Parrot",
     "chronos": "Chronos-T5-small", "persist": "Persist",
 }
 CH_NAMES = ["x", "y", "z"]
 
 
-def run_all_methods(ctx_true, observed, pred_len, seed, dt, chronos_pipe):
+def run_all_methods(ctx_true, observed, pred_len, seed, dt, chronos_pipe, include_csdi: bool = False):
     """Return a dict method -> [pred_len, D] mean forecast."""
     ctx_filled = linear_interp_fill(observed)
     out = {}
     out["ours"] = full_pipeline_forecast(observed, pred_len=pred_len, seed=seed,
                                          bayes_calls=10, n_epochs=150)
+    if include_csdi:
+        out["ours_csdi"] = full_pipeline_forecast(observed, pred_len=pred_len, seed=seed,
+                                                  imp_kind="csdi", bayes_calls=10, n_epochs=150)
     out["panda"] = panda_forecast(ctx_filled, pred_len=pred_len)
     if chronos_pipe is not None:
         mean, _ = chronos_forecast(chronos_pipe, ctx_filled, pred_len=pred_len, num_samples=20)
@@ -69,7 +74,7 @@ def run_all_methods(ctx_true, observed, pred_len, seed, dt, chronos_pipe):
 
 def plot_grid(
     scenarios_picked: list[str], seed: int, n_ctx: int, pred_len: int, dt: float,
-    chronos_model: str, fig_path: Path, ctx_show: int = 128,
+    chronos_model: str, fig_path: Path, ctx_show: int = 128, include_csdi: bool = False,
 ):
     # load chronos once
     from chronos import ChronosPipeline
@@ -96,7 +101,8 @@ def plot_grid(
             ctx_true, sparsity=sc.sparsity, noise_std_frac=sc.noise_std_frac,
             attractor_std=LORENZ63_ATTRACTOR_STD, seed=1000 * seed + hash(sc.name) % 10000,
         )
-        preds = run_all_methods(ctx_true, observed, pred_len, seed, dt, pipe)
+        preds = run_all_methods(ctx_true, observed, pred_len, seed, dt, pipe,
+                                 include_csdi=include_csdi)
 
         # VPT per method per scenario — used to mark breakpoint
         for ch in range(3):
@@ -153,11 +159,21 @@ def main():
     ap.add_argument("--chronos", default="amazon/chronos-t5-small")
     ap.add_argument("--tag", default="seed3_4panels")
     ap.add_argument("--ctx_show", type=int, default=128)
+    ap.add_argument("--include_csdi", action="store_true",
+                    help="add ours_csdi method (needs csdi_ckpt set via adapter)")
+    ap.add_argument("--csdi_ckpt", default=None)
     args = ap.parse_args()
+
+    if args.include_csdi:
+        if not args.csdi_ckpt:
+            raise SystemExit("--csdi_ckpt required with --include_csdi")
+        from methods.csdi_impute_adapter import set_csdi_checkpoint
+        set_csdi_checkpoint(args.csdi_ckpt)
+        print(f"[overlay] CSDI ckpt loaded: {args.csdi_ckpt}")
 
     fig_path = FIG_DIR / f"trajectory_overlay_{args.tag}.png"
     plot_grid(args.scenarios, args.seed, args.n_ctx, args.pred_len, args.dt,
-              args.chronos, fig_path, ctx_show=args.ctx_show)
+              args.chronos, fig_path, ctx_show=args.ctx_show, include_csdi=args.include_csdi)
 
 
 if __name__ == "__main__":

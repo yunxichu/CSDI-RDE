@@ -38,8 +38,8 @@ METHOD_COLORS = {
 }
 
 
-def _load(sc: str) -> dict:
-    return json.loads((RES_DIR / f"module4_horizon_cal_{sc}_n3.json").read_text())
+def _load(sc: str, suffix: str = "") -> dict:
+    return json.loads((RES_DIR / f"module4_horizon_cal_{sc}_n3{suffix}.json").read_text())
 
 
 def _series(metric_dict: dict, method: str, horizons: list[int]) -> tuple[np.ndarray, np.ndarray]:
@@ -49,10 +49,10 @@ def _series(metric_dict: dict, method: str, horizons: list[int]) -> tuple[np.nda
     return mean, std
 
 
-def plot_d3_coverage() -> None:
+def plot_d3_coverage(suffix: str = "", title_m1: str = "AR-Kalman M1") -> None:
     fig, axes = plt.subplots(1, 2, figsize=(11, 4.2), sharey=True)
     for ax, sc in zip(axes, ["S2", "S3"]):
-        d = _load(sc)
+        d = _load(sc, suffix)
         horizons = sorted(int(h) for h in d["picp"]["split"].keys())
         for m in METHODS:
             mean, std = _series(d["picp"], m, horizons)
@@ -71,19 +71,19 @@ def plot_d3_coverage() -> None:
         ax.set_xticks(horizons, labels=[str(h) for h in horizons])
     axes[0].set_ylabel("PICP @ α=0.10  (target 0.90)")
     axes[0].legend(fontsize=8.5, loc="lower left", framealpha=0.85)
-    plt.suptitle("Figure D3 — Conditional Coverage across Horizon  (mixed-horizon calibration)",
+    plt.suptitle(f"Figure D3 — Conditional Coverage across Horizon  (mixed-horizon calibration, {title_m1})",
                  fontsize=12)
     plt.tight_layout()
-    out = FIG_DIR / "horizon_coverage_paperfig.png"
+    out = FIG_DIR / f"horizon_coverage_paperfig{suffix}.png"
     plt.savefig(out, dpi=160, bbox_inches="tight")
     plt.close()
     print(f"[saved] {out}")
 
 
-def plot_d4_piwidth() -> None:
+def plot_d4_piwidth(suffix: str = "", title_m1: str = "AR-Kalman M1") -> None:
     fig, axes = plt.subplots(1, 2, figsize=(11, 4.2), sharey=False)
     for ax, sc in zip(axes, ["S2", "S3"]):
-        d = _load(sc)
+        d = _load(sc, suffix)
         horizons = sorted(int(h) for h in d["mpiw"]["split"].keys())
         for m in METHODS:
             mean, std = _series(d["mpiw"], m, horizons)
@@ -99,10 +99,10 @@ def plot_d4_piwidth() -> None:
         ax.set_xscale("log")
         ax.set_xticks(horizons, labels=[str(h) for h in horizons])
     axes[0].legend(fontsize=8.5, loc="upper left", framealpha=0.85)
-    plt.suptitle("Figure D4 — PI Width across Horizon  (mixed-horizon calibration)",
+    plt.suptitle(f"Figure D4 — PI Width across Horizon  (mixed-horizon calibration, {title_m1})",
                  fontsize=12)
     plt.tight_layout()
-    out = FIG_DIR / "horizon_piwidth_paperfig.png"
+    out = FIG_DIR / f"horizon_piwidth_paperfig{suffix}.png"
     plt.savefig(out, dpi=160, bbox_inches="tight")
     plt.close()
     print(f"[saved] {out}")
@@ -111,3 +111,6 @@ def plot_d4_piwidth() -> None:
 if __name__ == "__main__":
     plot_d3_coverage()
     plot_d4_piwidth()
+    # CSDI M1 versions
+    plot_d3_coverage(suffix="_csdi", title_m1="CSDI M1")
+    plot_d4_piwidth(suffix="_csdi", title_m1="CSDI M1")

@@ -90,6 +90,20 @@ python -u -m experiments.week1.plot_trajectory_overlay \
 
 `bf41f2c feat: 观测空间轨迹叠加图 + 中文交付文档`
 
+### CSDI M1 升级版（2026-04-22）
+
+**文件**：[experiments/week1/figures/trajectory_overlay_seed3_S0_S2_S3_S5_with_csdi.png](experiments/week1/figures/trajectory_overlay_seed3_S0_S2_S3_S5_with_csdi.png)
+
+同 seed/场景但 **同时显示 `ours` (AR-Kalman M1) 和 `ours_csdi` (CSDI M1)**。论文可选用此版本做 "M1 升级可视化证据"。
+
+复现命令：
+```bash
+CUDA_VISIBLE_DEVICES=0 python -m experiments.week1.plot_trajectory_overlay \
+    --seed 3 --scenarios S0 S2 S3 S5 \
+    --tag seed3_S0_S2_S3_S5_with_csdi --include_csdi \
+    --csdi_ckpt experiments/week2_modules/ckpts/dyn_csdi_full_v6_center_ep20.pt
+```
+
 ---
 
 ## Figure 3：Separatrix Ensemble（概率性 rollout，paper 主 novelty 图之一）⭐
@@ -168,6 +182,20 @@ python -u -m experiments.week1.plot_separatrix_ensemble \
 ### 相关 commit
 
 `c262e87 feat: SVGP ensemble rollout（A+D 方案）+ separatrix 图`
+
+### CSDI M1 升级版（2026-04-22）
+
+**文件**：[experiments/week1/figures/separatrix_ensemble_seed4_S0_K30_csdi.png](experiments/week1/figures/separatrix_ensemble_seed4_S0_K30_csdi.png)
+
+同 seed=4 S0 K=30 设置但 M1 换成 CSDI。**ensemble VPT 中位 1.99 Λ (与 AR-Kalman 版相同)、terminal wing 30/30 −x (全对)** — 证明 CSDI M1 不破坏 ensemble 质量。
+
+复现命令：
+```bash
+CUDA_VISIBLE_DEVICES=0 python -m experiments.week1.plot_separatrix_ensemble \
+    --seed 4 --sparsity 0 --noise 0 --K 30 \
+    --tag seed4_S0_K30_csdi --impute_kind csdi \
+    --csdi_ckpt experiments/week2_modules/ckpts/dyn_csdi_full_v6_center_ep20.pt
+```
 
 ---
 

@@ -51,7 +51,7 @@ def find_switch_indices(x: np.ndarray, min_gap: int = 5) -> np.ndarray:
 def plot_ensemble(
     seed: int, scenario_sparsity: float, scenario_noise: float,
     K: int, pred_len: int, n_ctx: int, dt: float,
-    ctx_show: int, fig_path: Path,
+    ctx_show: int, fig_path: Path, imp_kind: str = "ar_kalman",
 ):
     traj = integrate_lorenz63(n_ctx + pred_len, dt=dt, seed=seed, spinup=2000)
     ctx_true = traj[:n_ctx]
@@ -64,7 +64,7 @@ def plot_ensemble(
     print(f"running ensemble rollout K={K} …")
     pred_ens = full_pipeline_ensemble_forecast(
         observed, pred_len=pred_len, K=K, seed=seed,
-        bayes_calls=10, n_epochs=150,
+        bayes_calls=10, n_epochs=150, imp_kind=imp_kind,
     )  # [K, pred_len, 3]
 
     # Per-sample VPT — useful summary
@@ -194,12 +194,25 @@ def main():
     ap.add_argument("--dt", type=float, default=0.025)
     ap.add_argument("--ctx_show", type=int, default=128)
     ap.add_argument("--tag", default=None)
+    ap.add_argument("--impute_kind", default="ar_kalman", choices=["linear", "ar_kalman", "csdi"])
+    ap.add_argument("--csdi_ckpt", default=None)
     args = ap.parse_args()
-    tag = args.tag or f"seed{args.seed}_sp{int(args.sparsity*100):02d}_n{int(args.noise*100):02d}_K{args.K}"
+
+    if args.impute_kind == "csdi":
+        if not args.csdi_ckpt:
+            raise SystemExit("--csdi_ckpt required with --impute_kind csdi")
+        from methods.csdi_impute_adapter import set_csdi_checkpoint
+        set_csdi_checkpoint(args.csdi_ckpt)
+        print(f"[separatrix] CSDI ckpt loaded: {args.csdi_ckpt}")
+
+    default_tag = f"seed{args.seed}_sp{int(args.sparsity*100):02d}_n{int(args.noise*100):02d}_K{args.K}"
+    if args.impute_kind != "ar_kalman":
+        default_tag += f"_{args.impute_kind}"
+    tag = args.tag or default_tag
     fig_path = FIG_DIR / f"separatrix_ensemble_{tag}.png"
     summary = plot_ensemble(
         args.seed, args.sparsity, args.noise, args.K, args.pred_len, args.n_ctx, args.dt,
-        args.ctx_show, fig_path,
+        args.ctx_show, fig_path, imp_kind=args.impute_kind,
     )
     print(summary)
 

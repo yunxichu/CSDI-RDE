@@ -29,7 +29,14 @@
 | **D5** 🆕 | [figures/reliability_diagram_paperfig.png](experiments/week2_modules/figures/reliability_diagram_paperfig.png) | Reliability diagram, α∈{0.01..0.5}, Raw Gaussian vs Split CP | **Raw GP 严重过覆盖**（α=0.3 → PICP 0.98 vs nominal 0.70）；**Split CP 完美贴 y=x**，CP 校准必要性铁证 |
 | **D6** 🆕 | [figures/tau_stability_paperfig.png](experiments/week2_modules/figures/tau_stability_paperfig.png) | MI-Lyap τ-stability vs noise, 6 σ × 15 seeds × 3 methods | **MI-Lyap 在 σ=0 时 15/15 选同一 τ（std=0）**；σ=0.5 下比 Fraser std 小 47% |
 | **D7 v2** 🆕 | [figures/tau_lowrank_spectrum_paperfig.png](experiments/week2_modules/figures/tau_lowrank_spectrum_paperfig.png) | τ 矩阵奇异值谱，L ∈ {3,5,7} × 5 seeds | **有效 rank ≈ 2-3**（明显小于 full rank L-1），验证 §2.3 low-rank ansatz |
-| **Fig 1b** 🆕 | [figures/pt_v2_csdi_upgrade_n3.png](experiments/week1/figures/pt_v2_csdi_upgrade_n3.png) | Phase Transition ours vs ours_csdi, 7 scenarios × 3 seeds | **S6 noise-floor VPT 0.02→0.25 (10×)**，RMSE 7/7 全胜 |
+| **Fig 1b** 🆕 | [figures/pt_v2_csdi_upgrade_n5.png](experiments/week1/figures/pt_v2_csdi_upgrade_n5.png) | Phase Transition ours vs ours_csdi, 7 scenarios × 5 seeds（主）| **S2 VPT +53%, S4 +110%, S5 +48%, S6 +71%** |
+| **Fig 2 CSDI** 🆕 | [figures/trajectory_overlay_seed3_S0_S2_S3_S5_with_csdi.png](experiments/week1/figures/trajectory_overlay_seed3_S0_S2_S3_S5_with_csdi.png) | 加 ours_csdi 的轨迹叠加（4 sc × 3 channels） | Fig 1b 的定性版本，直观展示 M1 升级 |
+| **Fig 3 CSDI** 🆕 | [figures/separatrix_ensemble_seed4_S0_K30_csdi.png](experiments/week1/figures/separatrix_ensemble_seed4_S0_K30_csdi.png) | CSDI M1 + SVGP ensemble on S0 | VPT median 1.99Λ（与 AR-K 同），terminal wing 30/30 — CSDI 不破坏 ensemble |
+| **D3 CSDI** 🆕 | [figures/horizon_coverage_paperfig_csdi.png](experiments/week2_modules/figures/horizon_coverage_paperfig_csdi.png) | Horizon × Coverage，CSDI M1 | Lyap-emp 仍稳贴 0.90 |
+| **D4 CSDI** 🆕 | [figures/horizon_piwidth_paperfig_csdi.png](experiments/week2_modules/figures/horizon_piwidth_paperfig_csdi.png) | Horizon × PI Width，CSDI M1 | 同趋势 |
+| **D5 CSDI** 🆕 | [figures/reliability_diagram_paperfig_csdi.png](experiments/week2_modules/figures/reliability_diagram_paperfig_csdi.png) | Reliability diagram，CSDI M1 | Split CP 仍完美贴 y=x |
+| **Fig 5 S2/S3 CSDI** 🆕 | [figures/module4_horizon_cal_{S2,S3}_csdi.png](experiments/week2_modules/figures/) | Module 4 horizon cal，CSDI M1 | Lyap-emp overall PICP 0.898 |
+| **Fig 4b dual-M1 merged** 🆕 | [figures/ablation_final_dualM1_paperfig.png](experiments/week2_modules/figures/ablation_final_dualM1_paperfig.png) | 9-config × S2+S3 × h=1/4/16 dual-M1 | S3 h=4 Full −24%, S2 h=4 −M3 exact GPR −17% |
 
 **待补**：D2 Coverage Across Harshness / D9 EEG / D11 dysts
 
