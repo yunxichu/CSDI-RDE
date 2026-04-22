@@ -273,16 +273,21 @@ c49eb6f  feat: Phase 3 — D2 Coverage Across Harshness + Fig 1b 升级到 n=5
 
 ### 6.3 剩余工作
 
-**必须做（paper submission 前）**：
-- Paper introduction 细化（现在 1.5 页，还可以再精炼）
-- Appendix A formal proofs（现在只有 tech.md §0.3 §3.6 §4.5 的 informal sketch）
-- Figure quality check（有几张 PNG 分辨率偏低，打印可能需要重 render）
+**完整 TODO 清单 + 入口命令**见 [TODO_tech_gap_zh.md](TODO_tech_gap_zh.md)。一页纸摘要：
 
-**可做（提升论文强度）**：
-- Lorenz96 Phase Transition（需要在 L96 上重训 CSDI）
-- KS PDE 场景
-- dysts 20 系统 benchmark
-- 真实数据 case study（EEG / 气候 / 神经元等）
+| 优先级 | TODO | 工作量 | 障碍 |
+|:-:|---|:-:|---|
+| 🔥 高 | T1 Table 3 极端 harshness summary | 1 小时 | 无（数据已有） |
+| 🔥 高 | T2 Proposition 1/2 + Theorem 1 **formal proofs** | 5 天 | 纯写作 |
+| 🔥🔥 高 | T3 **Lorenz96 Phase Transition**（Fig 1 扩展） | 2-3 天 | CSDI 需在 L96 重训 |
+| 🔥🔥 高 | T4 **KS PDE** 场景 | 3-5 天 | 无 KS integrator |
+| 🔥🔥 高 | T5 **dysts 20 systems benchmark**（Table 1） | 1-2 天（~17 GPU 小时） | 无 |
+| 🟡 中 | T6 FIM foundation model 接入 | 半天 | 无 |
+| 🟡🟡 中 | T7 EEG case study（Fig 9） | 2-3 天 | 需要 EEG 数据集 |
+| 🟢 低 | T8 LaTeX 化（NeurIPS template） | 半天 | 无 |
+| 🟢 低 | T9 论文多轮 refine | 2-3 天 | 纯写作 |
+
+**推荐路径**：Level 1（~1 周 submit）= T1+T2+T8+T9；Level 2（~2 周）= +T3+T6；Level 3（~4 周完整 tech.md）= +T4+T5+T7。
 
 ---
 

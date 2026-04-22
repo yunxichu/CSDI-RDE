@@ -398,6 +398,8 @@ d9a7c6c  CSDI-PRO 工作空间初始化
 
 ## 7. 剩余工作（按优先级）
 
+**完整 TODO 清单和入口文件**：[TODO_tech_gap_zh.md](TODO_tech_gap_zh.md) — 基于 tech.md 的逐项对照 + 9 项未完成工作的入口 + 3 级推荐路径（Level 1：~1 周投 paper；Level 2：~2 周加强；Level 3：~4 周完整 tech.md）。
+
 ### P1 — paper 主图补齐（1-2 周）
 - [ ] Phase Transition 扩到 **Lorenz96**（高维验证，Lorenz96 生成器已写）
 - [ ] Phase Transition 扩到 **KS**（PDE 场景）
