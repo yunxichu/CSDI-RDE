@@ -80,7 +80,7 @@ $$n_\text{eff}(s, \sigma) = n \cdot (1-s) / (1+\sigma^2/\sigma_\text{attr}^2)$$
 
 ## 3. 方法
 
-> **视角声明。** 本章把 M1/M2/M3/M4 四模块按**延迟流形** $\mathcal{M}_\tau$ 这一共同几何对象重新组织。读者若只关心"每个模块做什么"，可跳过 §3.0 直接从 §3.1 开始阅读；但 §3.0 是 §4 理论部分的几何骨架，对理解 Proposition 1-2 和新 Theorem（Sparsity-Noise Interaction）不可或缺。
+> **视角声明。** 本章把 M1/M2/M3/M4 四模块按**延迟流形** $\mathcal{M}_\tau$ 这一共同几何对象重新组织。读者若只关心"每个模块做什么"，可跳过 §3.0 直接从 §3.1 开始阅读；但 §3.0 是 §4 理论部分的几何骨架，对理解 Proposition 1 / Proposition 3 和新 Theorem 2（Sparsity-Noise Interaction）不可或缺。
 
 ### 3.0 延迟流形作为中心对象（几何骨架）
 
@@ -126,7 +126,7 @@ $$\mathcal{K}: (y_t, y_{t-\tau_1}, \ldots, y_{t-\tau_{L-1}}) \;\longmapsto\; (y_
 
 **有效样本数 $n_\text{eff}$（§4 理论的关键参数）.** 在稀疏率 $s$、噪声比 $\sigma/\sigma_\text{attr}$ 下，context 窗口的有效样本数退化为
 $$n_\text{eff}(s, \sigma) \;=\; n \cdot (1-s) \cdot \frac{1}{1 + \sigma^2 / \sigma_\text{attr}^2}.$$
-第一项是稀疏率直接丢数据，第二项是高斯观测模型下的 Fisher 信息衰减（见 [Künsch 1984] 对部分可观测动力系统的严格处理；我们在附录 A.1 验证该公式在 Lorenz63 上的数值准确性）。$n_\text{eff}$ 将作为 Proposition 1 和 Proposition 2 的共同参数出现，把"稀疏率"和"噪声"两个因素统一为一个可解析处理的量。
+第一项是稀疏率直接丢数据，第二项是高斯观测模型下的 Fisher 信息衰减（见 [Künsch 1984] 对部分可观测动力系统的严格处理；我们在附录 A.1 验证该公式在 Lorenz63 上的数值准确性）。$n_\text{eff}$ 将作为 Proposition 1 / Proposition 3 / Theorem 2 的共同参数出现，把"稀疏率"和"噪声"两个因素统一为一个可解析处理的量。
 
 ---
 
@@ -185,11 +185,11 @@ $$ \hat{x} = \frac{y}{1 + \sigma^2}, \qquad \text{Var}[\hat{x}] = \frac{\sigma^2
 
 ### 3.3 模块 M3 — 在 $\mathcal{M}_\tau$ 上的 Koopman 算子回归（延迟坐标 SVGP）
 
-> **几何定位.** SVGP 不是"通用回归器"，而是**在 $\mathcal{M}_\tau$ 上对 Koopman 算子 $\mathcal{K}$ 做后验估计**。Matérn-5/2 核直接拟合 $\mathcal{K}$ 的 pushforward in delay coordinates，后验收缩率由 $\mathcal{M}_\tau$ 的内蕴维 $d_{KY}$ 主导（而非环境维 $D$）——这就是 §4 Proposition 2 的 claim，Fig 6 的 Lorenz96 线性 scaling 是其**直接实证**。
+> **几何定位.** SVGP 不是"通用回归器"，而是**在 $\mathcal{M}_\tau$ 上对 Koopman 算子 $\mathcal{K}$ 做后验估计**。Matérn-5/2 核直接拟合 $\mathcal{K}$ 的 pushforward in delay coordinates，后验收缩率由 $\mathcal{M}_\tau$ 的内蕴维 $d_{KY}$ 主导（而非环境维 $D$）——这就是 §4 Proposition 3 的 claim，Fig 6 的 Lorenz96 线性 scaling 是其**直接实证**。
 
 给定延迟坐标数据集 $\{(\mathbf{X}_\tau(t), x_{t+h})\}$，我们拟合 Matérn-5/2 核稀疏变分 GP，每个输出维独立 128 个 inducing points。用 MultiOutputSVGP 封装联合训练。
 
-**Prop 2 的直接实证（Fig 6）.** Lorenz96 $N \in \{10, 20, 40\}$、$n_\text{train}=1393$ 下，训练时间 $25.6 \pm 0.9$s、$42.4 \pm 3.9$s、$92.1 \pm 2.1$s —— **$N$ 的线性函数**。NRMSE 从 0.85 平滑退化到 1.00，$N=40$ 时 exact GPR 直接 OOM。**几何解读：** Lorenz96 $d_{KY}$ 随 $N$ 按次线性缓慢增长（$N=10 \to 40$ 对应 $d_{KY} \approx 4 \to 16$），而 ambient 维 $N$ 从 10 到 40 是 4× 增长；SVGP 训练时间 scaling 由 $d_{KY}$（不是 $N$）主导 —— 这实证了 Prop 2 的"收敛率与 $N$ 解耦"claim。
+**Prop 3 的直接实证（Fig 6）.** Lorenz96 $N \in \{10, 20, 40\}$、$n_\text{train}=1393$ 下，训练时间 $25.6 \pm 0.9$s、$42.4 \pm 3.9$s、$92.1 \pm 2.1$s —— **$N$ 的线性函数**。NRMSE 从 0.85 平滑退化到 1.00，$N=40$ 时 exact GPR 直接 OOM。**几何解读：** Lorenz96 $d_{KY}$ 随 $N$ 按次线性缓慢增长（$N=10 \to 40$ 对应 $d_{KY} \approx 4 \to 16$），而 ambient 维 $N$ 从 10 到 40 是 4× 增长；SVGP 训练时间 scaling 由 $d_{KY}$（不是 $N$）主导 —— 这实证了 Prop 3 的"收敛率与 $N$ 解耦"claim。
 
 **ensemble rollout 与 Koopman 谱（Fig 3）.** 对多步预测，我们对初始条件用 attractor std 的一个比例做扰动，rollout K=30 条路径，每条独立从 SVGP 后验采样。ensemble 标准差**非单调增长**；它在 Lorenz63 butterfly 的 separatrix 交叉处尖峰放大 45-100× —— 一个数据驱动的**分叉指示器**。测试轨迹上所有 30/30 条路径正确辨识最终 wing。**几何解读：** std 的尖峰对应 Koopman 算子在 unstable manifold 附近的**谱放大**—— 这让 Fig 3 从"定性展示"升级为"**$\mathcal{M}_\tau$ 的 Koopman 谱的可视化**"。
 
@@ -586,7 +586,7 @@ CSDI M1 下 Lyap-emp 相对 Split 为 **2.3× 改善**（对比 AR-Kalman 下 3.
 - 训练时间**在 $N$ 上线性**（25s → 42s → 92s, 比例 ≈ 1 : 1.7 : 3.6 vs N 的 1 : 2 : 4）。这是 SVGP 128 inducing points 的理论期望行为 $O(N \cdot m^2 \cdot n_\text{train})$。
 - NRMSE 从 0.85 随 N 缓慢退化到 1.00 —— 高维下每一维的信号更稀薄，预测难度自然上升。
 - Exact GPR 在 N=40 直接 **OOM**（超出 24GB GPU 内存）；SVGP 在同 GPU 上只用了不到 2GB。
-- 这实证支持 Proposition 2：**SVGP 的后验收缩率由 Kaplan-Yorke 维 $d_\text{KY}$（对 Lorenz96 ≈ 0.4 N）主导，而非环境维 N**。所以 paper 的 pipeline 能扩展到 Lorenz96 scale 的系统。
+- 这实证支持 Proposition 3：**SVGP 的后验收缩率由 Kaplan-Yorke 维 $d_\text{KY}$（对 Lorenz96 ≈ 0.4 N）主导，而非环境维 N**。所以 paper 的 pipeline 能扩展到 Lorenz96 scale 的系统。
 
 ---
 
@@ -619,21 +619,25 @@ CSDI M1 下 Lyap-emp 相对 Split 为 **2.3× 改善**（对比 AR-Kalman 下 3.
 
 ## 6. 讨论与限制
 
-**Scope.** 我们主要测了 Lorenz63（低维经典混沌），并在 Lorenz96 上确认 SVGP scaling。把完整 phase-transition 分析扩到 Lorenz96 (N=40)、Kuramoto-Sivashinsky、以及 dysts benchmark [Gilpin23] 是自然的下一步；我们的 CSDI M1 在每个系统上都需要重训（或做多系统联合 pretrain）。
+**Scope.** 我们主要测了 Lorenz63（低维经典混沌，$d_{KY} \approx 2.06$），并在 Lorenz96 上确认 SVGP scaling。把完整 phase-transition 分析扩到 Lorenz96 ($N=40$)、Kuramoto-Sivashinsky、dysts benchmark [Gilpin23] 是自然的下一步；我们的 CSDI M1 在每个系统上都需要重训（或做多系统联合 pretrain）。
 
-**真实数据。** 我们从干净积分合成观测；EEG、Lorenz96 受大气 reanalysis 强迫、ADNI 式临床时序都是计划中的 case study。
+**真实数据.** 我们从干净积分合成观测；EEG、Lorenz96 受大气 reanalysis 强迫、ADNI 式临床时序都是计划中的 case study。
 
-**理论。** 三条 proposition 在本草稿里都是 informal；formal proof 的草稿在附录里但尚未被同行审查。这一点我们明确标注。
+**理论严格度.** §4 的四条定理与 Corollary 在本草稿中以 informal 形式陈述；formal 证明草稿在附录 A.1-A.4 中给出但尚未被同行审查。特别地，**Theorem 2（Sparsity-Noise Interaction Phase Transition）** 是本工作的核心理论贡献，其 (b) 部分的 OOD 跃变 claim 依赖 Fisher information 退化（[Künsch 1984]）+ tokenizer 分布偏移两个引理；前者是经典结果，后者需要补一个辅助实验测量 Panda 在不同 $s$ 下 token distribution 的 KL 散度（§6 中 P2 的 follow-up）。
 
-**CSDI 方差。** 最佳 M1 checkpoint 在 epoch 20（4 万步）。训练 loss 之后仍然下降，但 held-out imputation RMSE 从 epoch 40 起反弹 —— 一种在 diffusion schedule 上的**微妙过拟合**。我们尚未完全定位其失败模式。
+**四模块耦合的未来实证方向.** §3.0 声明四模块通过 $\tau$、$d_{KY}$、Lyapunov 谱三个几何不变量耦合，但当前消融（§5.4）主要是"把每个模块各自替换成 baseline"，**尚未直接实证耦合**。自然的 follow-up 实验：**τ-coupling ablation** —— 给 CSDI 的 delay mask 分别喂 M2 选的 $\tau$ vs 随机 $\tau$ vs S0 的 $\tau$ 用到 S3（mismatched），看差距是否随 harshness 放大。此实验是 REFACTOR_PLAN（`REFACTOR_PLAN_zh.md` §6.1）中的 P1 项目，预计 1 周完成。此外 **$n_\text{eff}$ unified parameter 验证**（固定 $n_\text{eff}/n$ 扫 $(s, \sigma)$ 组合）可直接支撑 Theorem 2，见同文档 §6.2。
 
-**基础模型公平性。** 我们给 Panda 和 Chronos 的是**线性插值填好的**观测，不是 raw NaN context。两者在 raw NaN 输入下会更差，所以我们的 phase-transition 对比 —— 如果有偏 —— 是偏向它们的。
+**CSDI 方差.** 最佳 M1 checkpoint 在 epoch 20（4 万步）。训练 loss 之后仍然下降，但 held-out imputation RMSE 从 epoch 40 起反弹 —— 一种在 diffusion schedule 上的**微妙过拟合**。我们尚未完全定位其失败模式。
+
+**基础模型公平性.** 我们给 Panda 和 Chronos 的是**线性插值填好的**观测，不是 raw NaN context。两者在 raw NaN 输入下会更差，所以我们的 phase-transition 对比 —— 如果有偏 —— 是偏向它们的。**这一安排也恰好是 Theorem 2(b) OOD 跃变的触发条件**：线性插值在 $s > 0.5$ 后产生非物理直线段，基础模型视之为 OOD。换 raw NaN 输入只会让相变更尖锐。
 
 ---
 
 ## 7. 结论
 
-我们提出一个四模块混沌预测流水线，适用于稀疏、带噪观测；证明它在基础模型相变的区间下**平滑退化**；并辨识出一系列**关键非显然的工程选择**（CSDI 三 bug 的修复、门控非零初始化、每维中心化、贝叶斯软锚定、Lyap-经验 score 重塑）是必需而非可选的。在 Lorenz63 主基准上，流水线达到 Panda 的 2.2×、Parrot 的 7.1×，7 个 harshness 场景下覆盖率在 nominal 90% 的 ±2% 之内，训练在 N 上线性 scale，支撑 Lorenz96 规模系统的应用。
+我们建立了一个**以延迟流形 $\mathcal{M}_\tau$ 为中心**的混沌预测数学框架，把稀疏含噪条件下的四个经典子任务（插补 / 嵌入选择 / 回归 / UQ）统一为对 $\mathcal{M}_\tau$ 上同一 Koopman 算子的四种互补估计。框架的核心理论产物是：**Proposition 1（Ambient 维度税）+ Theorem 2（Sparsity-Noise Interaction Phase Transition）+ Proposition 3（Manifold 后验收缩）+ Theorem 4（Koopman 谱校准 CP）+ Corollary（Unified Scaling Law）**，通过 $n_\text{eff}(s, \sigma)$ 和 $d_{KY}$ 两个共同参数把基础模型相变解释为**理论必然**而非实现缺陷；临界点 $(s, \sigma) \approx (0.6, 0.5)$ 正是 S3 场景。
+
+在 Lorenz63 主基准上，流水线达到 Panda 的 **2.2×**、Parrot 的 **7.1×**（S3）、Panda 的 **9.4×**（S4 with CSDI M1），7 个 harshness 场景覆盖率在 nominal 90% ±2% 之内，训练在 $N$ 上近线性 scale。Panda 实测 −85% 退化与 Prop 1 下界 −44% + Theorem 2(b) OOD −41% **数量级闭环**，S5/S6 所有方法共同归零（物理底线），证明优势 physically grounded。我们辨识的一系列**关键非显然工程选择**（CSDI 三 bug、非零初始化、每维中心化、贝叶斯软锚定、Lyap-经验 score 重塑）在新框架下都被**重新锚定为几何必要条件**而非可选 trick。未来工作：τ-coupling 实证、$n_\text{eff}$ unified parameter 验证、Lorenz96 / KS / dysts 的跨系统验证。
 
 ---
 
@@ -650,7 +654,7 @@ CSDI M1 下 Lyap-emp 相对 Split 为 **2.3× 改善**（对比 AR-Kalman 下 3.
 | $d_{KY}$ | Kaplan-Yorke 维 | $d_{KY} = k + (\sum_{i=1}^{k}\lambda_i)/|\lambda_{k+1}|$；Lorenz63 $\approx 2.06$、L96-$N=20$ $\approx 8$ |
 | $\mathcal{K}$ | Koopman 算子 | $\mathcal{K}: g(x) \mapsto g(f(x))$；延迟坐标下退化为左移，是四模块共同估计目标 |
 | $\tau^\star$ | 最优延迟向量 | MI-Lyap 目标极值点；几何上让 $\mathcal{M}_\tau$ 不 self-intersect 也不过度拉伸 |
-| $n_\text{eff}(s, \sigma)$ | **有效样本数** | $n \cdot (1-s) \cdot 1/(1+\sigma^2/\sigma_\text{attr}^2)$；§4 Prop 1/2 + 新 Theorem 的共同参数 |
+| $n_\text{eff}(s, \sigma)$ | **有效样本数** | $n \cdot (1-s) \cdot 1/(1+\sigma^2/\sigma_\text{attr}^2)$；§4 Prop 1 / Thm 2 / Prop 3 的共同参数 |
 
 ### A.0.1 场景参数
 | 符号 | 含义 | 取值 |
