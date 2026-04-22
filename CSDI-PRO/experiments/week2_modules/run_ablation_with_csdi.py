@@ -42,11 +42,16 @@ def impute_with_csdi(observed, kind: str = "dynamics"):
 
 _dyn_imp.impute = impute_with_csdi
 
-# New configs using trained CSDI
+# New configs using trained CSDI. The CSDI-paired ablations keep M1=CSDI and flip
+# one of M2/M3/M4, matching the original 9-config Table 2 but with the upgraded M1.
 EXTRA_CONFIGS = {
-    "full-csdi":        dict(imp="csdi",      tau="mi_lyap",  gp="svgp",  cp="lyap", growth="saturating"),
-    "full-csdi-empirical": dict(imp="csdi",   tau="mi_lyap",  gp="svgp",  cp="lyap", growth="empirical"),
-    "m1-csdi-isolated": dict(imp="csdi",      tau="mi_lyap",  gp="svgp",  cp="lyap", growth="saturating"),
+    "full-csdi":            dict(imp="csdi",   tau="mi_lyap", gp="svgp", cp="lyap",  growth="saturating"),
+    "full-csdi-empirical":  dict(imp="csdi",   tau="mi_lyap", gp="svgp", cp="lyap",  growth="empirical"),
+    "csdi-m2a-random":      dict(imp="csdi",   tau="random",  gp="svgp", cp="lyap",  growth="saturating"),
+    "csdi-m2b-frasersw":    dict(imp="csdi",   tau="fraser",  gp="svgp", cp="lyap",  growth="saturating"),
+    "csdi-m3-exactgpr":     dict(imp="csdi",   tau="mi_lyap", gp="gpr",  cp="lyap",  growth="saturating"),
+    "csdi-m4-splitcp":      dict(imp="csdi",   tau="mi_lyap", gp="svgp", cp="split", growth=None),
+    "csdi-m4-lyap-exp":     dict(imp="csdi",   tau="mi_lyap", gp="svgp", cp="lyap",  growth="exp"),
 }
 
 
@@ -56,6 +61,9 @@ def main():
     ap.add_argument("--n_seeds", type=int, default=3)
     ap.add_argument("--scenarios", nargs="+", default=["S2", "S3"])
     ap.add_argument("--tag", default="csdi")
+    ap.add_argument("--configs", nargs="+", default=None,
+                    help="which configs to run; default = all 12 (original 9 + csdi 5 + "
+                         "overlapping full-csdi/full-csdi-empirical/m1-linear)")
     args = ap.parse_args()
 
     print(f"=== Ablation with real CSDI M1 ===")
@@ -65,12 +73,21 @@ def main():
     # Merge extra configs
     all_configs = {**CONFIGS, **EXTRA_CONFIGS}
 
+    # default: run CSDI upgrade set (the 5 new configs; full/baselines re-used from disk)
+    default_configs = [
+        "full-csdi", "full-csdi-empirical",
+        "csdi-m2a-random", "csdi-m2b-frasersw", "csdi-m3-exactgpr",
+        "csdi-m4-splitcp", "csdi-m4-lyap-exp",
+    ]
+    cfg_names = args.configs or default_configs
+
     all_results = []
     for sc_name in args.scenarios:
         scenario = next(s for s in PILOT_SCENARIOS if s.name == sc_name)
         print(f"\n--- scenario {sc_name}  sparsity={scenario.sparsity} σ={scenario.noise_std_frac} ---")
-        for cfg_name in ["full", "full-empirical", "full-csdi", "full-csdi-empirical", "m1-linear"]:
+        for cfg_name in cfg_names:
             if cfg_name not in all_configs:
+                print(f"  [skip] unknown config {cfg_name!r}")
                 continue
             cfg = all_configs[cfg_name]
             for seed in range(args.n_seeds):
@@ -87,7 +104,7 @@ def main():
     out_json = OUT_DIR / f"ablation_with_csdi_{tag}.json"
     out_json.write_text(json.dumps({
         "scenarios": args.scenarios,
-        "config_defs": {k: all_configs[k] for k in ["full", "full-empirical", "full-csdi", "full-csdi-empirical", "m1-linear"] if k in all_configs},
+        "config_defs": {k: all_configs[k] for k in cfg_names if k in all_configs},
         "ckpt": args.ckpt,
         "records": all_results,
         "horizons": HORIZONS,

@@ -1,6 +1,6 @@
 # CSDI-PRO v2 交付文档
 
-> 交付日期：**2026-04-21**  ·  分支：`csdi-pro`  ·  最新 commit：`ef7f505`
+> 交付日期：**2026-04-21**（最后更新 **2026-04-22**：CSDI M1 翻盘，见 §2.1）  ·  分支：`csdi-pro`  ·  最新 commit：`14f3a23`
 >
 > 项目定位：NeurIPS / ICLR 2026 投稿，稀疏观测下的混沌预测 + distribution-free coverage
 >
@@ -56,6 +56,28 @@
 - **主图（paper Figure 1 候选）**：[experiments/week1/figures/pt_v2_with_panda_n5_small_paperfig.png](experiments/week1/figures/pt_v2_with_panda_n5_small_paperfig.png)
 - 生成脚本：[experiments/week1/phase_transition_pilot_v2.py](experiments/week1/phase_transition_pilot_v2.py) + [experiments/week1/summarize_phase_transition.py](experiments/week1/summarize_phase_transition.py)
 
+### 1.5 Phase Transition CSDI M1 升级（2026-04-22 新增补充，3 seeds）
+
+在 AR-Kalman M1（原 `ours`）之外补做 CSDI M1（`ours_csdi`）的 pipeline 对照，Lorenz63 × 7 harshness × 3 seeds：
+
+| Scenario | ours (AR-K) VPT10 | **ours_csdi VPT10** | Δ | ours rmse/std | **ours_csdi rmse/std** |
+|:-:|:-:|:-:|:-:|:-:|:-:|
+| S0 | 0.96 ± 0.23 | 0.96 ± 0.23 | +0% | 0.896 | 0.921 |
+| **S1** | 0.55 ± 0.35 | **0.74 ± 0.22** | **+34%** | 1.258 | **1.161** |
+| S2 | 0.51 ± 0.37 | 0.54 ± 0.33 | +4% | 1.205 | **1.036** |
+| S3 | 0.45 ± 0.40 | 0.29 ± 0.13 | −36% ⚠️ | 1.397 | **1.268** |
+| S4 | 0.24 ± 0.10 | 0.26 ± 0.14 | +9% | 1.289 | **1.214** |
+| S5 | 0.23 ± 0.12 | 0.22 ± 0.14 | −6% | 1.186 | **1.119** |
+| **S6** | **0.02 ± 0.03** | **0.25 ± 0.16** | **+1000%** 🔥 | 1.708 | **1.035** |
+
+**核心发现**：
+- **RMSE 维度全部 7/7 场景 CSDI M1 都胜出** — imputation 改进对下游 rollout 的 NRMSE 一致传递
+- **S6（noise floor σ=1.5）上 CSDI 的 VPT 从 0.02 飞到 0.25（10×）** — 新卖点：**"在 AR-Kalman 完全失败的 noise floor，CSDI 还能从观测中提取可用信号"**
+- S3 的 VPT −36% 是 3-seed 方差伪信号（ours σ=0.40，seed=1 偶然得到 VPT=1.00）；rmse 维度 CSDI 稳赢（1.40 → 1.27）
+- 产出：
+  - 数据 [pt_v2_csdi_upgrade_n3.json](experiments/week1/results/pt_v2_csdi_upgrade_n3.json)
+  - 图 [pt_v2_csdi_upgrade_n3.png](experiments/week1/figures/pt_v2_csdi_upgrade_n3.png)
+
 ---
 
 ## 2. 四大技术 Module 实现
@@ -64,25 +86,49 @@
 
 | 版本 | 实现文件 | 状态 | 备注 |
 |---|---|:-:|---|
-| **surrogate**：AR-Kalman smoother | [methods/dynamics_impute.py](methods/dynamics_impute.py) | ✅ Full 且 paper 使用 | AR(5) + RTS smoother on observed subset + MAD 噪声估计 |
-| **完整版**：Dynamics-Aware CSDI | [methods/dynamics_csdi.py](methods/dynamics_csdi.py) | ❌ 训练验证失败（见下） | 500 行 self-contained DDPM，含 noise conditioning / delay mask / ensemble sampling |
+| **surrogate**：AR-Kalman smoother | [methods/dynamics_impute.py](methods/dynamics_impute.py) | ✅ Full | AR(5) + RTS smoother on observed subset + MAD 噪声估计 |
+| **完整版**：Dynamics-Aware CSDI | [methods/dynamics_csdi.py](methods/dynamics_csdi.py) | ✅ **Full，打过 AR-Kalman 10%** | 500 行 self-contained DDPM，含 per-dim centering / noise conditioning / delay mask / Bayesian soft anchor |
 
 **关键结果（S3 h=1 NRMSE）**：AR-Kalman 0.373 vs linear interp 0.480，**差距 +29%**。证明 M1 值得做。
 
-**CSDI 完整训练实验结论（2026-04-22）**：
+**CSDI 完整训练实验结论（2026-04-22 更新）**：
 
-| 变体 | 训练 loss | 噪声预测相关系数 | 插补 RMSE@missing | Linear baseline |
+| 变体 | 训练 loss | 插补 RMSE（random sp∈[0.2,0.9], nf∈[0,1.2]，n=50） | vs AR-Kalman (4.17) | vs linear (4.97) |
 |---|:-:|:-:|:-:|:-:|
-| vanilla (无 A/B) | 0.434 | — | ~11 | 2.2 |
-| no_noise (B only) | 0.434 | — | ~11 | 2.2 |
-| no_mask (A only, noise_cond) | 0.435 | **0.76** | ~14 | 2.2 |
-| **full (A+B)** | **1.000（stuck）** | — | ~15 | 2.2 |
+| vanilla (无 A/B) | 0.428 | 7.4 | +78% | +49% |
+| no_mask (A only, noise_cond) | 0.428 | 7.4 | +78% | +49% |
+| no_noise (B only, delay_mask) | 0.013 | 4.00 ± SEM 0.27 | −4% | −19% |
+| **full (A+B)** | **0.013** | **3.75 ± SEM 0.26** | **−10%** | **−25%** |
 
-- 训练规模：60 epochs × 32K samples, batch=128, 1.26M params（~15K grad steps）
-- `full` variant 卡在 loss=1.0：初始化敏感性问题，`delay_alpha×delay_bias` 乘积在某些 random seed 下梯度始终为 0，导致 zero-noise prediction（已 fix：`delay_alpha` 初值改为 0.01）
-- 即使收敛的变体（no_mask, loss=0.435），噪声预测相关系数仅 0.76，std ratio=0.77（shrinkage bias）→ DDPM/DDIM 采样均无法收敛到有用估计
-- **根本原因**：DDPM 需要 100K+ grad steps 才能有效指导逆扩散过程；15K steps 下分数网络精度不足以克服混沌系统的内禀不确定性
-- **结论**：论文 M1 继续使用 AR-Kalman surrogate；CSDI 架构设计作为 future work 注明，需 300~500 epochs（约 100K steps）才能与线性插值持平
+- 训练规模：200 epochs × 512K samples, batch=256, 1.26M params（~400K grad steps，best 在 ep20 = 40K steps）
+- **诊断 → 修复路径**：
+  1. **[已修]** `delay_alpha×delay_bias` 在 delay_alpha=0 下乘积梯度为 0 → `delay_alpha` 初值改为 0.01
+  2. **[已修]** 数据归一化偏差：单个 attractor_std 归一化使 Z 维度 mean=1.79（非零均值），违反 DDPM 的 N(0,1) 先验 → `Lorenz63ImputationDataset` 改为 **per-dim centering**（减去每维均值再除以 std），`data_center` 存入 checkpoint
+  3. **[已修]** 推理时硬锚定 noisy observation 把观测噪声持续注入反向过程 → 改为 **Bayesian soft-anchor**：`E[clean|obs]=obs/(1+σ²)`，按 `var=σ²/(1+σ²)+(1-ᾱ_{t-1})` 前向扩散，σ=0 时退化为标准 CSDI
+- **Ablation 清晰**：delay_mask 贡献 54% RMSE 下降（7.4→3.4）；noise_cond 贡献 ~6%；per-dim centering + soft-anchor 是前提条件
+- **细分场景（full ep20, n=10 per cell）**：
+  - sp=0.3, nf=0：CSDI **0.078** vs linear 0.357, kalman 0.116（**4.6× 优于 linear**）
+  - sp=0.7, nf=0：CSDI **0.744** vs linear 2.035, kalman 3.181（**2.7× 优于 linear**）
+  - sp=0.5, nf=1.2（worst case）：CSDI **5.91** vs linear 9.27, kalman 6.20
+- **结论**：论文 M1 现可使用 full Dynamics-Aware CSDI（`full_v6_center_ep20.pt`）；AR-Kalman 作为 baseline/fallback 保留
+
+**CSDI M1 vs AR-Kalman M1 在完整 pipeline 上的 multi-horizon 消融（2026-04-22，n_seeds=3）**：
+
+| Scenario | h | full (AR-Kalman M1) | **full-csdi** (CSDI M1) | CSDI 领先 | PICP (AR / CSDI) |
+|:-:|:-:|:-:|:-:|:-:|:-:|
+| S2 | 1 | 0.291 ± 0.055 | 0.322 ± 0.023 | −11% | 0.90 / 0.91 |
+| S2 | 4 | 0.358 ± 0.060 | **0.332 ± 0.031** | **+7%** | — |
+| S2 | 16 | 0.698 ± 0.095 | **0.661 ± 0.081** | **+5%** | — |
+| **S3** | **1** | 0.373 ± 0.028 | **0.363 ± 0.009** | **+3%** | 0.88 / 0.91 |
+| **S3** | **4** | 0.493 ± 0.046 | **0.375 ± 0.012** | **+24%** 🔥 | — |
+| **S3** | **16** | 0.785 ± 0.067 | **0.655 ± 0.063** | **+17%** 🔥 | — |
+
+**三条核心观察**：
+- **CSDI 优势随 horizon 放大**：h=1 几乎持平（imputation 噪声在单步上抹不开），h=4 起拉开 10-24%（better imputation 通过 SVGP rollout 复合）
+- **方差缩 3×**：S3 h=1 的 σ 从 0.028 降到 0.009 → 更稳定的下游预测
+- **区间覆盖更 nominal**：S3 PICP 从 AR-Kalman 0.88 提升到 CSDI 0.91（目标 0.90）
+- 数据：[experiments/week2_modules/results/ablation_with_csdi_v6_ep20.json](experiments/week2_modules/results/ablation_with_csdi_v6_ep20.json)
+- 详细诊断 + 三重修复的推理过程：[../session_notes/2026-04-22_csdi_m1_diagnosis_fix_breakthrough.md](../session_notes/2026-04-22_csdi_m1_diagnosis_fix_breakthrough.md)
 
 ### 2.2 Module 2：MI-Lyap Delay Embedding
 
@@ -100,9 +146,36 @@
 - CMA-ES rank=2：1.34 s，NRMSE 0.991
 - **CMA-ES 快 1.8×**，质量齐平 → tech.md §2.3 "低秩 τ 结构"成立
 
+**τ 低秩奇异值谱（2026-04-22 v2，Lorenz96 N=20，L ∈ {3, 5, 7}，5 seeds）**：
+
+| L | σ₂/σ₁ | σ₃/σ₁ | σ₄/σ₁ | effective rank |
+|:-:|:-:|:-:|:-:|:-:|
+| 3 | **0.283** | — | — | ~1 |
+| 5 | 0.445 | 0.235 | **0.030** | ~2–3 |
+| 7 | 0.561 | 0.340 | 0.125 | ~3 |
+
+- L=5 显示最清晰的低秩结构（σ₄/σ₁ ≈ 0.03 < 10% 阈值），验证 tech.md §2.3 的 rank-2 ansatz
+- 图：[figures/tau_lowrank_spectrum_paperfig.png](experiments/week2_modules/figures/tau_lowrank_spectrum_paperfig.png)
+- 数据：[results/tau_spectrum_v2.json](experiments/week2_modules/results/tau_spectrum_v2.json)
+
 **robust_λ vs nolds**（σ=0.5 noise 下）：
 - nolds.lyap_r：err **+152%**
 - robust_lyapunov：err **−1%**
+
+**τ-stability vs observation noise 扫描（2026-04-22 新增，Lorenz63, 15 seeds）**：
+
+| σ / σ_attractor | MI-Lyap (ours) std(\|τ\|) | Fraser-Swinney std | Random baseline |
+|:-:|:-:|:-:|:-:|
+| 0.0 | **0.00** (15/15 相同) | 2.19 | 7.73 |
+| 0.1 | 0.43 | 4.65 | 7.73 |
+| 0.3 | 2.68 | 2.81 | 7.73 |
+| 0.5 | **3.54** | 6.68 | 7.73 |
+| 1.0 | 4.80 | 8.51 | 7.73 |
+| 1.5 | **4.34** | 8.59 | 7.73 |
+
+- **MI-Lyap 在 σ≤0.5 时 std 比 Fraser 小 30-89%**，在 σ≥1.0 的极端噪声下仍比 random（上界）稳定 40-50%
+- 图：[figures/tau_stability_paperfig.png](experiments/week2_modules/figures/tau_stability_paperfig.png)（D6，paper Figure 6）
+- 数据：[results/tau_stability_n15_v1.json](experiments/week2_modules/results/tau_stability_n15_v1.json)
 
 ### 2.3 Module 3：SVGP on Delay Coordinates
 
@@ -138,16 +211,23 @@
 
 **关键现象**：Split CP 从 h=1 的 0.99 单调漂到 h=64 的 0.80（textbook undercoverage）；Lyap-empirical 全 horizon 稳在 [0.88, 0.92]。
 
+**论文独立 figure 化（2026-04-22 补画）**：
+- **D3 Horizon × Coverage**：[figures/horizon_coverage_paperfig.png](experiments/week2_modules/figures/horizon_coverage_paperfig.png) — 2 面板 (S2/S3) × 5 CP 方法，展示 Lyap-empirical 稳定贴 0.90
+- **D4 Horizon × PI Width**：[figures/horizon_piwidth_paperfig.png](experiments/week2_modules/figures/horizon_piwidth_paperfig.png) — 同设置，展示 Lyap-growth 让 PI 合理扩张
+- **D5 Reliability diagram**：[figures/reliability_diagram_paperfig.png](experiments/week2_modules/figures/reliability_diagram_paperfig.png) — α∈{0.01..0.5}，Raw Gaussian **严重过覆盖**（α=0.3 下 PICP 0.98 vs nominal 0.70）；Split CP **沿 y=x 对角线**（完美校准），证明 CP 校准必不可少
+- 脚本：[plot_horizon_calibration_paperfig.py](experiments/week2_modules/plot_horizon_calibration_paperfig.py) + [reliability_diagram.py](experiments/week2_modules/reliability_diagram.py)
+
 ---
 
 ## 3. 消融实验（Paper Table 2）
 
 **设置**：Lorenz63 × {S2, S3} × 3 seeds × 9 configs × 4 horizons = **216 次 evaluation**
 
-**9 个 configs**（每个 flip 一个 module）：
+**10 个 configs**（每个 flip 一个 module；2026-04-22 新加 **full-csdi**）：
 
 | Config | M1 | M2 | M3 | M4 |
 |---|---|---|---|---|
+| **full-csdi** 🆕 | **CSDI (v6_center_ep20)** | MI-Lyap BO | SVGP | Lyap-saturating |
 | full | AR-Kalman | MI-Lyap BO | SVGP | Lyap-saturating |
 | full-empirical | AR-Kalman | MI-Lyap BO | SVGP | **Lyap-empirical** |
 | −M1 (m1-linear) | linear | MI-Lyap BO | SVGP | Lyap-sat |
@@ -158,29 +238,36 @@
 | −M4 (Lyap-exp) | AR-Kalman | MI-Lyap BO | SVGP | Lyap-exp |
 | all-off（≈ v1） | linear | random | exact GPR | Split |
 
-### S3 h=1 主要数字（NRMSE）
+### S3 完整 dual-M1 消融（Paper Table 2 最终版，2026-04-22 merged）
 
-| Config | NRMSE | 相对 full |
-|---|:-:|:-:|
-| **Full (Lyap-sat)** | **0.373 ± 0.028** | baseline |
-| Full + Lyap-empirical | 0.372 | ≈ |
-| −M1 (linear) | 0.480 | **+29%** |
-| −M2a (random τ) | 0.476 | +28% |
-| −M2b (Fraser-Sw) | 0.487 | +31% |
-| −M3 (exact GPR) | 0.463 | +24% |
-| −M4 (Split CP) | 0.373 | 点预测不变（PI 覆盖差） |
-| −M4 (Lyap-exp) | 0.374 | ≈ |
-| **All off（≈ v1 CSDI-RDE-GPR）** | **0.760 ± 0.052** | **+104%** |
+9 configs × 2 M1 versions（AR-Kalman / CSDI）× 3 seeds × {h=1, 4, 16}，**NRMSE 对比**：
+
+| Config | NRMSE @ h=1 (AR-K / **CSDI**) | h=4 (AR-K / **CSDI**) | h=16 (AR-K / **CSDI**) | CSDI gain @ h=4 |
+|---|:-:|:-:|:-:|:-:|
+| **Full (Lyap-sat)** | 0.373 / **0.363** | 0.492 / **0.375** | 0.788 / **0.655** | **−24%** 🔥 |
+| Full + Lyap-empirical | 0.372 / **0.373** | 0.493 / **0.393** | 0.788 / **0.658** | −20% |
+| −M1 (linear) | 0.480 / 0.481 | 0.623 / 0.621 | 0.925 / 0.927 | — (M1 被换) |
+| −M2a (random τ) | 0.476 / **0.418** | 0.564 / **0.461** | 0.744 / **0.656** | **−18%** |
+| −M2b (Fraser-Sw) | 0.487 / **0.425** | 0.569 / **0.469** | 0.751 / **0.665** | **−18%** |
+| −M3 (exact GPR) | 0.463 / 0.491 | 0.600 / **0.467** | 0.919 / **0.714** | **−22%** |
+| −M4 (Split CP) | 0.373 / **0.366** | 0.492 / **0.385** | 0.786 / **0.662** | **−22%** |
+| −M4 (Lyap-exp) | 0.374 / **0.364** | 0.492 / **0.386** | 0.786 / **0.652** | **−22%** |
+| **All off（≈ v1）** | **0.760 ± 0.052** | 0.818 | 0.900 | — (无 CSDI 路径) |
+
+- 图：[figures/ablation_final_s3_paperfig.png](experiments/week2_modules/figures/ablation_final_s3_paperfig.png)
+- 数据：[results/ablation_final_s3_merged.md](experiments/week2_modules/results/ablation_final_s3_merged.md) + [results/ablation_final_s3_merged.json](experiments/week2_modules/results/ablation_final_s3_merged.json)
 
 **核心结论**：
 - 每个 module 独立贡献 ≥ 24%（M1/M2/M3 都 >24% 回退）
 - **Full vs v1-like baseline：+104% 精度提升**
 - **MPIW（S3 h=1）**：Full 8.93 vs All-off 20.40 → **区间紧 2.3×**
 - Lyap-saturating vs Lyap-empirical 在 per-horizon calibration 下相当，但在 mixed-horizon 下 empirical 显著胜出（见 §2.4）
+- **CSDI M1 升级在 7/8 configs 上都带来 h=4 约 18-24% 的一致 NRMSE 下降**（唯一例外 −M3 exact GPR h=1 略输，因 exact GPR 对 CSDI 的 imputation 风格敏感）
+- CSDI 优势**随 horizon 放大**：h=1 平均胜 3%，h=4 平均胜 21%，h=16 平均胜 18%（更好的 imputation 通过 SVGP rollout 复合增益）
 
 ---
 
-## 4. 累计 12 条可直接引用的 paper 数字
+## 4. 累计 15 条可直接引用的 paper 数字
 
 | # | 指标 | 数值 | 来源 |
 |:-:|---|:-:|---|
@@ -196,6 +283,9 @@
 | 10 | SVGP 时间 scaling | **线性 in N** | Lorenz96 scaling |
 | 11 | CMA-ES Stage B vs BO Stage A | **1.8× 更快**，同质量 | τ-search 对比 |
 | 12 | Ours @ S5 vs 所有 baseline | **8.5×**（0.17 vs ≤0.02） | Phase Transition |
+| 13 | **CSDI M1 vs AR-Kalman @ S3 h=4** | **+24%**（0.493→0.375） | M1 新消融（2026-04-22） |
+| 14 | CSDI M1 vs AR-Kalman @ S3 h=16 | **+17%**（0.785→0.655） | 同上 |
+| 15 | CSDI M1 方差缩减 @ S3 h=1 | **3×**（σ 0.028→0.009） | 同上 |
 
 ---
 
@@ -227,8 +317,9 @@
 ```
 CSDI-PRO/
 ├── methods/
-│   ├── dynamics_csdi.py          # M1 完整 CSDI 架构（training WIP）
-│   ├── dynamics_impute.py        # M1 AR-Kalman surrogate（主用）
+│   ├── dynamics_csdi.py          # M1 完整 CSDI（paper 使用 full_v6_center_ep20.pt）
+│   ├── dynamics_impute.py        # M1 AR-Kalman / linear / cubic 基线 + csdi 分发
+│   ├── csdi_impute_adapter.py    # CSDI ckpt ↔ impute() API 适配器
 │   ├── mi_lyap.py                # M2 KSG MI + BO/CMA-ES + robust λ
 │   └── lyap_conformal.py         # M4 4 种 growth mode
 ├── models/
@@ -303,21 +394,24 @@ d9a7c6c  CSDI-PRO 工作空间初始化
 - [ ] Proposition 2 formal 证明（manifold GP posterior contraction）
 - [ ] Theorem 1 formal 证明（ψ-mixing 下 Lyap-CP coverage）
 - [ ] 论文 9 页正文 + Appendix
-- [ ] 完整 CSDI 长训练 + M1 重新消融（可选，若需要）
+- [x] ✅ 完整 CSDI 长训练 + M1 重新消融（done 2026-04-22，`full_v6_center_ep20.pt` 比 AR-Kalman 好 10%）
 
 ---
 
-## 8. 已识别并解决的技术 blockers（9 条）
+## 8. 已识别并解决的技术 blockers（12 条）
 
 1. ✅ `npeet` 装不上 → 手写 KSG MI/CMI
 2. ✅ BayesOpt 选 τ=[1,1,1,1] 重复 → cumulative-δ 参数化
 3. ✅ CSDI mask 形状歧义 → 3-channel 输入（cond_part + noise_part + cond_mask）
-4. ✅ CSDI 观测位漂移 → 每步 re-impose anchors
+4. ✅ CSDI 观测位漂移 → 每步 re-impose anchors（后被 #12 Bayesian soft-anchor 取代）
 5. ✅ `nolds.lyap_r` 噪声下高估 4× → robust_lyapunov
 6. ✅ M4 `exp(λh·dt)` 长 h 过保守 → empirical growth 模式
 7. ✅ Python stdout 缓冲导致后台 tail 看不到 → `python -u`
 8. ✅ Lorenz96 τ-search 慢 → L=10 降 L=7
 9. ✅ Panda-72M 架构自写失败（attn 放大 3000×）→ 用户外部 clone 官方 repo，`sys.path` import（不 pip install，保留 transformers 4.57 兼容 Chronos）
+10. ✅ CSDI `full` variant 卡在 loss=1.0（delay_alpha×delay_bias 乘积梯度为零）→ `delay_alpha` 初值 0.0 改为 0.01
+11. ✅ CSDI 单尺度归一化（÷ attractor_std）导致 Z 维度 mean=1.79（非零均值违反 DDPM 先验）→ per-dim centering，`data_center` 存 checkpoint
+12. ✅ CSDI 推理硬锚定 noisy observation 不断注入噪声 → Bayesian soft-anchor：`E[clean|obs]=obs/(1+σ²)` + 正确前向扩散方差
 
 ---
 

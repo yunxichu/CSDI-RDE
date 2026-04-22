@@ -285,6 +285,7 @@ class Lorenz63ImputationDataset(Dataset):
         attractor_std: float = 8.51,
         seed: int = 0,
         cache_path: str | None = None,
+        data_center: np.ndarray | None = None,
     ) -> None:
         self.seq_len = seq_len
         self.dt = dt
@@ -302,6 +303,14 @@ class Lorenz63ImputationDataset(Dataset):
             self.n_samples = n_samples
             self._cache = None
             self._pool = self._build_pool()
+
+        # Per-dim centering. Lorenz63's Z has mean ~16.4, so single-scalar /attractor_std
+        # leaves Z with a large offset in normalized space — breaks DDPM's N(0,1) prior.
+        if data_center is None:
+            source = self._cache if self._cache is not None else self._pool
+            self.data_center = source.reshape(-1, source.shape[-1]).mean(0).astype(np.float32)
+        else:
+            self.data_center = np.asarray(data_center, dtype=np.float32)
 
     def _build_pool(self) -> np.ndarray:
         from experiments.week1.lorenz63_utils import integrate_lorenz63
@@ -335,12 +344,16 @@ class Lorenz63ImputationDataset(Dataset):
         mask_2d = np.repeat(mask[:, None], clean.shape[1], axis=1)
 
         noisy = clean + rng.normal(scale=sigma, size=clean.shape).astype(np.float32)
-        observed = noisy * mask_2d
 
+        # Per-dim centering + global scale so that x has mean≈0, std≈O(1) per dim.
         scale = self.attractor_std
+        clean_n = (clean - self.data_center) / scale
+        noisy_n = (noisy - self.data_center) / scale
+        observed = noisy_n * mask_2d  # (obs_val at missing positions is 0 in normalized space)
+
         return {
-            "clean": torch.from_numpy(clean / scale).float(),
-            "observed": torch.from_numpy(observed / scale).float(),
+            "clean": torch.from_numpy(clean_n).float(),
+            "observed": torch.from_numpy(observed).float(),
             "mask": torch.from_numpy(mask_2d).float(),
             "sigma": torch.tensor(sigma / scale, dtype=torch.float32),
         }
@@ -364,6 +377,7 @@ class DynamicsCSDIConfig:
     use_noise_cond: bool = True
     use_delay_mask: bool = True
     device: str = "cuda"
+    data_center: tuple = (0.0, 0.0, 0.0)  # per-dim mean subtracted before /attractor_std
 
 
 class DynamicsCSDI:
@@ -399,8 +413,15 @@ class DynamicsCSDI:
         batch_size: int = 32,
         lr: float = 1e-3,
         verbose: bool = True,
+        save_every: int = 0,
+        ckpt_dir=None,
+        tag: str = "",
     ) -> "DynamicsCSDI":
-        loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=0)
+        # Sync data_center from dataset so it is persisted in checkpoints.
+        if hasattr(dataset, "data_center"):
+            self.cfg.data_center = tuple(float(x) for x in dataset.data_center)
+        loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=4,
+                            pin_memory=True, persistent_workers=True)
         opt = torch.optim.Adam(self.net.parameters(), lr=lr)
         sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=epochs)
         self.net.train()
@@ -429,7 +450,11 @@ class DynamicsCSDI:
                 total += loss.item() * B; n += B
             sched.step()
             if verbose and (ep % 5 == 0 or ep == epochs - 1):
-                print(f"  [dyn-csdi] epoch {ep:3d} loss={total / n:.4f}")
+                print(f"  [dyn-csdi] epoch {ep:3d} loss={total / n:.4f}", flush=True)
+            if save_every > 0 and ckpt_dir is not None and ep > 0 and ep % save_every == 0:
+                mid_path = Path(ckpt_dir) / f"dyn_csdi_{tag}_ep{ep}.pt"
+                self.save(mid_path)
+                print(f"  [ckpt] mid-save ep{ep} → {mid_path}", flush=True)
         self.net.eval()
         return self
 
@@ -453,9 +478,11 @@ class DynamicsCSDI:
                 mask_arr = np.repeat(mask_arr[:, None], obs.shape[1], axis=1)
         obs = np.nan_to_num(obs, nan=0.0)
 
-        # Normalise to match training; remember scale for denormalisation
+        # Normalise to match training: per-dim centering then global scale.
+        # data_center is stored in cfg so checkpoint round-trips preserve it.
         scale = attractor_std
-        obs = obs / scale
+        center = np.asarray(self.cfg.data_center, dtype=np.float32)
+        obs = (obs - center) / scale
 
         T, D = obs.shape
         L = self.cfg.seq_len
@@ -477,12 +504,17 @@ class DynamicsCSDI:
         samples = torch.zeros(n_samples, T, D, device=self.device)
         obs_mask_b = mask_t.unsqueeze(0)
         obs_val_b = obs_t.unsqueeze(0)
+
+        # Bayesian posterior of clean given noisy obs, assuming unit-variance clean prior
+        # (normalized space). E[clean|obs] = obs * 1/(1+sigma^2); Var = sigma^2/(1+sigma^2).
+        # sigma_norm==0 recovers the original hard-anchor behaviour exactly.
+        sigma_sq = float(sigma_norm) ** 2
+        clean_est = obs_val_b / (1.0 + sigma_sq)
+        var_clean = sigma_sq / (1.0 + sigma_sq)
+
         for s in range(n_samples):
-            # initialise x at ALL positions from noise, but **re-impose observed at every step**
-            # so the score network's inputs are consistent with training (noise_part at
-            # observed is always cond_obs).
+            # initialise x as pure noise (matches forward-diffused clean at step T).
             x = torch.randn_like(obs_t).unsqueeze(0)  # (1, L, D)
-            x = obs_mask_b * obs_val_b + (1 - obs_mask_b) * x  # start observed anchored
             for t in range(self.schedule.num_steps - 1, -1, -1):
                 t_t = torch.tensor([t], device=self.device)
                 pred_noise = self.net(x, obs_val_b, obs_mask_b, t_t,
@@ -496,20 +528,22 @@ class DynamicsCSDI:
                     prev_alpha = self._alpha[t - 1]
                     sd = (((1 - prev_alpha) / (1 - alpha_t)) * self._beta[t]).sqrt()
                     x = x + sd * torch.randn_like(x)
-                # re-impose observed at this t: compute forward-diffused cond_obs and
-                # blend so that observed positions follow the known trajectory instead
-                # of drifting.
+                # Soft re-impose observed: forward-diffuse E[clean|obs] to step t-1 with
+                # variance that accounts for obs noise + forward diffusion noise.
                 if t > 0:
                     alpha_tm1 = self._alpha[t - 1]
+                    mu_tm1 = alpha_tm1.sqrt() * clean_est
+                    var_tm1 = alpha_tm1 * var_clean + (1.0 - alpha_tm1)
                     anchor_noise = torch.randn_like(obs_val_b)
-                    obs_at_tm1 = (alpha_tm1.sqrt() * obs_val_b
-                                  + (1 - alpha_tm1).sqrt() * anchor_noise)
+                    obs_at_tm1 = mu_tm1 + var_tm1.sqrt() * anchor_noise
                     x = obs_mask_b * obs_at_tm1 + (1 - obs_mask_b) * x
                 else:
-                    x = obs_mask_b * obs_val_b + (1 - obs_mask_b) * x
+                    # final step t=0: use posterior mean estimate of clean directly
+                    x = obs_mask_b * clean_est + (1 - obs_mask_b) * x
             samples[s] = x.squeeze(0)
-        # Un-normalise back to raw attractor scale
-        return (samples * scale).cpu().numpy()
+        # Un-normalise back to raw attractor scale (reverse center + scale)
+        samples_np = samples.cpu().numpy() * scale + center
+        return samples_np
 
     def _impute_chunked(self, obs, mask_arr, tau, sigma, n_samples, attractor_std):
         T, D = obs.shape

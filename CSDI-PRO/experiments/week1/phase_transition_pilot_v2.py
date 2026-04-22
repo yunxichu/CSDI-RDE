@@ -115,6 +115,12 @@ def run_pilot(
                         observed, pred_len=pred_len, seed=seed,
                         bayes_calls=10, n_epochs=150,
                     )
+                elif method == "ours_csdi":
+                    # requires set_csdi_checkpoint() to have been called at start
+                    mean = full_pipeline_forecast(
+                        observed, pred_len=pred_len, seed=seed,
+                        imp_kind="csdi", bayes_calls=10, n_epochs=150,
+                    )
                 elif method == "panda":
                     mean = panda_forecast(ctx_filled, pred_len=pred_len)
                 else:
@@ -230,7 +236,16 @@ def main() -> None:
     ap.add_argument("--model", default="amazon/chronos-t5-small")
     ap.add_argument("--methods", nargs="+", default=["ours", "panda", "chronos", "parrot", "persist"])
     ap.add_argument("--tag", default="with_panda")
+    ap.add_argument("--csdi_ckpt", default=None,
+                    help="path to DynamicsCSDI checkpoint (required if 'ours_csdi' is in methods)")
     args = ap.parse_args()
+
+    if "ours_csdi" in args.methods:
+        if not args.csdi_ckpt:
+            raise SystemExit("--csdi_ckpt is required when 'ours_csdi' is in --methods")
+        from methods.csdi_impute_adapter import set_csdi_checkpoint
+        set_csdi_checkpoint(args.csdi_ckpt)
+        print(f"[pilot] CSDI ckpt loaded: {args.csdi_ckpt}")
 
     records = run_pilot(
         n_seeds=args.n_seeds,

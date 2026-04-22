@@ -91,7 +91,14 @@ def main() -> None:
     ap.add_argument("--tag", default=None)
     ap.add_argument("--cache_path", default=None,
                     help="load pre-generated trajectories from this .npz")
+    ap.add_argument("--save_every", type=int, default=0,
+                    help="save intermediate checkpoint every N epochs (0=disable)")
+    ap.add_argument("--seed", type=int, default=0,
+                    help="random seed for reproducible initialisation")
     args = ap.parse_args()
+
+    import torch as _torch
+    _torch.manual_seed(args.seed)
 
     tag = args.tag or f"{args.variant}_ep{args.epochs}"
     cfg_kwargs = VARIANTS[args.variant]
@@ -108,7 +115,7 @@ def main() -> None:
     )
     print(f"=== Train Dynamics-CSDI variant={args.variant}  {cfg_kwargs}")
     print(f"    seq_len={args.seq_len} channels={args.channels} layers={args.n_layers} "
-          f"n_samples={args.n_samples} epochs={args.epochs}")
+          f"n_samples={args.n_samples} epochs={args.epochs} lr={args.lr} seed={args.seed}")
 
     model = DynamicsCSDI(cfg)
     n_params = sum(p.numel() for p in model.net.parameters())
@@ -120,7 +127,8 @@ def main() -> None:
     )
     print(f"[data] dataset size={len(ds)}  cache={'yes' if args.cache_path else 'no (on-the-fly pool)'}")
     t0 = time.time()
-    model.fit(ds, epochs=args.epochs, batch_size=args.batch_size, lr=args.lr, verbose=True)
+    model.fit(ds, epochs=args.epochs, batch_size=args.batch_size, lr=args.lr, verbose=True,
+              save_every=args.save_every, ckpt_dir=CKPT_DIR, tag=tag)
     train_time = time.time() - t0
     print(f"[train] total {train_time:.1f}s = {train_time/60:.1f} min")
 

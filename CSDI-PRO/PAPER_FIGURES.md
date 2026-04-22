@@ -299,13 +299,200 @@ CUDA_VISIBLE_DEVICES=0 python -u -m experiments.week2_modules.lorenz96_scaling \
 
 | # | 图名 | 状态 |
 |:-:|---|:-:|
-| D2 | Coverage Across Harshness | ❌ 数据已有（pt_v2_with_panda JSON），需画 |
-| D3 | Horizon × Coverage 独立图 | ⚠️ 数据在 Figure 5 里，需整理 paper 版 |
-| D4 | Horizon × PI Width | ⚠️ 同上 |
-| D5 | Reliability diagram（pre/post conformal） | ❌ metrics/uq_metrics.py 有 reliability_curve()，需跑 |
-| D6 | MI-Lyap τ 稳定性 vs noise | ❌ 新增 σ 扫描实验 |
+| D2 | Coverage Across Harshness | ❌ 数据已有（pt_v2_with_panda JSON 里无 PICP），需小规模新跑 |
+| D3 | Horizon × Coverage 独立图 | ✅ **完成**（2026-04-22，见 §D3 新节） |
+| D4 | Horizon × PI Width | ✅ **完成**（同上） |
+| D5 | Reliability diagram（pre/post conformal） | ✅ **完成**（2026-04-22，见 §D5 新节） |
+| D6 | MI-Lyap τ 稳定性 vs noise | ✅ **完成**（2026-04-22，见 §D6 新节） |
+| D7 | τ 矩阵低秩奇异值谱（L=3-5 fix） | ✅ **完成**（2026-04-22 v2，见 §D7 新节） |
 | D9 | EEG case study | ❌ 需 EEG 数据集 |
 | D11 | dysts 20 系统 benchmark | ❌ 大任务 |
+
+---
+
+## Figure D3：Horizon × Coverage（2026-04-22 新增）
+
+**状态**：✅ Paper-ready
+
+**文件**：[experiments/week2_modules/figures/horizon_coverage_paperfig.png](experiments/week2_modules/figures/horizon_coverage_paperfig.png)
+
+### 呈现什么
+2 面板（S2 / S3），横轴 horizon h ∈ {1, 2, 4, 8, 16, 24, 32, 48}，纵轴 PICP（目标 0.90）。5 条线：Split CP / Lyap-exp / Lyap-sat / Lyap-clipped / **Lyap-empirical**。
+
+### 关键数字
+- S3 Split CP 从 h=1 的 PICP 0.99 漂到 h=48 的 0.80（undercoverage）
+- **Lyap-empirical 全 horizon 稳在 [0.88, 0.92]**
+
+### 如何复现
+```bash
+python -m experiments.week2_modules.plot_horizon_calibration_paperfig
+```
+数据来源：[results/module4_horizon_cal_{S2,S3}_n3.json](experiments/week2_modules/results/)
+
+---
+
+## Figure D4：Horizon × PI Width（2026-04-22 新增）
+
+**状态**：✅ Paper-ready
+
+**文件**：[experiments/week2_modules/figures/horizon_piwidth_paperfig.png](experiments/week2_modules/figures/horizon_piwidth_paperfig.png)
+
+### 呈现什么
+2 面板（S2 / S3），横轴 h，纵轴 MPIW（mean PI width）。展示 **Lyap-growth 让 PI 合理扩张**：Split CP 的 width 随 h 固定 → 长 h 自然欠保险；Lyap-exp/sat/clipped 按 growth 放大；**Lyap-empirical 的 width 由经验残差自然决定，既不过窄也不过宽**。
+
+### 如何复现
+同 D3（同一个脚本同时出图）。
+
+---
+
+## Figure D5：Reliability Diagram（2026-04-22 新增）
+
+**状态**：✅ Paper-ready
+
+**文件**：[experiments/week2_modules/figures/reliability_diagram_paperfig.png](experiments/week2_modules/figures/reliability_diagram_paperfig.png)
+
+### 呈现什么
+2 面板（S2 / S3），横轴 **nominal coverage 1−α**（α ∈ {0.01, 0.05, 0.10, 0.20, 0.30, 0.40, 0.50}），纵轴 **empirical PICP**。2 条线：
+- **Raw Gaussian PI (pre-CP)**：严重过覆盖（α=0.3 时 PICP 0.98 vs nominal 0.70）
+- **Split CP (post-CP)**：几乎精确贴 y=x 对角线（完美校准）
+
+### 关键数字（h=1, S3）
+| α | nominal | Raw PICP | Split CP PICP |
+|:-:|:-:|:-:|:-:|
+| 0.01 | 0.99 | 1.00 | 0.99 |
+| 0.10 | 0.90 | 1.00 | 0.90 |
+| 0.30 | 0.70 | 0.98 | 0.71 |
+| 0.50 | 0.50 | 0.92 | 0.50 |
+
+**论文叙事**：raw GP 的置信区间无法直接使用（严重过覆盖）；CP 校准把所有 α 压到对角线上。
+
+### 如何复现
+```bash
+CUDA_VISIBLE_DEVICES=0 python -m experiments.week2_modules.reliability_diagram --n_seeds 3 --scenarios S2 S3
+```
+
+### 原始数据
+[results/reliability_diagram_n3_v1.json](experiments/week2_modules/results/reliability_diagram_n3_v1.json)
+
+---
+
+## Figure D6：MI-Lyap τ Stability vs Observation Noise（2026-04-22 新增）
+
+**状态**：✅ Paper-ready
+
+**文件**：[experiments/week2_modules/figures/tau_stability_paperfig.png](experiments/week2_modules/figures/tau_stability_paperfig.png)
+
+### 呈现什么
+2 面板（|τ| 均值 + std）× 3 方法（MI-Lyap / Fraser-Swinney / Random），σ ∈ {0.0, 0.1, 0.3, 0.5, 1.0, 1.5}，15 seeds。
+
+### 关键数字
+| σ | MI-Lyap std(\|τ\|) | Fraser std | Random |
+|:-:|:-:|:-:|:-:|
+| 0.0 | **0.00**（15/15 完全相同） | 2.19 | 7.73 |
+| 0.5 | **3.54** | 6.68 | 7.73 |
+| 1.5 | **4.34** | 8.59 | 7.73 |
+
+**paper claim**：MI-Lyap 在 σ≤0.5 比 Fraser std 小 30-89%；σ=1.5 仍比 random 上界稳 ~50%。
+
+### 如何复现
+```bash
+python -m experiments.week2_modules.tau_stability_vs_noise --n_seeds 15
+```
+
+### 数据
+[results/tau_stability_n15_v1.json](experiments/week2_modules/results/tau_stability_n15_v1.json)
+
+---
+
+## Figure D7：τ Matrix Low-Rank Spectrum（2026-04-22 重跑 v2）
+
+**状态**：✅ Paper-ready（v1 L=7 区分度不足已修，现在用 L ∈ {3, 5, 7} 扫描）
+
+**文件**：[experiments/week2_modules/figures/tau_lowrank_spectrum_paperfig.png](experiments/week2_modules/figures/tau_lowrank_spectrum_paperfig.png)
+
+### 呈现什么
+Lorenz96 N=20 下 CMA-ES Stage B 收敛后，U@U^T 矩阵的奇异值（log-y 轴，归一化到 σ₁）。3 条线对应 L ∈ {3, 5, 7}，5 seeds 带 error-band。10% 阈值虚线。
+
+### 关键数字
+| L | σ₂/σ₁ | σ₃/σ₁ | σ₄/σ₁ | 有效 rank |
+|:-:|:-:|:-:|:-:|:-:|
+| 3 | **0.283** | — | — | ~1 |
+| 5 | 0.445 | 0.235 | **0.030** | ~2-3 |
+| 7 | 0.561 | 0.340 | 0.125 | ~3 |
+
+**paper claim**：最优 τ 矩阵存在经验低秩结构，有效 rank ≈ 2-3（明显小于 full rank L-1），支持 tech.md §2.3 的 rank=2 ansatz 和 CMA-ES Stage B 的 1.8× 加速理由。
+
+### 如何复现
+```bash
+python -m experiments.week2_modules.tau_lowrank_spectrum_v2 --L_list 3 5 7 --n_seeds 5
+```
+
+### 数据
+[results/tau_spectrum_v2.json](experiments/week2_modules/results/tau_spectrum_v2.json)
+
+---
+
+## Figure 1 升级：Phase Transition + CSDI M1（2026-04-22 新增，Figure 1 补充版）
+
+**状态**：✅ Paper-ready（作为 Figure 1 的 supplementary 或 paper 正文新增小节）
+
+**文件**：[experiments/week1/figures/pt_v2_csdi_upgrade_n3.png](experiments/week1/figures/pt_v2_csdi_upgrade_n3.png)
+
+### 呈现什么
+`ours`（AR-Kalman M1）vs `ours_csdi`（CSDI M1 v6_center_ep20）在 Lorenz63 × 7 harshness × 3 seeds 的 VPT@1.0 对比。
+
+### 关键数字
+| Scenario | ours VPT10 | **ours_csdi VPT10** | Δ |
+|:-:|:-:|:-:|:-:|
+| S1 | 0.55 | **0.74** | **+34%** |
+| **S6** (noise floor) | **0.02** | **0.25** | **+1000%** 🔥 |
+| RMSE 7/7 scenarios | — | **全胜** | 一致传递 |
+
+**新 paper claim**："CSDI M1 在 AR-Kalman 完全失败的 noise floor（σ=1.5）仍能从观测中提取可用信号，VPT 从 0.02 飞到 0.25"
+
+### 如何复现
+```bash
+CUDA_VISIBLE_DEVICES=0 python -m experiments.week1.phase_transition_pilot_v2 \
+    --n_seeds 3 --methods ours ours_csdi \
+    --csdi_ckpt experiments/week2_modules/ckpts/dyn_csdi_full_v6_center_ep20.pt \
+    --tag csdi_upgrade_n3
+```
+
+### 数据
+[results/pt_v2_csdi_upgrade_n3.json](experiments/week1/results/pt_v2_csdi_upgrade_n3.json)
+
+---
+
+## Figure 4b：9-config Ablation with Dual-M1（2026-04-22 新增，Figure 4 升级版）
+
+**状态**：✅ Paper-ready
+
+**文件**：[experiments/week2_modules/figures/ablation_final_s3_paperfig.png](experiments/week2_modules/figures/ablation_final_s3_paperfig.png)
+
+### 呈现什么
+3 面板（h=1 / h=4 / h=16），每个 panel 有 9 组 paired bars（**灰色 = AR-Kalman M1** vs **粉色 = CSDI M1**），with error bars.
+
+### 核心 paper claim
+- CSDI 在 7/8 configs 上 **h=4 带来一致的 −18% 到 −24% NRMSE**（唯一例外 −M1/linear 列，M1 被换掉了就与 CSDI 无关）
+- 优势**随 horizon 放大**：h=1 平均 ~3%，h=4 平均 ~21%，h=16 平均 ~18%
+
+### 如何复现
+```bash
+# 1. 跑原 9 configs AR-Kalman ablation（若已有则跳）
+python -m experiments.week2_modules.run_ablation --n_seeds 3 --scenarios S3 --tag S3_n3_v2
+# 2. 跑 CSDI ablation 补齐
+CUDA_VISIBLE_DEVICES=0 python -m experiments.week2_modules.run_ablation_with_csdi \
+    --ckpt experiments/week2_modules/ckpts/dyn_csdi_full_v6_center_ep20.pt \
+    --n_seeds 3 --scenarios S3 --tag v6_ep20_9cfg_S3 \
+    --configs csdi-m2a-random csdi-m2b-frasersw csdi-m3-exactgpr csdi-m4-splitcp csdi-m4-lyap-exp
+# 3. 合并出图
+python -m experiments.week2_modules.merge_ablation_csdi_paperfig
+```
+
+### 数据
+- Merged table markdown：[results/ablation_final_s3_merged.md](experiments/week2_modules/results/ablation_final_s3_merged.md)
+- Merged JSON：[results/ablation_final_s3_merged.json](experiments/week2_modules/results/ablation_final_s3_merged.json)
+- 输入：`ablation_S3_n3_v2.json`（AR-Kalman）+ `ablation_with_csdi_v6_ep20.json`（CSDI batch 1）+ `ablation_with_csdi_v6_ep20_9cfg_S3.json`（CSDI batch 2）
 
 ---
 

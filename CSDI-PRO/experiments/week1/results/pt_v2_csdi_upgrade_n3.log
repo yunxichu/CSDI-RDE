@@ -1,0 +1,50 @@
+[csdi-adapter] loaded experiments/week2_modules/ckpts/dyn_csdi_full_v6_center_ep20.pt  params=1,260,036
+[pilot] CSDI ckpt loaded: experiments/week2_modules/ckpts/dyn_csdi_full_v6_center_ep20.pt
+[pilot] device=cuda model=amazon/chronos-t5-small n_seeds=3 n_ctx=512 pred_len=128 dt=0.025 methods=['ours', 'ours_csdi']
+  seed=0 S0 ours     keep=1.00 σ=0.00  VPT@0.3= 0.93  VPT@1.0= 1.09  rmse/std=0.411  t=12.1s
+  seed=0 S0 ours_csdi keep=1.00 σ=0.00  VPT@0.3= 0.93  VPT@1.0= 1.09  rmse/std=0.422  t=15.9s
+  seed=0 S1 ours     keep=0.82 σ=0.10  VPT@0.3= 0.27  VPT@1.0= 1.02  rmse/std=1.036  t=11.0s
+  seed=0 S1 ours_csdi keep=0.82 σ=0.10  VPT@0.3= 0.29  VPT@1.0= 1.04  rmse/std=1.070  t=15.4s
+  seed=0 S2 ours     keep=0.62 σ=0.30  VPT@0.3= 0.41  VPT@1.0= 1.02  rmse/std=0.730  t=9.1s
+  seed=0 S2 ours_csdi keep=0.62 σ=0.30  VPT@0.3= 0.34  VPT@1.0= 0.97  rmse/std=0.774  t=15.4s
+  seed=0 S3 ours     keep=0.45 σ=0.50  VPT@0.3= 0.00  VPT@1.0= 0.29  rmse/std=1.466  t=11.9s
+  seed=0 S3 ours_csdi keep=0.45 σ=0.50  VPT@0.3= 0.20  VPT@1.0= 0.34  rmse/std=0.997  t=16.3s
+  seed=0 S4 ours     keep=0.28 σ=0.80  VPT@0.3= 0.25  VPT@1.0= 0.36  rmse/std=1.164  t=10.8s
+  seed=0 S4 ours_csdi keep=0.28 σ=0.80  VPT@0.3= 0.16  VPT@1.0= 0.27  rmse/std=1.201  t=16.8s
+  seed=0 S5 ours     keep=0.09 σ=1.20  VPT@0.3= 0.00  VPT@1.0= 0.29  rmse/std=1.266  t=10.6s
+  seed=0 S5 ours_csdi keep=0.09 σ=1.20  VPT@0.3= 0.00  VPT@1.0= 0.27  rmse/std=1.063  t=16.7s
+  seed=0 S6 ours     keep=0.04 σ=1.50  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=1.640  t=12.5s
+  seed=0 S6 ours_csdi keep=0.04 σ=1.50  VPT@0.3= 0.02  VPT@1.0= 0.34  rmse/std=0.980  t=15.9s
+  seed=1 S0 ours     keep=1.00 σ=0.00  VPT@0.3= 0.57  VPT@1.0= 1.16  rmse/std=0.977  t=11.2s
+  seed=1 S0 ours_csdi keep=1.00 σ=0.00  VPT@0.3= 0.95  VPT@1.0= 1.16  rmse/std=0.977  t=17.3s
+  seed=1 S1 ours     keep=0.77 σ=0.10  VPT@0.3= 0.32  VPT@1.0= 0.45  rmse/std=1.365  t=9.0s
+  seed=1 S1 ours_csdi keep=0.77 σ=0.10  VPT@0.3= 0.39  VPT@1.0= 0.54  rmse/std=1.111  t=16.7s
+  seed=1 S2 ours     keep=0.62 σ=0.30  VPT@0.3= 0.27  VPT@1.0= 0.36  rmse/std=1.511  t=11.1s
+  seed=1 S2 ours_csdi keep=0.62 σ=0.30  VPT@0.3= 0.32  VPT@1.0= 0.45  rmse/std=0.990  t=16.7s
+  seed=1 S3 ours     keep=0.38 σ=0.50  VPT@0.3= 0.39  VPT@1.0= 1.00  rmse/std=1.220  t=11.4s
+  seed=1 S3 ours_csdi keep=0.38 σ=0.50  VPT@0.3= 0.23  VPT@1.0= 0.41  rmse/std=1.459  t=13.6s
+  seed=1 S4 ours     keep=0.24 σ=0.80  VPT@0.3= 0.05  VPT@1.0= 0.25  rmse/std=1.289  t=10.7s
+  seed=1 S4 ours_csdi keep=0.24 σ=0.80  VPT@0.3= 0.25  VPT@1.0= 0.43  rmse/std=1.163  t=17.2s
+  seed=1 S5 ours     keep=0.09 σ=1.20  VPT@0.3= 0.05  VPT@1.0= 0.34  rmse/std=1.026  t=11.0s
+  seed=1 S5 ours_csdi keep=0.09 σ=1.20  VPT@0.3= 0.07  VPT@1.0= 0.36  rmse/std=1.125  t=15.9s
+  seed=1 S6 ours     keep=0.04 σ=1.50  VPT@0.3= 0.00  VPT@1.0= 0.00  rmse/std=2.185  t=11.3s
+  seed=1 S6 ours_csdi keep=0.04 σ=1.50  VPT@0.3= 0.00  VPT@1.0= 0.39  rmse/std=1.021  t=14.4s
+  seed=2 S0 ours     keep=1.00 σ=0.00  VPT@0.3= 0.05  VPT@1.0= 0.63  rmse/std=1.301  t=11.0s
+  seed=2 S0 ours_csdi keep=1.00 σ=0.00  VPT@0.3= 0.05  VPT@1.0= 0.63  rmse/std=1.363  t=13.5s
+  seed=2 S1 ours     keep=0.83 σ=0.10  VPT@0.3= 0.05  VPT@1.0= 0.18  rmse/std=1.373  t=8.7s
+  seed=2 S1 ours_csdi keep=0.83 σ=0.10  VPT@0.3= 0.05  VPT@1.0= 0.63  rmse/std=1.301  t=15.9s
+  seed=2 S2 ours     keep=0.65 σ=0.30  VPT@0.3= 0.00  VPT@1.0= 0.16  rmse/std=1.375  t=10.7s
+  seed=2 S2 ours_csdi keep=0.65 σ=0.30  VPT@0.3= 0.02  VPT@1.0= 0.18  rmse/std=1.345  t=15.9s
+  seed=2 S3 ours     keep=0.38 σ=0.50  VPT@0.3= 0.00  VPT@1.0= 0.05  rmse/std=1.506  t=11.6s
+  seed=2 S3 ours_csdi keep=0.38 σ=0.50  VPT@0.3= 0.00  VPT@1.0= 0.11  rmse/std=1.347  t=15.5s
+  seed=2 S4 ours     keep=0.23 σ=0.80  VPT@0.3= 0.00  VPT@1.0= 0.11  rmse/std=1.414  t=9.1s
+  seed=2 S4 ours_csdi keep=0.23 σ=0.80  VPT@0.3= 0.00  VPT@1.0= 0.09  rmse/std=1.278  t=16.6s
+  seed=2 S5 ours     keep=0.10 σ=1.20  VPT@0.3= 0.00  VPT@1.0= 0.07  rmse/std=1.265  t=10.4s
+  seed=2 S5 ours_csdi keep=0.10 σ=1.20  VPT@0.3= 0.00  VPT@1.0= 0.02  rmse/std=1.169  t=15.8s
+  seed=2 S6 ours     keep=0.04 σ=1.50  VPT@0.3= 0.00  VPT@1.0= 0.07  rmse/std=1.298  t=10.6s
+  seed=2 S6 ours_csdi keep=0.04 σ=1.50  VPT@0.3= 0.00  VPT@1.0= 0.02  rmse/std=1.105  t=16.0s
+[pilot] records saved to /home/rhl/Github/CSDI-PRO/experiments/week1/results/pt_v2_csdi_upgrade_n3.json
+[pilot] figure saved to /home/rhl/Github/CSDI-PRO/experiments/week1/figures/pt_v2_csdi_upgrade_n3.png
+
+[verdict] VPT@1.0 by (method, scenario):
+  ours      S0=0.96  S1=0.55  S2=0.51  S3=0.45  S4=0.24  S5=0.23  S6=0.02

@@ -145,9 +145,13 @@ def _ar_kalman_smooth_impl(col: np.ndarray, known: np.ndarray, p: int = 5) -> np
 def impute(observed: np.ndarray, kind: str = "dynamics") -> np.ndarray:
     """Impute a (T, D) array with NaNs.
 
-    kind in {"linear", "cubic", "dynamics", "ar_kalman"}.
+    kind in {"linear", "cubic", "dynamics", "ar_kalman", "csdi"}.
     """
     observed = np.asarray(observed, dtype=np.float64)
+    if kind == "csdi":
+        # full-trajectory DDPM path; requires set_csdi_checkpoint() to have been called.
+        from methods.csdi_impute_adapter import csdi_impute
+        return csdi_impute(observed)
     if observed.ndim == 1:
         return _impute_column(observed, kind=kind)
     out = np.empty_like(observed)
