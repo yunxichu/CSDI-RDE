@@ -164,12 +164,13 @@
 
 ---
 
-## 五、9 项未完成 TODO（按价值 × 难度排序）
+## 五、10 项未完成 TODO（按价值 × 难度排序）
 
 | 优先级 | TODO | 工作量 | 障碍 | 入口文件 |
 |:-:|---|:-:|---|---|
+| 🔥🔥🔥 **最高** | **T0** paper 叙事重构（延迟流形统一框架） | 3 周（P0 1w + P1 2w） | 无 | [`REFACTOR_PLAN_zh.md`](REFACTOR_PLAN_zh.md) — P0 纯写作（§1/§3.0/§3-4 重定位），P1 τ-coupling ablation + $n_\text{eff}$ unified + Prop 1/新 Theorem formal。本项直接提升投稿天花板，T2/T9 是其子任务 |
 | 🔥 高 | **T1** Table 3 极端 harshness summary | 1 hr | 无 | `paper_draft_zh.md §5.8` 衍生，读 `pt_v2_with_panda_n5_small.json` |
-| 🔥 高 | **T2** Prop 1/2 + Thm 1 formal proofs | 5 天 | 纯写作 | `paper_draft_zh.md` Appendix A.1/A.2/A.3；参考 tech.md §0.3 §3.6 §4.5 + Tsybakov 2009 / Castillo 2014 / Chernozhukov 2018 |
+| 🔥 高 | **T2** Prop 1/2 + Thm 1 formal proofs（T0 子任务） | 5 天 | 纯写作 | `paper_draft_zh.md` Appendix A.1/A.2/A.3；参考 tech.md §0.3 §3.6 §4.5 + Tsybakov 2009 / Castillo 2014 / Chernozhukov 2018；**注意**：T0 会引入新 Theorem (Sparsity-Noise Interaction)，证明需配套调整 |
 | 🔥🔥 高 | **T3** Lorenz96 Phase Transition | 2-3 天 | CSDI 需 L96 重训 | 仿 `make_lorenz_dataset.py` 写 L96 版；改 `DynamicsCSDIConfig.data_dim`；复用 `phase_transition_pilot_v2.py`（调 D=40） |
 | 🔥🔥 高 | **T4** KS PDE 场景 | 3-5 天 | 无 KS integrator | 新写 `experiments/week1/ks_utils.py`（ETDRK4 积分器）; 复用 PT 模板 |
 | 🔥🔥 高 | **T5** dysts 20 benchmark（Table 1）| 1-2 天 + ~17 GPU-hr | 无 | `pip install dysts`，新写 `experiments/week1/run_dysts_benchmark.py` |
@@ -182,9 +183,11 @@
 
 | 路径 | 时间 | 做什么 | 结果 |
 |:-:|:-:|---|---|
-| **Level 1 最短 submit** | ~1 周 | T1 + T2 + T8 + T9 | 投 NeurIPS/ICLR（放弃 L96/KS/dysts/EEG，写进 §6 Limitations） |
+| **Level 0 叙事升级**（推荐起点） | ~3 周 | **T0 全做**（REFACTOR_PLAN P0+P1）+ T1 + T8 | 投 ICML/NeurIPS accept band（理论骨架 + τ-coupling 实证 + LaTeX）；T2/T9 包含在 T0 内 |
+| **Level 1 最短 submit** | ~1 周 | T1 + T2 + T8 + T9 | 投 NeurIPS/ICLR（放弃 L96/KS/dysts/EEG，写进 §6 Limitations）—— 不升级叙事 |
 | **Level 2 加强** | ~2 周 | Level 1 + T3 + T6 | Fig 1 升级为 L63 + L96 双 panels |
 | **Level 3 完整** | ~4 周 | Level 2 + T4 + T5 + T7 | tech.md 100% 完成 |
+| **Level 4 完整 + 叙事升级**（天花板） | ~7 周 | T0 + Level 3 | ICML/NeurIPS accept + 全系统验证（L63+L96+KS+dysts+EEG） |
 
 ---
 

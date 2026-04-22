@@ -13,14 +13,18 @@ Four-module pipeline: **imputation → delay embedding → SVGP regression → L
 
 | 文档 | 作用 | 何时看 |
 |---|---|---|
+| **[REFACTOR_PLAN_zh.md](REFACTOR_PLAN_zh.md)** | **paper 叙事重构完整方案（延迟流形统一框架；P0/P1/P2 三阶段路径）** | **下一阶段投 ICML/NeurIPS 前的必读** |
 | **[STATUS.md](STATUS.md)** | **项目状态 + 时间线 + 完成度 + 9 项 TODO + 投稿可能性** | **下次接着做前先看这个** |
 | **[ASSETS.md](ASSETS.md)** | **论文 figures + 数据文件 + checkpoints + 脚本 的索引** | 当你想找某张图或某个数据文件 |
 | **[EXPERIMENTS_REPORT_zh.md](EXPERIMENTS_REPORT_zh.md)** | **详细实验结果表 + 所有符号定义** | 当你想查"某数字怎么来的" |
-| **[paper_draft_zh.md](paper_draft_zh.md)** / **[paper_draft.md](paper_draft.md)** | 论文中英文首版草稿 | 当你想审 paper |
+| **[paper_draft_zh.md](paper_draft_zh.md)** / **[paper_draft.md](paper_draft.md)** | 论文中英文首版草稿（待按 REFACTOR_PLAN 重构） | 当你想审 paper |
 | **[tech.md](tech.md)** | v2 完整技术设计规范（1046 行，历史档案） | 当你想看原始设计意图 |
+| `改进方案` | 三段对话原文（REFACTOR_PLAN 的来源） | 当你想看重构方案的原始推理 |
 | `../session_notes/2026-04-22_csdi_m1_diagnosis_fix_breakthrough.md` | CSDI 三 bug 诊断的完整过程 | 当你想深挖 CSDI 翻盘细节 |
 
-**短路径**：新来 → 先看 **STATUS.md**（15 分钟读完对项目全貌清晰）→ 有具体需求再开其它。
+**短路径**：
+- 新来 → 先看 **STATUS.md**（15 分钟读完对项目全貌清晰）→ 有具体需求再开其它
+- **准备投 ICML/NeurIPS** → 看 **REFACTOR_PLAN_zh.md**（把 paper 从"pipeline 叙事"升级到"延迟流形统一框架"，P0 纯写作 1 周 + P1 证明+τ-coupling 2 周）
 
 ---
 
