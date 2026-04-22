@@ -284,7 +284,7 @@
 
 ---
 
-## 4. 累计 18 条可直接引用的 paper 数字
+## 4. 累计 21 条可直接引用的 paper 数字
 
 | # | 指标 | 数值 | 来源 |
 |:-:|---|:-:|---|
@@ -306,6 +306,9 @@
 | 16 | **Lyap-emp vs Split overall \|PICP−0.9\|** | **3.2×**（0.071→0.022，7 scenarios × 3 horizons） | D2（2026-04-22） |
 | 17 | **CSDI ours_csdi @ S2 VPT10** | **+53%** vs ours（0.80→1.22，n=5） | Fig 1b v2 |
 | 18 | **CSDI ours_csdi @ S4 VPT10** | **+110%** vs ours（0.26→0.55，n=5） | 同上 |
+| 19 | **ours_csdi vs Panda @ S4** | **9.4×**（0.55 / 0.06） | Fig 1b 扩展 |
+| 20 | **ours_csdi vs Parrot @ S4** | **8.1×**（0.55 / 0.07） | 同上 |
+| 21 | **ours_csdi @ S2 全面碾压所有 baseline** | **1.26-8.7×**（vs Parrot/Panda/Chronos/Persist） | 同上 |
 
 ---
 
