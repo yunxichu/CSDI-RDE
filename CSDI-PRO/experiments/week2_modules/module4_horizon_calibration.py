@@ -87,9 +87,10 @@ def build_mixed_horizon_dataset(ctx_filled: np.ndarray, taus: np.ndarray, horizo
 
 
 def run(n_seeds: int, scenario_name: str, sparsity: float, noise: float, dt: float = 0.025,
-        growth_modes: list[str] = ["exp", "saturating", "clipped", "empirical"]) -> dict:
+        growth_modes: list[str] = ["exp", "saturating", "clipped", "empirical"],
+        impute_kind: str = "ar_kalman") -> dict:
     print(f"=== Module-4 horizon-cal experiment:  {scenario_name} (s={sparsity}, σ={noise}) seeds=[0..{n_seeds - 1}]"
-          f" growth_modes={growth_modes}")
+          f" growth_modes={growth_modes}  M1={impute_kind}")
     per_horizon_picp_split: dict[int, list[float]] = {h: [] for h in HORIZONS}
     per_horizon_mpiw_split: dict[int, list[float]] = {h: [] for h in HORIZONS}
     per_horizon_picp: dict[str, dict[int, list[float]]] = {m: {h: [] for h in HORIZONS} for m in growth_modes}
@@ -99,7 +100,7 @@ def run(n_seeds: int, scenario_name: str, sparsity: float, noise: float, dt: flo
     for seed in range(n_seeds):
         traj = integrate_lorenz63(N_CTX, dt=dt, seed=seed, spinup=2000)
         obs, mask = make_sparse_noisy(traj, sparsity=sparsity, noise_std_frac=noise, seed=seed)
-        ctx_filled = impute(obs, kind="ar_kalman")
+        ctx_filled = impute(obs, kind=impute_kind)
         # Estimate λ from data with the noise-robust estimator (falls back to
         # clipped [0.1, 2.5] range); compare against true 0.906.
         from methods.mi_lyap import robust_lyapunov
@@ -225,15 +226,27 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--n_seeds", type=int, default=3)
     ap.add_argument("--scenario", default="S3")
+    ap.add_argument("--impute_kind", default="ar_kalman", choices=["linear", "ar_kalman", "csdi"])
+    ap.add_argument("--csdi_ckpt", default=None)
+    ap.add_argument("--tag_suffix", default="")
     args = ap.parse_args()
+
+    if args.impute_kind == "csdi":
+        if not args.csdi_ckpt:
+            raise SystemExit("--csdi_ckpt required with --impute_kind csdi")
+        from methods.csdi_impute_adapter import set_csdi_checkpoint
+        set_csdi_checkpoint(args.csdi_ckpt)
+        print(f"[module4] CSDI ckpt loaded: {args.csdi_ckpt}")
 
     sc_map = {"S2": (0.4, 0.3), "S3": (0.6, 0.5), "S4": (0.75, 0.8)}
     sparsity, noise = sc_map[args.scenario]
-    summary = run(args.n_seeds, args.scenario, sparsity, noise)
-    out = OUT_DIR / f"module4_horizon_cal_{args.scenario}_n{args.n_seeds}.json"
+    summary = run(args.n_seeds, args.scenario, sparsity, noise, impute_kind=args.impute_kind)
+    summary["m1_kind"] = args.impute_kind
+    suffix = args.tag_suffix or (f"_{args.impute_kind}" if args.impute_kind != "ar_kalman" else "")
+    out = OUT_DIR / f"module4_horizon_cal_{args.scenario}_n{args.n_seeds}{suffix}.json"
     out.write_text(json.dumps(summary, indent=2))
     print(f"[saved] {out}")
-    plot(summary, FIG_DIR / f"module4_horizon_cal_{args.scenario}.png")
+    plot(summary, FIG_DIR / f"module4_horizon_cal_{args.scenario}{suffix}.png")
 
     # Verdict — per-horizon PICP + aggregate deviations
     print("\n[verdict] per-horizon PICP (target 0.90):")

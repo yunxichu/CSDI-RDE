@@ -69,12 +69,12 @@ def build_ds(ctx_filled, taus, horizons):
             np.concatenate(hs, 0))
 
 
-def run_one(scenario, seed: int, alpha: float = 0.1) -> dict:
+def run_one(scenario, seed: int, alpha: float = 0.1, impute_kind: str = "ar_kalman") -> dict:
     traj = integrate_lorenz63(N_CTX, dt=0.025, seed=seed, spinup=2000)
     obs, _ = make_sparse_noisy(traj, sparsity=scenario.sparsity,
                                noise_std_frac=scenario.noise_std_frac, seed=seed)
     try:
-        ctx_filled = impute(obs, kind="ar_kalman")
+        ctx_filled = impute(obs, kind=impute_kind)
     except Exception:
         from experiments.week1.lorenz63_utils import linear_interp_fill
         ctx_filled = linear_interp_fill(obs)
@@ -158,21 +158,32 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--n_seeds", type=int, default=3)
     ap.add_argument("--tag", default="n3_v1")
+    ap.add_argument("--impute_kind", default="ar_kalman", choices=["linear", "ar_kalman", "csdi"])
+    ap.add_argument("--csdi_ckpt", default=None)
     args = ap.parse_args()
+
+    if args.impute_kind == "csdi":
+        if not args.csdi_ckpt:
+            raise SystemExit("--csdi_ckpt required with --impute_kind csdi")
+        from methods.csdi_impute_adapter import set_csdi_checkpoint
+        set_csdi_checkpoint(args.csdi_ckpt)
+        print(f"[coverage] CSDI ckpt loaded: {args.csdi_ckpt}")
 
     all_recs = []
     for sc in PILOT_SCENARIOS:
-        print(f"\n=== scenario {sc.name} (sparsity={sc.sparsity}, σ={sc.noise_std_frac}) ===")
+        print(f"\n=== scenario {sc.name} (sparsity={sc.sparsity}, σ={sc.noise_std_frac}, M1={args.impute_kind}) ===")
         for seed in range(args.n_seeds):
-            rec = run_one(sc, seed)
+            rec = run_one(sc, seed, impute_kind=args.impute_kind)
+            rec["m1_kind"] = args.impute_kind
             all_recs.append(rec)
             h1_s = rec.get("split_picp_h1", np.nan); h1_l = rec.get("lyap_picp_h1", np.nan)
             print(f"  seed={seed}  h1 PICP split={h1_s:.2f}  lyap-emp={h1_l:.2f}  λ_hat={rec['lam']:.2f}")
 
-    out_json = OUT_DIR / f"coverage_across_harshness_{args.tag}.json"
+    suffix = f"_{args.impute_kind}" if args.impute_kind != "ar_kalman" else ""
+    out_json = OUT_DIR / f"coverage_across_harshness_{args.tag}{suffix}.json"
     out_json.write_text(json.dumps(all_recs, indent=2))
     print(f"[saved] {out_json}")
-    plot(all_recs, FIG_DIR / "coverage_across_harshness_paperfig.png")
+    plot(all_recs, FIG_DIR / f"coverage_across_harshness_paperfig{suffix}.png")
 
 
 if __name__ == "__main__":

@@ -214,6 +214,7 @@
 
 **论文独立 figure 化（2026-04-22 补画）**：
 - **D2 Coverage Across Harshness**：[figures/coverage_across_harshness_paperfig.png](experiments/week2_modules/figures/coverage_across_harshness_paperfig.png) — 7 scenarios (S0→S6) × 3 horizons (h=1/4/16) × 3 seeds，**overall mean \|PICP−0.9\| Split 0.071 vs Lyap-emp 0.022 → 3.2× 改善**；18/21 cells Lyap-emp 胜，尤其 h=16 Split 在 S0-S3 严重 undercover (0.74-0.78) 而 Lyap-emp 稳 0.85-0.93
+- **D2 Coverage Across Harshness @ CSDI M1**：[figures/coverage_across_harshness_paperfig_csdi.png](experiments/week2_modules/figures/coverage_across_harshness_paperfig_csdi.png) — 同设置但 M1 换成 CSDI，**overall \|PICP−0.9\| Split 0.069 vs Lyap-emp 0.031 → 2.3× 改善**（CSDI M1 残差更紧，Lyap-growth 的相对 benefit 略小，但 claim 仍成立）
 - **D3 Horizon × Coverage**：[figures/horizon_coverage_paperfig.png](experiments/week2_modules/figures/horizon_coverage_paperfig.png) — 2 面板 (S2/S3) × 5 CP 方法，展示 Lyap-empirical 稳定贴 0.90
 - **D4 Horizon × PI Width**：[figures/horizon_piwidth_paperfig.png](experiments/week2_modules/figures/horizon_piwidth_paperfig.png) — 同设置，展示 Lyap-growth 让 PI 合理扩张
 - **D5 Reliability diagram**：[figures/reliability_diagram_paperfig.png](experiments/week2_modules/figures/reliability_diagram_paperfig.png) — α∈{0.01..0.5}，Raw Gaussian **严重过覆盖**（α=0.3 下 PICP 0.98 vs nominal 0.70）；Split CP **沿 y=x 对角线**（完美校准），证明 CP 校准必不可少
@@ -240,9 +241,22 @@
 | −M4 (Lyap-exp) | AR-Kalman | MI-Lyap BO | SVGP | Lyap-exp |
 | all-off（≈ v1） | linear | random | exact GPR | Split |
 
-### S3 完整 dual-M1 消融（Paper Table 2 最终版，2026-04-22 merged）
+### S2 + S3 完整 dual-M1 消融（Paper Table 2 最终版，2026-04-22 merged）
 
-9 configs × 2 M1 versions（AR-Kalman / CSDI）× 3 seeds × {h=1, 4, 16}，**NRMSE 对比**：
+9 configs × 2 M1 versions（AR-Kalman / CSDI）× 3 seeds × {S2, S3} × {h=1, 4, 16}，**NRMSE 对比**：
+
+**S2（sp=0.4, σ=0.3）h=4**：
+
+| Config | AR-Kalman | CSDI | Δ |
+|---|:-:|:-:|:-:|
+| **Full** | 0.357 | **0.332** | **−7%** |
+| −M2a random τ | 0.451 | 0.455 | +1% |
+| −M2b Fraser-Sw | 0.471 | 0.472 | 0% |
+| **−M3 exact GPR** | 0.443 | **0.368** | **−17%** 🔥 |
+| −M4 Split CP | 0.357 | 0.334 | −6% |
+| −M4 Lyap-exp | 0.357 | 0.332 | −7% |
+
+**S3（sp=0.6, σ=0.5）完整表**：
 
 | Config | NRMSE @ h=1 (AR-K / **CSDI**) | h=4 (AR-K / **CSDI**) | h=16 (AR-K / **CSDI**) | CSDI gain @ h=4 |
 |---|:-:|:-:|:-:|:-:|
@@ -256,8 +270,9 @@
 | −M4 (Lyap-exp) | 0.374 / **0.364** | 0.492 / **0.386** | 0.786 / **0.652** | **−22%** |
 | **All off（≈ v1）** | **0.760 ± 0.052** | 0.818 | 0.900 | — (无 CSDI 路径) |
 
-- 图：[figures/ablation_final_s3_paperfig.png](experiments/week2_modules/figures/ablation_final_s3_paperfig.png)
-- 数据：[results/ablation_final_s3_merged.md](experiments/week2_modules/results/ablation_final_s3_merged.md) + [results/ablation_final_s3_merged.json](experiments/week2_modules/results/ablation_final_s3_merged.json)
+- 图（S3 only）：[figures/ablation_final_s3_paperfig.png](experiments/week2_modules/figures/ablation_final_s3_paperfig.png)
+- **图（S2 + S3 dual-M1 合版）**：[figures/ablation_final_dualM1_paperfig.png](experiments/week2_modules/figures/ablation_final_dualM1_paperfig.png)
+- 数据：[results/ablation_final_dualM1_merged.md](experiments/week2_modules/results/ablation_final_dualM1_merged.md) + [results/ablation_final_dualM1_merged.json](experiments/week2_modules/results/ablation_final_dualM1_merged.json)
 
 **核心结论**：
 - 每个 module 独立贡献 ≥ 24%（M1/M2/M3 都 >24% 回退）

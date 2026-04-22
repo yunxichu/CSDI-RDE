@@ -80,11 +80,11 @@ def build_ds(ctx_filled, taus, horizons):
             np.concatenate(hs, 0))
 
 
-def run_one_seed(scenario: str, seed: int) -> dict:
+def run_one_seed(scenario: str, seed: int, impute_kind: str = "ar_kalman") -> dict:
     cfg = SCENARIOS[scenario]
     traj = integrate_lorenz63(N_CTX, dt=0.025, seed=seed, spinup=2000)
     obs, _ = make_sparse_noisy(traj, sparsity=cfg["sparsity"], noise_std_frac=cfg["noise"], seed=seed)
-    ctx_filled = impute(obs, kind="ar_kalman")
+    ctx_filled = impute(obs, kind=impute_kind)
     lam_est = robust_lyapunov(ctx_filled[:, 0], dt=0.025, emb_dim=5, lag=2,
                               trajectory_len=50, prefilter=True)
     spec = mi_lyap_bayes_tau(ctx_filled[:, 0], L=L_EMBED, tau_max=TAU_MAX, horizon=1,
@@ -164,18 +164,31 @@ def main() -> None:
     ap.add_argument("--n_seeds", type=int, default=3)
     ap.add_argument("--scenarios", nargs="+", default=["S2", "S3"])
     ap.add_argument("--tag", default="n3_v1")
+    ap.add_argument("--impute_kind", default="ar_kalman", choices=["linear", "ar_kalman", "csdi"])
+    ap.add_argument("--csdi_ckpt", default=None)
     args = ap.parse_args()
+
+    if args.impute_kind == "csdi":
+        if not args.csdi_ckpt:
+            raise SystemExit("--csdi_ckpt required with --impute_kind csdi")
+        from methods.csdi_impute_adapter import set_csdi_checkpoint
+        set_csdi_checkpoint(args.csdi_ckpt)
+        print(f"[reliability] CSDI ckpt loaded: {args.csdi_ckpt}")
 
     all_summary = {}
     for sc in args.scenarios:
-        print(f"\n=== Reliability diagram @ {sc}  (α ∈ {ALPHAS})")
-        recs = [run_one_seed(sc, seed) for seed in range(args.n_seeds)]
+        print(f"\n=== Reliability diagram @ {sc}  (α ∈ {ALPHAS}, M1={args.impute_kind})")
+        recs = [run_one_seed(sc, seed, impute_kind=args.impute_kind) for seed in range(args.n_seeds)]
         all_summary[sc] = recs
+    all_summary["_m1_kind"] = args.impute_kind  # type: ignore
 
-    out_json = OUT_DIR / f"reliability_diagram_{args.tag}.json"
+    suffix = f"_{args.impute_kind}" if args.impute_kind != "ar_kalman" else ""
+    out_json = OUT_DIR / f"reliability_diagram_{args.tag}{suffix}.json"
     out_json.write_text(json.dumps(all_summary, indent=2))
     print(f"[saved] {out_json}")
-    plot(all_summary, FIG_DIR / f"reliability_diagram_paperfig.png")
+    # drop _m1_kind meta entry for plotting
+    plot_summary = {k: v for k, v in all_summary.items() if not k.startswith("_")}
+    plot(plot_summary, FIG_DIR / f"reliability_diagram_paperfig{suffix}.png")
 
 
 if __name__ == "__main__":
