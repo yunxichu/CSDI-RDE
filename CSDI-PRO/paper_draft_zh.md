@@ -590,6 +590,58 @@ CSDI M1 下 Lyap-emp 相对 Split 为 **2.3× 改善**（对比 AR-Kalman 下 3.
 
 ---
 
+### 5.X1 τ-coupling 消融：M1 是否真的与 M2 耦合？（P1 正在进行）
+
+> **状态（2026-04-23）.** 本小节为 REFACTOR_PLAN §6.1 的 P1 实验，脚本 `experiments/week2_modules/run_tau_coupling_ablation.py` 已实现并通过导入测试；等待 GPU 时间跑 S3 × 5 modes × 3 seeds = 15 runs 后回填数字（预计 1-2 天 GPU 时间）。当前给出实验设计、预期、以及方法论细节，供论文结构先就位。
+
+**动机.** §3.2 论证 M1 CSDI 的 delay attention mask 应以 M2 选出的 τ 作为 anchor——否则 score 网络建的是"错误流形"的切丛结构。这一耦合 claim 目前来自几何直觉（§3.0）+ 三 bug 修复的附带效果，但**没有被独立实证过**；§5.4 module-level ablation 只改变整个 M1 是 CSDI 还是 AR-Kalman，不分离 delay mask 的 τ 贡献。
+
+**设计.** 固定 S3 场景，固定其余模块（M2 mi_lyap 选 τ on current trajectory, M3 SVGP, M4 Lyap-empirical）；仅改变 M1 CSDI 的 delay attention mask 被初始化成什么 τ：
+
+| Mode | M1 delay mask τ | 用途 |
+|---|---|---|
+| `default` | 训练学到的 delay_bias（不 override） | 参考：learned bias 能不能替代显式 τ anchor |
+| `A_random` | 随机 τ ∈ U(1, 30)^{L-1} | 下限：无任何耦合 |
+| `B_current` | **M2 在当前轨迹上选出的 τ** | 正确耦合（paper 主 claim） |
+| `C_mismatch` | M2 在一条独立 S0 干净轨迹上选出的 τ，移植到 S3 | 错 τ：结构对但数值不对 |
+| `D_equidist` | 固定 [2, 4, 8, 16] 等距 τ | 无几何信息先验 |
+
+每 mode 在同一轨迹 seed × 同一观测 mask 下跑（控制其他变量），downstream M2/M3/M4 全部使用 `τ_B`（同一条 τ），因此 M1 是唯一变量。
+
+**预期（来自 §3.2 几何论证）.**
+- **B_current > A_random**：这是核心 claim，差距应 > 统计显著
+- **B_current > D_equidist**：几何驱动的 τ 优于 agnostic 等距 τ
+- **B_current ≳ C_mismatch**：当前轨迹的 τ 优于"错误轨迹"的 τ；但 Lorenz63 不同轨迹共享 attractor 几何，差距可能较小
+- **default vs B_current**：若 learned delay_bias 已经隐式恢复了"时间局部性"（接近 M2 的 τ 结构），两者接近；若 learned bias 捕捉到更多东西，default 略优
+- **差距随 harshness 放大**：paper 计划补测 S0 + S3 + S5，验证差距在 S3 最大（S0 下 M1 任务简单，S5 下信号过噪没 M1 能救）
+
+**方法论注意事项.**
+- **`delay_alpha` 的不可比性**：CSDI 训练时 `delay_alpha` 是 learnable scalar，收敛到某值。`set_tau()` 在 override 时把 `delay_alpha` **重置为 0.1**（见 `dynamics_csdi.py:204`）。因此 `default` 与 A/B/C/D 差一个 `delay_alpha` 常数因子；A/B/C/D 之间是 apples-to-apples（同 `delay_alpha = 0.1`，只有 delay_bias 的 τ anchor 不同）
+- **训练分布 vs 推理分布**：CSDI 训练时以何种 τ 作 mask anchor？本 paper 的训练脚本 `train_csdi_dyn.py` 使用 Lorenz63 平均 MI-Lyap τ；所以 default 模式类似"见过常见的 τ"的 M1，而 A/B/C/D 是"外加 τ 指令"。这个差异在论文讨论时应明示
+
+**表格结构（待填数字）.**
+
+| Mode | NRMSE@h=1 | NRMSE@h=4 | NRMSE@h=16 | VPT@τ=1.0 [Λ] | PICP@h=16 | Δ vs B_current |
+|---|---:|---:|---:|---:|---:|---:|
+| default | TBD | TBD | TBD | TBD | TBD | (reference) |
+| A_random | TBD | TBD | TBD | TBD | TBD | (expect worst) |
+| **B_current** | TBD | TBD | TBD | TBD | TBD | 0 |
+| C_mismatch | TBD | TBD | TBD | TBD | TBD | (expect mild degrade) |
+| D_equidist | TBD | TBD | TBD | TBD | TBD | (expect moderate degrade) |
+
+**如果结果支持 B > A/C/D**：直接坐实 §3.0 的耦合 claim，把 §3.2 "delay mask 用 M2 的 τ 对齐 $T\mathcal{M}_\tau$" 从"几何类比"升级到"实证必需"。
+
+**如果结果模糊**（例如 B ≈ A）：意味着 M1 CSDI 学到的 delay_bias 对 τ anchor 的敏感性低；这本身是一个有趣的 finding，我们会在 §6 讨论 —— 可能因为 Lorenz63 的 τ 有效范围较窄（L=5 × tau_max=30），learned bias 覆盖了相关的时间差结构。
+
+**如果 B < default**：意味着 override 时重置 `delay_alpha=0.1` 抹去了训练学到的 scaling；这是实验设计缺陷，需要 follow-up 改为 `set_tau()` 保留 learned `delay_alpha`。
+
+**运行命令（即将执行）.**
+```bash
+CUDA_VISIBLE_DEVICES=0 python -m experiments.week2_modules.run_tau_coupling_ablation \
+    --ckpt experiments/week2_modules/ckpts/dyn_csdi_full_v6_center_ep20.pt \
+    --n_seeds 3 --scenario S3 --tag tau_coupling_S3_n3_v1
+```
+
 ### 5.8 实验总结表
 
 所有 paper-relevant 实验的一张全局扫描表：

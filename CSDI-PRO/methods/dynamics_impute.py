@@ -142,6 +142,23 @@ def _ar_kalman_smooth_impl(col: np.ndarray, known: np.ndarray, p: int = 5) -> np
     return np.array([m[0] for m in mus_s])
 
 
+# Module-level τ override slot for csdi kind. Set via set_tau_override() from the
+# calling runner (e.g. τ-coupling ablation in run_ablation_with_csdi.py). None =
+# CSDI uses its internal delay_bias as learned during training (default behavior).
+_TAU_OVERRIDE = None
+
+
+def set_tau_override(tau):
+    """Set the τ override for subsequent csdi-kind impute() calls. Pass None to clear.
+
+    tau: 1-D int array or list of length L-1 (delays in steps). Used by
+    §5.X1 τ-coupling ablation to compare random / mismatched / equidistant τ against
+    the default M2-selected τ.
+    """
+    global _TAU_OVERRIDE
+    _TAU_OVERRIDE = tau
+
+
 def impute(observed: np.ndarray, kind: str = "dynamics") -> np.ndarray:
     """Impute a (T, D) array with NaNs.
 
@@ -149,9 +166,8 @@ def impute(observed: np.ndarray, kind: str = "dynamics") -> np.ndarray:
     """
     observed = np.asarray(observed, dtype=np.float64)
     if kind == "csdi":
-        # full-trajectory DDPM path; requires set_csdi_checkpoint() to have been called.
         from methods.csdi_impute_adapter import csdi_impute
-        return csdi_impute(observed)
+        return csdi_impute(observed, tau_override=_TAU_OVERRIDE)
     if observed.ndim == 1:
         return _impute_column(observed, kind=kind)
     out = np.empty_like(observed)

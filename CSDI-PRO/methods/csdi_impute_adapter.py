@@ -48,7 +48,8 @@ def set_csdi_checkpoint(ckpt_path: str | Path, device: str = "cuda") -> None:
     print(f"[csdi-adapter] loaded {ckpt_path}  params={sum(p.numel() for p in model.net.parameters()):,}")
 
 
-def csdi_impute(observed: np.ndarray, n_samples: int = 8, sigma_override: Optional[float] = None) -> np.ndarray:
+def csdi_impute(observed: np.ndarray, n_samples: int = 8, sigma_override: Optional[float] = None,
+                tau_override: Optional[np.ndarray] = None) -> np.ndarray:
     """Run trained CSDI on a (T, D) observed window; return posterior mean.
 
     Input: observed with NaNs at missing steps.
@@ -56,6 +57,12 @@ def csdi_impute(observed: np.ndarray, n_samples: int = 8, sigma_override: Option
 
     Keeps a fixed seq_len window (the model's config.seq_len) by sliding in
     non-overlapping chunks if observed is longer.
+
+    tau_override (optional, 1-D int array of length L-1): if provided, overrides
+    the delay-mask τ anchor at inference time. Used for §5.X1 τ-coupling ablation.
+    See paper §3.2 for how τ parameterizes delay attention; the model learns a
+    learnable delay_bias/delay_alpha whose *initialization* depends on τ, but at
+    inference the bias is re-initialized via set_tau(tau_override). No retraining.
     """
     assert _GLOBAL_CSDI is not None, "call set_csdi_checkpoint() first"
     model = _GLOBAL_CSDI
@@ -75,13 +82,18 @@ def csdi_impute(observed: np.ndarray, n_samples: int = 8, sigma_override: Option
                   if mask[:, d].sum() > 4 else 0.0 for d in range(D)]
         sigma = float(np.mean(sigmas))
 
+    # τ override: convert to torch tensor once; DynamicsCSDI.impute() forwards to set_tau()
+    tau_arg = None
+    if tau_override is not None:
+        tau_arr = np.asarray(tau_override, dtype=np.int64)
+        tau_arg = torch.as_tensor(tau_arr, dtype=torch.long, device=model.cfg.device)
+
     # If T > seq_len, process in non-overlapping chunks (last chunk may overlap to fit)
     if T <= seq_len:
-        # pad with zero on the right so CSDI sees seq_len
         pad = seq_len - T
         pad_obs = np.concatenate([obs_filled_zero, np.zeros((pad, D), dtype=np.float32)], axis=0)
         pad_mask = np.concatenate([mask, np.zeros((pad, D), dtype=np.float32)], axis=0)
-        samples = model.impute(pad_obs, pad_mask, sigma=sigma, n_samples=n_samples)
+        samples = model.impute(pad_obs, pad_mask, sigma=sigma, n_samples=n_samples, tau=tau_arg)
         mu = samples.mean(axis=0)[:T]
         return mu
 
@@ -96,7 +108,7 @@ def csdi_impute(observed: np.ndarray, n_samples: int = 8, sigma_override: Option
             pad = seq_len - chunk_obs.shape[0]
             chunk_obs = np.concatenate([chunk_obs, np.zeros((pad, D), dtype=np.float32)], axis=0)
             chunk_mask = np.concatenate([chunk_mask, np.zeros((pad, D), dtype=np.float32)], axis=0)
-        samples = model.impute(chunk_obs, chunk_mask, sigma=sigma, n_samples=n_samples)
+        samples = model.impute(chunk_obs, chunk_mask, sigma=sigma, n_samples=n_samples, tau=tau_arg)
         mu = samples.mean(axis=0)[:end - start]
         out[start:end] = mu
         start = end
