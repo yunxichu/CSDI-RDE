@@ -642,6 +642,55 @@ CUDA_VISIBLE_DEVICES=0 python -m experiments.week2_modules.run_tau_coupling_abla
     --n_seeds 3 --scenario S3 --tag tau_coupling_S3_n3_v1
 ```
 
+### 5.X2 $n_\text{eff}$ unified parameter 验证（P1 正在进行）
+
+> **状态（2026-04-23）.** 本小节为 REFACTOR_PLAN §6.2 的 P1 实验，脚本 `experiments/week1/run_neff_unified_ablation.py` 已实现。等待 GPU 时间跑 4 configs × 5 seeds × 2 methods = **40 runs**（预计 ~30 分钟 GPU 时间）后回填数字。
+
+**动机.** §4 Theorem 2 断言 $n_\text{eff}(s, \sigma) = n(1-s)/(1+\sigma^2/\sigma_\text{attr}^2)$ 是 ambient 与 manifold 方法的统一控制参数 —— 但 ambient 方法还受 OOD 跃变影响（Thm 2(b)）。这直接给出可证伪预言：
+
+- **Manifold (ours)**：VPT 应该是 $n_\text{eff}/n$ 的单变量函数；不同 $(s, \sigma)$ 组合只要 $n_\text{eff}/n$ 相同，性能相近
+- **Ambient (Panda)**：VPT 不收敛到 $n_\text{eff}$ 曲线 —— 纯稀疏配置（$s$ 大，$\sigma=0$）由于 tokenizer 分布偏移会比等 $n_\text{eff}$ 的混合配置差
+
+**设计.** 在固定 $n_\text{eff}/n \approx 0.30$（S3 的 $n_\text{eff}$ 值）下扫 4 个 $(s, \sigma)$ 组合：
+
+| Config | $s$ | $\sigma/\sigma_\text{attr}$ | $n_\text{eff}/n$ | 类型 |
+|:-:|:-:|:-:|:-:|---|
+| U1 | 0.60 | 0.50 | 0.320 | 标准 S3（对照） |
+| U2 | 0.50 | 0.77 | 0.314 | 少稀疏，多噪声 |
+| U3 | 0.70 | 0.00 | 0.300 | **纯稀疏**（无噪声） |
+| U4 | 0.00 | 1.53 | 0.299 | **纯噪声**（无稀疏） |
+
+4 configs × 5 seeds × 2 methods（ours_csdi + panda）= 40 runs。
+
+**预期.**
+
+| 方法 | 预期 VPT 模式 | Theorem 2 解读 |
+|---|---|---|
+| Ours (manifold) | U1 ≈ U2 ≈ U3 ≈ U4（全部接近） | $n_\text{eff}$-driven smooth退化，不受 $(s, \sigma)$ 分解影响 |
+| Panda (ambient) | U3 < U1 < U4 | 纯稀疏 U3 触发线性插值 OOD 最严重；纯噪声 U4 只触发 noise 维度税 |
+
+**结果占位表（待填）.**
+
+| Config | VPT@1.0 (ours) | VPT@1.0 (panda) | NRMSE@h=1 ours | NRMSE@h=1 panda |
+|---|---:|---:|---:|---:|
+| U1 | TBD | TBD | TBD | TBD |
+| U2 | TBD | TBD | TBD | TBD |
+| U3 | TBD | TBD | TBD | TBD |
+| U4 | TBD | TBD | TBD | TBD |
+| ratio max/min | expect ≈ 1 | expect > 1.5 | expect ≈ 1 | expect > 1.5 |
+
+**三种结果情景.**
+- **Ours collapses, Panda doesn't（最强结果）**：直接坐实 Thm 2 的"ambient has OOD jump" claim。论文地位：Fig 1 相变的第二个独立证据
+- **Ours 部分 collapses, Panda 也 collapses**：意味着 $n_\text{eff}$ 足以描述 Panda 的退化，Thm 2(b) 的 OOD 跃变 claim 需要更精细的 KL 测量（参考 REFACTOR_PLAN §6.3 P2）才能证实
+- **两者都不 collapses**：存在一阶效应之外的 $(s, \sigma)$-特有 interaction；需要重新审视 Fisher 信息退化公式（引理 A.0.1）是否适用于混沌动力学
+
+**运行命令（即将执行）.**
+```bash
+CUDA_VISIBLE_DEVICES=0 python -m experiments.week1.run_neff_unified_ablation \
+    --ckpt experiments/week2_modules/ckpts/dyn_csdi_full_v6_center_ep20.pt \
+    --n_seeds 5 --methods ours_csdi panda --tag neff_unified_v1
+```
+
 ### 5.8 实验总结表
 
 所有 paper-relevant 实验的一张全局扫描表：
