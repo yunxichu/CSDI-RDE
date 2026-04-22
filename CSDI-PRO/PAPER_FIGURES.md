@@ -299,7 +299,7 @@ CUDA_VISIBLE_DEVICES=0 python -u -m experiments.week2_modules.lorenz96_scaling \
 
 | # | 图名 | 状态 |
 |:-:|---|:-:|
-| D2 | Coverage Across Harshness | ❌ 数据已有（pt_v2_with_panda JSON 里无 PICP），需小规模新跑 |
+| D2 | Coverage Across Harshness | ✅ **完成**（2026-04-22，见 §D2 新节） |
 | D3 | Horizon × Coverage 独立图 | ✅ **完成**（2026-04-22，见 §D3 新节） |
 | D4 | Horizon × PI Width | ✅ **完成**（同上） |
 | D5 | Reliability diagram（pre/post conformal） | ✅ **完成**（2026-04-22，见 §D5 新节） |
@@ -373,6 +373,33 @@ CUDA_VISIBLE_DEVICES=0 python -m experiments.week2_modules.reliability_diagram -
 
 ### 原始数据
 [results/reliability_diagram_n3_v1.json](experiments/week2_modules/results/reliability_diagram_n3_v1.json)
+
+---
+
+## Figure D2：Coverage Across Harshness（2026-04-22 新增）
+
+**状态**：✅ Paper-ready
+
+**文件**：[experiments/week2_modules/figures/coverage_across_harshness_paperfig.png](experiments/week2_modules/figures/coverage_across_harshness_paperfig.png)
+
+### 呈现什么
+3 面板（h=1 / h=4 / h=16），横轴 7 harshness scenarios S0-S6，纵轴 PICP，每个 cell 3 seeds 的 errorbar。对比 Split CP vs Lyap-empirical CP。
+
+### 关键数字
+- **Overall mean \|PICP − 0.90\| 跨 21 cells（7 sc × 3 h）：**
+  - Split CP: **0.071**
+  - Lyap-empirical: **0.022**
+  - Ratio: **3.2×**
+- **18/21 cells Lyap-emp 贴得更紧**
+- **S0-S3 h=16 最大差距**：Split 0.74-0.78 （严重 undercoverage），Lyap-emp 0.85-0.93（贴 0.90）
+
+### 如何复现
+```bash
+CUDA_VISIBLE_DEVICES=0 python -m experiments.week2_modules.coverage_across_harshness --n_seeds 3
+```
+
+### 数据
+[results/coverage_across_harshness_n3_v1.json](experiments/week2_modules/results/coverage_across_harshness_n3_v1.json)
 
 ---
 

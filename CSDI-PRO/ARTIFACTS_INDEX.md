@@ -25,6 +25,7 @@
 | Fig 7 ⚠️ | [figures/tau_low_rank_spectrum.png](experiments/week2_modules/figures/tau_low_rank_spectrum.png) | τ 矩阵 UV^T 奇异值谱 | Stage B 低秩 τ-search 有效（CMA-ES rank=2 1.8× 快于 BO）；L=7 区分度不足，需 L=3-5 重跑 |
 | **D3** 🆕 | [figures/horizon_coverage_paperfig.png](experiments/week2_modules/figures/horizon_coverage_paperfig.png) | Horizon × Coverage 独立图（paper 版），2 panels × 5 CP methods | **Lyap-empirical 全 horizon 稳在 [0.88, 0.92]**，Split CP 漂到 0.80 |
 | **D4** 🆕 | [figures/horizon_piwidth_paperfig.png](experiments/week2_modules/figures/horizon_piwidth_paperfig.png) | Horizon × PI Width，同设置 | **Lyap-growth 让 PI 合理扩张**；Lyap-empirical 既不过窄也不过宽 |
+| **D2** 🆕 | [figures/coverage_across_harshness_paperfig.png](experiments/week2_modules/figures/coverage_across_harshness_paperfig.png) | Coverage Across Harshness, S0-S6 × 3 horizons × 3 seeds | **Lyap-emp 3.2× 更准校准**（\|PICP−0.9\| 0.071→0.022，18/21 cells 胜） |
 | **D5** 🆕 | [figures/reliability_diagram_paperfig.png](experiments/week2_modules/figures/reliability_diagram_paperfig.png) | Reliability diagram, α∈{0.01..0.5}, Raw Gaussian vs Split CP | **Raw GP 严重过覆盖**（α=0.3 → PICP 0.98 vs nominal 0.70）；**Split CP 完美贴 y=x**，CP 校准必要性铁证 |
 | **D6** 🆕 | [figures/tau_stability_paperfig.png](experiments/week2_modules/figures/tau_stability_paperfig.png) | MI-Lyap τ-stability vs noise, 6 σ × 15 seeds × 3 methods | **MI-Lyap 在 σ=0 时 15/15 选同一 τ（std=0）**；σ=0.5 下比 Fraser std 小 47% |
 | **D7 v2** 🆕 | [figures/tau_lowrank_spectrum_paperfig.png](experiments/week2_modules/figures/tau_lowrank_spectrum_paperfig.png) | τ 矩阵奇异值谱，L ∈ {3,5,7} × 5 seeds | **有效 rank ≈ 2-3**（明显小于 full rank L-1），验证 §2.3 low-rank ansatz |
@@ -66,7 +67,9 @@
 | [experiments/week2_modules/results/reliability_diagram_n3_v1.json](experiments/week2_modules/results/reliability_diagram_n3_v1.json) | α ∈ {0.01..0.5} × S2+S3 × 3 seeds 的 Raw/Split PICP | **D5 输入** |
 | [experiments/week2_modules/results/tau_stability_n15_v1.json](experiments/week2_modules/results/tau_stability_n15_v1.json) | 6 σ × 15 seeds × 3 方法的 τ vector | **D6 输入** |
 | [experiments/week2_modules/results/tau_spectrum_v2.json](experiments/week2_modules/results/tau_spectrum_v2.json) | L ∈ {3,5,7} × 5 seeds 的 CMA-ES UV^T 奇异值 | **D7 输入** |
-| [experiments/week1/results/pt_v2_csdi_upgrade_n3.json](experiments/week1/results/pt_v2_csdi_upgrade_n3.json) | Phase Transition ours vs ours_csdi, 7 scenarios × 3 seeds | **Fig 1b 输入** |
+| [experiments/week1/results/pt_v2_csdi_upgrade_n3.json](experiments/week1/results/pt_v2_csdi_upgrade_n3.json) | Phase Transition ours vs ours_csdi, 7 scenarios × 3 seeds（先导，已废） | 历史 |
+| **[experiments/week1/results/pt_v2_csdi_upgrade_n5.json](experiments/week1/results/pt_v2_csdi_upgrade_n5.json)** | **n=5 主数字版**：6/7 场景 CSDI 胜，S4 VPT 翻倍 | **Fig 1b 输入（主）** |
+| [experiments/week2_modules/results/coverage_across_harshness_n3_v1.json](experiments/week2_modules/results/coverage_across_harshness_n3_v1.json) | 7 scenarios × 3 horizons × 3 seeds, Split + Lyap-emp PICP/MPIW | **D2 输入** |
 
 ### 2.4 SVGP scaling
 

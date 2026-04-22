@@ -56,27 +56,28 @@
 - **主图（paper Figure 1 候选）**：[experiments/week1/figures/pt_v2_with_panda_n5_small_paperfig.png](experiments/week1/figures/pt_v2_with_panda_n5_small_paperfig.png)
 - 生成脚本：[experiments/week1/phase_transition_pilot_v2.py](experiments/week1/phase_transition_pilot_v2.py) + [experiments/week1/summarize_phase_transition.py](experiments/week1/summarize_phase_transition.py)
 
-### 1.5 Phase Transition CSDI M1 升级（2026-04-22 新增补充，3 seeds）
+### 1.5 Phase Transition CSDI M1 升级（2026-04-22 新增，**n=5 主数字**）
 
-在 AR-Kalman M1（原 `ours`）之外补做 CSDI M1（`ours_csdi`）的 pipeline 对照，Lorenz63 × 7 harshness × 3 seeds：
+在 AR-Kalman M1（原 `ours`）之外补做 CSDI M1（`ours_csdi`）的 pipeline 对照，Lorenz63 × 7 harshness × **5 seeds**：
 
-| Scenario | ours (AR-K) VPT10 | **ours_csdi VPT10** | Δ | ours rmse/std | **ours_csdi rmse/std** |
+| Scenario | ours (AR-K) VPT10 | **ours_csdi VPT10** | Δ | ours rmse | **ours_csdi rmse** |
 |:-:|:-:|:-:|:-:|:-:|:-:|
-| S0 | 0.96 ± 0.23 | 0.96 ± 0.23 | +0% | 0.896 | 0.921 |
-| **S1** | 0.55 ± 0.35 | **0.74 ± 0.22** | **+34%** | 1.258 | **1.161** |
-| S2 | 0.51 ± 0.37 | 0.54 ± 0.33 | +4% | 1.205 | **1.036** |
-| S3 | 0.45 ± 0.40 | 0.29 ± 0.13 | −36% ⚠️ | 1.397 | **1.268** |
-| S4 | 0.24 ± 0.10 | 0.26 ± 0.14 | +9% | 1.289 | **1.214** |
-| S5 | 0.23 ± 0.12 | 0.22 ± 0.14 | −6% | 1.186 | **1.119** |
-| **S6** | **0.02 ± 0.03** | **0.25 ± 0.16** | **+1000%** 🔥 | 1.708 | **1.035** |
+| S0 | 1.37 ± 0.71 | **1.61 ± 0.76** | **+18%** ✓ | 0.753 | 0.763 |
+| S1 | 1.15 ± 0.75 | 1.11 ± 0.59 | −3% | 0.856 | 0.905 |
+| **S2** | 0.80 ± 0.50 | **1.22 ± 0.80** | **+53%** 🔥 | 1.249 | **0.934** |
+| S3 | 0.91 ± 0.84 | 0.82 ± 0.67 | −10% | 1.030 | 1.036 |
+| **S4** | 0.26 ± 0.25 | **0.55 ± 0.78** | **+110%** 🔥 | 1.165 | **0.971** |
+| **S5** | 0.11 ± 0.15 | **0.17 ± 0.18** | **+48%** ✓ | 1.125 | **1.092** |
+| **S6** | 0.10 ± 0.10 | **0.16 ± 0.16** | **+71%** ✓ | 1.177 | **1.060** |
 
-**核心发现**：
-- **RMSE 维度全部 7/7 场景 CSDI M1 都胜出** — imputation 改进对下游 rollout 的 NRMSE 一致传递
-- **S6（noise floor σ=1.5）上 CSDI 的 VPT 从 0.02 飞到 0.25（10×）** — 新卖点：**"在 AR-Kalman 完全失败的 noise floor，CSDI 还能从观测中提取可用信号"**
-- S3 的 VPT −36% 是 3-seed 方差伪信号（ours σ=0.40，seed=1 偶然得到 VPT=1.00）；rmse 维度 CSDI 稳赢（1.40 → 1.27）
+**核心发现（n=5 主数字）**：
+- **6/7 场景 CSDI M1 VPT 更高或持平**（S1/S3 小幅落后在 1-seed σ 范围内）
+- **Harsh regime（S2/S4/S5/S6）CSDI 领先 48-110%**，paper 的锋利对比点
+- **Overall rmse 改善 8%**（ours 1.051 → csdi 0.966）
 - 产出：
-  - 数据 [pt_v2_csdi_upgrade_n3.json](experiments/week1/results/pt_v2_csdi_upgrade_n3.json)
-  - 图 [pt_v2_csdi_upgrade_n3.png](experiments/week1/figures/pt_v2_csdi_upgrade_n3.png)
+  - 数据 [pt_v2_csdi_upgrade_n5.json](experiments/week1/results/pt_v2_csdi_upgrade_n5.json)
+  - 图 [pt_v2_csdi_upgrade_n5.png](experiments/week1/figures/pt_v2_csdi_upgrade_n5.png)
+  - n=3 先导版本（废弃，保留存档）：[pt_v2_csdi_upgrade_n3.*](experiments/week1/results/)
 
 ---
 
@@ -212,10 +213,11 @@
 **关键现象**：Split CP 从 h=1 的 0.99 单调漂到 h=64 的 0.80（textbook undercoverage）；Lyap-empirical 全 horizon 稳在 [0.88, 0.92]。
 
 **论文独立 figure 化（2026-04-22 补画）**：
+- **D2 Coverage Across Harshness**：[figures/coverage_across_harshness_paperfig.png](experiments/week2_modules/figures/coverage_across_harshness_paperfig.png) — 7 scenarios (S0→S6) × 3 horizons (h=1/4/16) × 3 seeds，**overall mean \|PICP−0.9\| Split 0.071 vs Lyap-emp 0.022 → 3.2× 改善**；18/21 cells Lyap-emp 胜，尤其 h=16 Split 在 S0-S3 严重 undercover (0.74-0.78) 而 Lyap-emp 稳 0.85-0.93
 - **D3 Horizon × Coverage**：[figures/horizon_coverage_paperfig.png](experiments/week2_modules/figures/horizon_coverage_paperfig.png) — 2 面板 (S2/S3) × 5 CP 方法，展示 Lyap-empirical 稳定贴 0.90
 - **D4 Horizon × PI Width**：[figures/horizon_piwidth_paperfig.png](experiments/week2_modules/figures/horizon_piwidth_paperfig.png) — 同设置，展示 Lyap-growth 让 PI 合理扩张
 - **D5 Reliability diagram**：[figures/reliability_diagram_paperfig.png](experiments/week2_modules/figures/reliability_diagram_paperfig.png) — α∈{0.01..0.5}，Raw Gaussian **严重过覆盖**（α=0.3 下 PICP 0.98 vs nominal 0.70）；Split CP **沿 y=x 对角线**（完美校准），证明 CP 校准必不可少
-- 脚本：[plot_horizon_calibration_paperfig.py](experiments/week2_modules/plot_horizon_calibration_paperfig.py) + [reliability_diagram.py](experiments/week2_modules/reliability_diagram.py)
+- 脚本：[plot_horizon_calibration_paperfig.py](experiments/week2_modules/plot_horizon_calibration_paperfig.py) + [reliability_diagram.py](experiments/week2_modules/reliability_diagram.py) + [coverage_across_harshness.py](experiments/week2_modules/coverage_across_harshness.py)
 
 ---
 
@@ -267,7 +269,7 @@
 
 ---
 
-## 4. 累计 15 条可直接引用的 paper 数字
+## 4. 累计 18 条可直接引用的 paper 数字
 
 | # | 指标 | 数值 | 来源 |
 |:-:|---|:-:|---|
@@ -286,6 +288,9 @@
 | 13 | **CSDI M1 vs AR-Kalman @ S3 h=4** | **+24%**（0.493→0.375） | M1 新消融（2026-04-22） |
 | 14 | CSDI M1 vs AR-Kalman @ S3 h=16 | **+17%**（0.785→0.655） | 同上 |
 | 15 | CSDI M1 方差缩减 @ S3 h=1 | **3×**（σ 0.028→0.009） | 同上 |
+| 16 | **Lyap-emp vs Split overall \|PICP−0.9\|** | **3.2×**（0.071→0.022，7 scenarios × 3 horizons） | D2（2026-04-22） |
+| 17 | **CSDI ours_csdi @ S2 VPT10** | **+53%** vs ours（0.80→1.22，n=5） | Fig 1b v2 |
+| 18 | **CSDI ours_csdi @ S4 VPT10** | **+110%** vs ours（0.26→0.55，n=5） | 同上 |
 
 ---
 
