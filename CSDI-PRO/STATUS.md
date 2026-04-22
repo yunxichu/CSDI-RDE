@@ -91,9 +91,25 @@
 
 **3.4 D2 Coverage Across Harshness 补跑**：21 cells × AR-Kalman / CSDI 双版
 
-### 阶段 4 — 文档整合（2026-04-23 今日）
+### 阶段 4 — 文档整合（2026-04-23 上午）
 
 合并 `DELIVERY.md` + `PROGRESS.md` + `TODO_tech_gap_zh.md` + `COMPLETE_WORK_LOG_zh.md` → 本文档（STATUS.md）；合并 `PAPER_FIGURES.md` + `ARTIFACTS_INDEX.md` → `ASSETS.md`。README 重写成导航 hub。
+
+### 阶段 5 — REFACTOR_PLAN P0 完成：paper 叙事升级到延迟流形统一框架（2026-04-23 下午）
+
+**触发**：用户给出三段对话（`CSDI-PRO/改进方案`），提议把 paper 从"四模块 pipeline"升级到"$\mathcal{M}_\tau$ 统一几何框架"。整合为 [`REFACTOR_PLAN_zh.md`](REFACTOR_PLAN_zh.md)（440 行）。
+
+**完成**（6 commit，paper_draft_zh.md +275 行，实验数字零改动）：
+- **§3.0 新增**（几何骨架）：Takens + $d_{KY}$ + $\mathcal{K}$ + $n_\text{eff}(s,σ)$；附录 A.0.0 新加 8 个几何符号
+- **§3.1-3.4 重定位**：M2 提前（$\tau$ 是 M1 输入）；三 bug 从工程踩坑 → 几何必要条件
+- **§4 理论重构**：三 informal prop → 四定理族 + Corollary。核心新贡献是 **Theorem 2（Sparsity-Noise Interaction Phase Transition）**，临界点 $(s,σ) \approx (0.6,0.5)$ 恰好 = S3，把"S3 是主战场"升为理论预测。数量级闭环：Panda −85% = Prop 1 下界 −44% + Thm 2(b) OOD −41%
+- **§1 三段式 opener**：现象 → 理论 → 实证；新增 §1.2 Unified View；贡献列表 6 → 8 条
+- **Abstract + §2**：按流形视角重排 + 加 manifold learning tradition 段
+- **§6/§7 升级**：§6 加 τ-coupling / $n_\text{eff}$ unified follow-up；§7 从"好 pipeline"→"M_τ 中心框架"
+
+**反思见**：`session_notes/2026-04-23_refactor_plan_p0_complete.md`（含 5 个做得好的点 + 5 个待警觉风险 + P1 阶段计划）
+
+**下一阶段 P1（~2 周）**：τ-coupling ablation + $n_\text{eff}$ unified 实验 + Prop 1 / Thm 2 formal 证明。
 
 ---
 
@@ -168,7 +184,7 @@
 
 | 优先级 | TODO | 工作量 | 障碍 | 入口文件 |
 |:-:|---|:-:|---|---|
-| 🔥🔥🔥 **最高** | **T0** paper 叙事重构（延迟流形统一框架） | 3 周（P0 1w + P1 2w） | 无 | [`REFACTOR_PLAN_zh.md`](REFACTOR_PLAN_zh.md) — P0 纯写作（§1/§3.0/§3-4 重定位），P1 τ-coupling ablation + $n_\text{eff}$ unified + Prop 1/新 Theorem formal。本项直接提升投稿天花板，T2/T9 是其子任务 |
+| 🔥🔥🔥 **最高** | **T0** paper 叙事重构 — **P0 已完成 ✅（2026-04-23）/ P1 pending** | 剩 2 周（P1） | 无 | [`REFACTOR_PLAN_zh.md`](REFACTOR_PLAN_zh.md) — P0 纯写作已完成（Abstract / §1 / §2 / §3.0 / §3.1-4 重定位 / §4 四定理 + Corollary / §6-§7 升级；见 `session_notes/2026-04-23_refactor_plan_p0_complete.md`）。P1 待办：τ-coupling ablation + $n_\text{eff}$ unified 实验 + Prop 1/Thm 2 formal 证明。T2/T9 是其子任务 |
 | 🔥 高 | **T1** Table 3 极端 harshness summary | 1 hr | 无 | `paper_draft_zh.md §5.8` 衍生，读 `pt_v2_with_panda_n5_small.json` |
 | 🔥 高 | **T2** Prop 1/2 + Thm 1 formal proofs（T0 子任务） | 5 天 | 纯写作 | `paper_draft_zh.md` Appendix A.1/A.2/A.3；参考 tech.md §0.3 §3.6 §4.5 + Tsybakov 2009 / Castillo 2014 / Chernozhukov 2018；**注意**：T0 会引入新 Theorem (Sparsity-Noise Interaction)，证明需配套调整 |
 | 🔥🔥 高 | **T3** Lorenz96 Phase Transition | 2-3 天 | CSDI 需 L96 重训 | 仿 `make_lorenz_dataset.py` 写 L96 版；改 `DynamicsCSDIConfig.data_dim`；复用 `phase_transition_pilot_v2.py`（调 D=40） |
