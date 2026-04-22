@@ -184,7 +184,7 @@
 
 | 优先级 | TODO | 工作量 | 障碍 | 入口文件 |
 |:-:|---|:-:|---|---|
-| 🔥🔥🔥 **最高** | **T0** paper 叙事重构 — **P0 已完成 ✅（2026-04-23）/ P1 pending** | 剩 2 周（P1） | 无 | [`REFACTOR_PLAN_zh.md`](REFACTOR_PLAN_zh.md) — P0 纯写作已完成（Abstract / §1 / §2 / §3.0 / §3.1-4 重定位 / §4 四定理 + Corollary / §6-§7 升级；见 `session_notes/2026-04-23_refactor_plan_p0_complete.md`）。P1 待办：τ-coupling ablation + $n_\text{eff}$ unified 实验 + Prop 1/Thm 2 formal 证明。T2/T9 是其子任务 |
+| 🔥🔥🔥 **最高** | **T0** paper 叙事重构 — **P0 完成 ✅ / P1 半完成 ✅📝（2026-04-23）** | 剩 ~1 周 | 需 GPU | [`REFACTOR_PLAN_zh.md`](REFACTOR_PLAN_zh.md) — P0 完成：Abstract / §1 / §2 / §3.0 / §3.1-4 / §4 四定理 / §6-§7；P1 完成一半：Appendix A formal 证明草稿（4 定理 + 引理）、τ-coupling ablation 脚本 + §5.X1 占位、n_eff unified 脚本 + §5.X2 占位。**P1 剩余：实际跑两个实验 + Prop 1 常数校准 + 英文版同步**。见 `session_notes/2026-04-23_refactor_plan_p0_complete.md` |
 | 🔥 高 | **T1** Table 3 极端 harshness summary | 1 hr | 无 | `paper_draft_zh.md §5.8` 衍生，读 `pt_v2_with_panda_n5_small.json` |
 | 🔥 高 | **T2** Prop 1/2 + Thm 1 formal proofs（T0 子任务） | 5 天 | 纯写作 | `paper_draft_zh.md` Appendix A.1/A.2/A.3；参考 tech.md §0.3 §3.6 §4.5 + Tsybakov 2009 / Castillo 2014 / Chernozhukov 2018；**注意**：T0 会引入新 Theorem (Sparsity-Noise Interaction)，证明需配套调整 |
 | 🔥🔥 高 | **T3** Lorenz96 Phase Transition | 2-3 天 | CSDI 需 L96 重训 | 仿 `make_lorenz_dataset.py` 写 L96 版；改 `DynamicsCSDIConfig.data_dim`；复用 `phase_transition_pilot_v2.py`（调 D=40） |
