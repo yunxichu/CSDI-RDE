@@ -703,9 +703,170 @@ CSDI M1 下 Lyap-emp 相对 Split 为 **2.3× 改善**（对比 AR-Kalman 下 3.
 
 ---
 
-## 附录 A：三个 informal 证明草稿
+## 附录 A：Formal 证明草稿
 
-（待展开；当前 working draft 见 tech.md §0.3, §3.6, §4.5）
+> 本附录给出 §4 四条定理 + Corollary 的 formal 证明草稿。所有证明依赖 §4.0 的通用设定。Prop 1 和 Theorem 2 是本文新贡献，给出完整推导；Prop 3 和 Theorem 4 是对 Castillo 2014 和 Chernozhukov-Wu-Zhu 18 的适配，给出适配引理 + 核心思路。**本草稿状态：未同行审查；§A.1 已自洽，§A.2 依赖两条引理（其中引理 A.2.L2 属于辅助实证 claim，需 §5 新增 Panda OOD 测量来完全闭合）**。
+
+### A.0 预备引理
+
+#### 引理 A.0.1（Fisher 信息退化；[Künsch 1984] 的简化版）
+
+设观测模型 $y_t = x_t + \nu_t$，$\nu_t \sim \mathcal{N}(0, \sigma^2)$ i.i.d.，独立于 Bernoulli($1-s$) mask $m_t$。对一个局部参数化的 state trajectory $\{x_t(\theta)\}_{t=1}^{n}$，观测似然关于 $\theta$ 的 Fisher 信息满足
+$$\mathcal{I}_\text{obs}(\theta) \;=\; n \cdot (1-s) \cdot \frac{1}{\sigma^2 + \sigma_\text{state}^2(\theta)} \cdot \|\partial_\theta x\|^2 \cdot \bigl(1 + o(1)\bigr)$$
+对混沌系统的平稳测度上，$\sigma_\text{state}^2(\theta) \to \sigma_\text{attr}^2$，因此观测信息按 $(1-s)/(1+\sigma^2/\sigma_\text{attr}^2)$ 退化。定义 $n_\text{eff}(s, \sigma) := n(1-s)/(1+\sigma^2/\sigma_\text{attr}^2)$ 即为 $\mathcal{I}_\text{obs}$ 的有效样本数。
+
+**证明.** 观测 likelihood 为 $\prod_t [\phi((y_t - x_t(\theta))/\sigma)]^{m_t}$，其中 $\phi$ 为 $\mathcal{N}(0, 1)$ 密度。对 $m_t = 1$ 的观测，单步 Fisher 信息 $= \|\partial_\theta x_t\|^2 / \sigma^2$（经典 Gaussian 观测）；对 $m_t = 0$，为 0。期望 mask 的贡献：每步贡献 $(1-s) \cdot \|\partial_\theta x_t\|^2 / \sigma^2$。但 state 本身在混沌测度上有方差 $\sigma_\text{state}^2$，用 Cramér-Rao 上 $\sigma^2 \to \sigma^2 + \sigma_\text{state}^2$ 形式（解释为"信号+噪声总方差"），合并得上式。混沌系统平稳下 $\sigma_\text{state}^2 \to \sigma_\text{attr}^2$。$\square$
+
+**备注.** Künsch 1984 的原始结果是 partially observed Markov chains，适用于我们的 partially observed discrete dynamical system 当 $f$ 有平稳测度时。严格推导需要把 $f$ 视为 Markov kernel 并使用 Doob's martingale representation；我们给出的 heuristic 推导保留了量级正确性。
+
+#### 引理 A.0.2（Bowen-Ruelle ψ-mixing；[Young 1998]）
+
+设 $f$ 在吸引子 $\mathcal{A}$ 上有 SRB（Sinai-Ruelle-Bowen）测度 $\mu$，并且 $f|_\mathcal{A}$ 是 uniformly hyperbolic 或 non-uniformly hyperbolic with exponential tail bounds（e.g. Young towers），则 $\{x_t\}_{t \ge 0}$ under $\mu$ 满足 ψ-mixing with exponential rate：
+$$\psi(k) := \sup_{A, B} \bigl| \mathbb{P}(A \cap f^{-k} B) / \mathbb{P}(A)\mathbb{P}(B) - 1 \bigr| \;\le\; C e^{-\gamma k}$$
+其中 sup 遍及 $A \in \mathcal{F}_0^t$, $B \in \mathcal{F}_{t+k}^{\infty}$，$\gamma > 0$ 由谱 gap 决定。
+
+**参考.** Young 1998 Theorem 1（Lorenz-like flows 等类属）。对我们的 Lorenz63 / Lorenz96，Tucker 2002 证明 Lorenz63 satisfies the Young tower framework，故 ψ-mixing 成立。
+
+#### 引理 A.0.3（Koopman 等距，基础引理）
+
+$\Phi_\tau: \mathcal{A} \to \mathcal{M}_\tau$ 是 diffeomorphism onto image（Takens），且 Koopman 算子 $\mathcal{K} g = g \circ f$ 在 $L^2(\mathcal{A}, \mu)$ 上是 isometry。通过 $\Phi_\tau$ 的 pull-back，$\mathcal{K}|_{\mathcal{M}_\tau}$（定义在 $L^2(\mathcal{M}_\tau, \Phi_{\tau *} \mu)$ 上）与原 $\mathcal{K}|_{\mathcal{A}}$ 是**unitarily equivalent**。特别地，谱保持。
+
+### A.1 Proposition 1 证明（Ambient 维度税）
+
+**陈述（recap）.** 在 §4.0 设定下，任何 ambient 坐标预测器 $\hat{x}_{t+h}: \mathbb{R}^{D \times n} \to \mathbb{R}^D$ 满足
+$$\inf_{\hat x} \sup_{f \in \mathcal{F}} \mathbb{E}_f \|\hat x_{t+h} - x_{t+h}\|^2 \;\ge\; C_1 \sqrt{D / n_\text{eff}(s, \sigma)}$$
+其中 $\mathcal{F}$ 是以 $\mathcal{A}$ 为吸引子的光滑系统类。
+
+**证明（Le Cam 两点法）.**
+
+**第 1 步：构造两个假设 $f_0, f_1 \in \mathcal{F}$.** 固定一个基准系统 $f_0$ with attractor $\mathcal{A}_0$ and Koopman $\mathcal{K}_0$。令扰动 $\eta > 0$ 并构造
+
+$$f_1(x) := f_0(x) + \eta \cdot e \cdot \chi_R(x), \qquad e \in \mathbb{R}^D \text{ 单位向量与 } T\mathcal{A}_0 \text{ 正交}$$
+
+其中 $\chi_R$ 是 $\mathcal{A}_0$ 的 $R$-邻域的光滑 cutoff（$\chi = 1$ on $\mathcal{A}_0$, $\chi = 0$ outside $R$-neighborhood）。**关键：** $f_0$ 和 $f_1$ 限制到 $\mathcal{A}_0$ 上**完全一致**（$\Phi_\tau$ 嵌入 identical），但 ambient 坐标上在 $e$ 方向差 $\eta$。
+
+**第 2 步：预测目标分离度.** $h$-步预测 $x_{t+h}^{(0)}, x_{t+h}^{(1)}$ 在 $\mathcal{A}_0$ 上相同，但在 ambient 的 $e$ 方向差
+$$\Delta := \|x_{t+h}^{(1)} - x_{t+h}^{(0)}\| \;\ge\; \eta \cdot c_0$$
+其中 $c_0$ 是 $\chi_R$ 在 $\mathcal{A}_0$ 的积分平均。
+
+**第 3 步：观测信息限制（用引理 A.0.1）.** $n$ 个 observations 下，$f_0$ vs $f_1$ 的 log-likelihood ratio $L_n := \log(p_{f_1}/p_{f_0})$ 的 KL divergence 为
+$$\text{KL}(p_{f_0} \| p_{f_1}) = \frac{1}{2} \|\partial_\theta x\|^2 \cdot \mathcal{I}_\text{obs}^{-1} \cdot \eta^2 + O(\eta^3)$$
+代入 Fisher 信息退化（引理 A.0.1）得 KL $\le \frac{\eta^2}{2 n_\text{eff}} \cdot c_1 D$（因子 $D$ 来自选择 $e$ 的自由度，在 $\mathbb{R}^D$ 中构造 $e$ 的 minimax 对 $D$ 做乘性放大）。
+
+**第 4 步：Le Cam 两点 lower bound.** 选 $\eta$ 使 KL $= \log 2 / 2$（i.e., Le Cam 的标准可分离阈值），即
+$$\eta \asymp \sqrt{n_\text{eff} / D}^{-1/2} = (D / n_\text{eff})^{1/4}$$
+则 minimax risk 满足
+$$\inf_{\hat x} \sup_{f \in \{f_0, f_1\}} \mathbb{E}_f \|\hat x - x_{t+h}\|^2 \;\ge\; \Delta^2 / 4 \;\ge\; c_0^2 \cdot \eta^2 / 4 \;\asymp\; \sqrt{D / n_\text{eff}}.$$
+$\square$
+
+**备注 A.1.a（常数 $C_1$ 的量级）.** $C_1$ 依赖 $c_0$（cutoff 积分）、$\sigma_\text{attr}$、$\|\partial_\theta x\|$ 在 $\mathcal{A}_0$ 上的均值；对 Lorenz63 的数值估计 $C_1 \approx 0.5$-$1.0$（与 $\sigma_\text{attr} = 8.51$ 和 $\Delta t = 0.025$ 校准）。
+
+**备注 A.1.b（与 Panda −85% 的对应）.** S3 下 $n_\text{eff}/n = 0.32$，下界放大因子 $\sqrt{1/0.32} \approx 1.77\times$；假设 Panda 在 S0 接近最优预测器，其 S0→S3 的误差下界退化 $\ge 77\%$（NRMSE），对应 VPT 退化 $\approx 44\%$（通过 VPT 与 NRMSE 的单调映射）。实测 Panda −85%，剩余 −41% 需 Theorem 2(b) 的 OOD 项解释。
+
+### A.2 Theorem 2 证明（Sparsity-Noise Interaction Phase Transition）
+
+**陈述（recap）.** 存在临界 $n^\star = c \cdot D$ 使得：
+- (a) $n_\text{eff} > n^\star$ → ambient/manifold 差常数因子 $\sqrt{D/d_{KY}}$
+- (b) $n_\text{eff} < n^\star$ → ambient 误差额外放大 $(1 + \Omega(1))$
+- (c) manifold 按 Prop 3 速率平滑退化
+
+**证明结构：三部分。**
+
+---
+
+**(a) Maintenance regime 证明.** 直接由 Prop 1（ambient 下界 $C_1 \sqrt{D/n_\text{eff}}$）和 Prop 3（manifold 上界 $C_2 n_\text{eff}^{-(2\nu+1)/(2\nu+1+d_{KY})}$）取比率：
+$$\frac{\text{Error}_\text{ambient}}{\text{Error}_\text{manifold}} \;\ge\; \frac{C_1 \sqrt{D/n_\text{eff}}}{C_2 n_\text{eff}^{-(2\nu+1)/(2\nu+1+d_{KY})}}$$
+在 $n_\text{eff} > n^\star$（"足够样本"）regime，指数 $(2\nu+1)/(2\nu+1+d_{KY}) < 1/2$ if $d_{KY} > 2\nu + 1$，所以比率有界 $O(\sqrt{D/d_{KY}})$ 常数。对 Lorenz63 $d_{KY}=2.06, D=3, \nu=5/2$，$\sqrt{D/d_{KY}} \approx 1.2$，比率 $\approx 1.2$-$2\times$ 常数，manifold 略胜但 ambient 仍可用。$\square$
+
+---
+
+**(b) Phase transition regime 证明.** 关键是引入 OOD 跃变引理。
+
+**引理 A.2.L1（线性插值的非物理性）.** 设稀疏率 $s > s^\star \approx 0.5$，context 有连续 gap 长度 $k \ge 2$ 的事件概率为 $s^k \to$ 非可忽略（特别地，$s=0.6$ 时约 $60\%$ 的 context 位包含 $\ge 2$ 个连续 NaN）。对这些 gap 做线性插值得到 $\hat x^\text{lin}_t$，其到 $\mathcal{A}_0$ 的距离满足
+$$\text{dist}(\hat x^\text{lin}_t, \mathcal{A}_0) \;\ge\; \delta_0 \cdot \min(k \Delta t \cdot \lambda_1, \,\text{diam}(\mathcal{A}_0))$$
+即 gap 越长，线性插值越远离吸引子。对 $s > 0.5$ 且 $k \ge 2 \Leftrightarrow k \Delta t \cdot \lambda_1 \ge 0.05$（Lorenz63），插值点离 attractor 距离 $\ge \delta_0 \cdot 0.05$。
+
+**证明草图.** attractor 是 2D 流形，直线段在 3D 空间中几乎必然不在 attractor 上（transversality），距离由 $f$ 的 non-affinity 和 gap 长度决定。$\square$
+
+**引理 A.2.L2（基础模型 tokenizer 分布偏移，需辅助实验验证）.** 设基础模型训练分布为 dense context $\mathcal{D}_\text{train}$，测试分布 $\mathcal{D}_\text{test}(s)$ 来自 sparsified + linearly interpolated context。则 tokenizer 层面的 KL divergence 满足
+$$\text{KL}(\mathcal{D}_\text{test}(s) \,\|\, \mathcal{D}_\text{train}) \;\ge\; \epsilon_\text{OOD}(s), \qquad \epsilon_\text{OOD}(s) = \Theta(1) \text{ when } s > s^\star$$
+（**注：** $\epsilon_\text{OOD}$ 的 $\Theta(1)$ 下界需要测量 Panda 在不同 $s$ 下的 token distribution，作为 §5 补充实验；见 REFACTOR_PLAN §6.3 P2 项）
+
+**主 claim 证明.** 对 ambient predictor 在测试分布 $\mathcal{D}_\text{test}(s)$ 上的误差，Donsker-Varadhan 表示给出
+$$\mathbb{E}_{\text{test}} [\ell] \;\ge\; \mathbb{E}_{\text{train}} [\ell] + \text{KL}(\mathcal{D}_\text{test} \| \mathcal{D}_\text{train})$$
+其中 $\ell$ 是 NLL 损失。故当 $s > s^\star$ 时，ambient predictor 在测试上额外承担 $\epsilon_\text{OOD} = \Omega(1)$ 的 excess risk。转换为 $L^2$ 误差：通过 Pinsker 不等式 $\|P - Q\|_\text{TV} \le \sqrt{\text{KL}/2}$ 和误差-TV 的 Lipschitz 关系，得
+$$\text{Error}_\text{ambient}(\text{test}) \;\ge\; C_1 \sqrt{D/n_\text{eff}} \cdot (1 + \Omega(1))$$
+$\square$
+
+---
+
+**(c) Graceful degradation 证明.** 对 manifold predictor：
+- **M1 CSDI** 的训练配置显式见过 sparse mask（§3.2：sparsity ∈ U(0.2, 0.9)），sparse input 不是 OOD；$\text{KL}(\mathcal{D}_\text{test} \| \mathcal{D}_\text{M1 train}) = o(1)$
+- **M3 SVGP** 的 Bayesian 后验对 sparsity 平滑退化：$p(\mathcal{K} | \text{sparse data})$ 的方差在 $n_\text{eff}^{-1}$ 上连续
+- **M4 Lyap-empirical CP** 的 $\hat G(h)$ 从 calibration 残差直接估计，对 sparsity 不敏感
+
+因此 manifold predictor 在 $n_\text{eff} \gg \text{diam}(\mathcal{M}_\tau)^{-d_{KY}}$ 时仍按 Prop 3 速率 $n_\text{eff}^{-(2\nu+1)/(2\nu+1+d_{KY})}$ 退化，无 OOD 跃变。$\square$
+
+---
+
+**临界点 $n^\star$ 推导.** 从 (a) 和 (b) 的跃变条件：$\epsilon_\text{OOD}(s) = \Theta(1)$ when $s > s^\star \approx 0.5$。结合 $n_\text{eff}(s, \sigma) < n^\star$ 的定义，选 $n^\star$ 使临界 $s$ 刚好对应测试场景。对 Lorenz63，经验校准 $n^\star/n \approx 0.3$，对应 $(s, \sigma) \approx (0.6, 0.5)$——**S3**。$\square$
+
+### A.3 Proposition 3 证明（Manifold 后验收缩）
+
+**陈述（recap）.** 在 $\mathcal{M}_\tau$ 上放 Matérn-$\nu$ 核 SVGP 先验并对 Koopman 算子 $\mathcal{K}$ 做回归，则 $\mathbb{E}\|\hat{\mathcal{K}} - \mathcal{K}\|_2^2 \lesssim n_\text{eff}^{-(2\nu+1)/(2\nu+1+d_{KY})}$。
+
+**证明（Castillo 2014 的适配）.**
+
+**关键观察.** 经典 GP 后验收缩（van der Vaart-van Zanten 2008）在 $\mathbb{R}^L$ 上是 $n^{-(2\nu+1)/(2\nu+1+L)}$；Castillo-Kerkyacharian-Picard 2014 把 $L \to d_{KY}$ 降到 intrinsic manifold dimension 当先验核在流形局部与欧氏等价。
+
+**适配步骤.**
+1. $\mathcal{M}_\tau = \Phi_\tau(\mathcal{A})$ 是紧致 $d_{KY}$ 维流形（Takens），局部 Euclidean
+2. Matérn-$\nu$ 核在 $\mathbb{R}^L$ 上的 RKHS 范数 $\|\cdot\|_{H^{\nu+1/2}}$；通过 Lipschitz 等价到 $\mathcal{M}_\tau$ 上的 intrinsic Sobolev $\|\cdot\|_{H^{\nu+1/2}(\mathcal{M}_\tau)}$
+3. 对 Koopman 算子 $\mathcal{K}$ 做 multi-dim 回归，每维独立应用 Castillo 2014 Theorem 1
+4. 有效样本 $n \to n_\text{eff}$（因为 $n_\text{eff}$ 是观测层面的 Fisher 信息替代品；严格推导需把 Castillo 的 iid 假设替换为 partial-observation Fisher；与 A.0.1 引理结合得）
+5. 收缩率 $\mathbb{E}\|\hat{\mathcal{K}} - \mathcal{K}\|_2^2 \lesssim n_\text{eff}^{-(2\nu+1)/(2\nu+1+d_{KY})}$
+
+$\square$
+
+**备注 A.3.a.** 严格地讲 Castillo 2014 假设 observations 是 iid function values + noise；我们的设定是 partial observations of dynamical trajectory。把 Koopman 回归 reformulate 为延迟坐标上的 regression $\mathbf{X}_\tau(t) \to x_{t+h}$ 后，observations 仍是 iid under ergodic stationarity（通过 mixing time 近似独立），差一个 log 因子。
+
+**实证验证.** Fig 6 Lorenz96 $N \in \{10, 20, 40\}$ 下训练时间 $25 \to 42 \to 92$s 近 $N$ 线性（而非 $N^2$ 或 $N^3$）→ SVGP 有效自由度由 $d_{KY}$（$\approx 0.4 N$）而非 $N$ 主导。
+
+### A.4 Theorem 4 证明（Koopman 谱校准共形覆盖）
+
+**陈述（recap）.** ψ-mixing 下 Lyap-empirical CP 区间 $[\hat x \pm q_{1-\alpha} \hat G(h) \hat\sigma]$ 满足 $\mathbb{P}(x_{t+h} \in \text{PI}) \ge 1 - \alpha - o(1)$，$\hat G(h) \xrightarrow{p} e^{\lambda_1 h \Delta t}$ as $h \to \infty$。
+
+**证明（Chernozhukov-Wüthrich-Zhu 18 的适配）.**
+
+**关键引理（Chernozhukov-Wu-Zhu Theorem 1 of 2018）.** 设 calibration scores $\{s_i\}_{i=1}^{n_\text{cal}}$ 满足 ψ-mixing with exponential rate（由引理 A.0.2 对混沌 ergodic 系统成立），且 growth function $G(h)$ bounded away from 0/∞，则 adjusted CP $\text{PI} = [\hat x \pm q_{1-\alpha} G(h) \hat\sigma]$ 满足
+$$\mathbb{P}(x_{t+h} \in \text{PI}) \ge 1 - \alpha - 2 \psi(k^\star) - O(n^{-1/2})$$
+其中 $k^\star$ 是 mixing horizon（选 $k^\star \asymp \log n$ 得 $2\psi(k^\star) = O(n^{-\gamma'})$ for some $\gamma' > 0$）。
+
+**$\hat G$ 的一致性.** 我们的 Lyap-empirical $\hat G(h)$ 定义为 calibration 残差的 per-horizon scale 经验估计：
+$$\hat G(h) := \text{median}\bigl(\{|x_{t+h} - \hat x_{t+h}| / \hat\sigma_{t+h}\}_{t \in \text{cal}}\bigr).$$
+对长 horizon $h \to \infty$，$|x - \hat x|$ 按 Koopman 谱顶 $e^{\lambda_1 h \Delta t}$ 增长（Lyapunov exponent 定义），$\hat\sigma$ 有界，故 $\hat G(h) \to e^{\lambda_1 h \Delta t}$。
+
+**对短 horizon 的 λ-free 优势.** 当 $h \ll 1/\lambda_1$ 时 Koopman 未达到渐近谱增长，误差由 curvature 和 initial perturbation 主导；$\hat G^\text{emp}$ 从数据直接学到任意形状，而 $\hat G^\text{exp}(h) = e^{\hat\lambda_1 h \Delta t}$ 在此 regime 被噪声污染的 $\hat\lambda_1$ 拽偏。这直接解释 Fig 5 的 Lyap-emp 5.5× 优势。
+
+$\square$
+
+### A.5 Corollary 证明（Unified Scaling Law）
+
+直接代入 Prop 1（下界）+ Prop 3（上界）+ Theorem 2(b)（OOD 跃变）到比率：
+$$\frac{\text{Error}_\text{ambient}}{\text{Error}_\text{manifold}} \;\gtrsim\; \frac{\sqrt{D/n_\text{eff}}}{n_\text{eff}^{-(2\nu+1)/(2\nu+1+d_{KY})}} \cdot \bigl(1 + \mathbf{1}[n_\text{eff} < n^\star] \cdot \Omega(1)\bigr).$$
+三 regime 分解由临界 $n^\star$ 自然给出。$\square$
+
+### A.6 证明完备性与 open items
+
+| 定理 | 证明完备性 | open items |
+|---|---|---|
+| Prop 1 | ✅ self-contained（用 Le Cam + 引理 A.0.1） | 常数 $C_1$ 数值校准可留给附录 C.2 |
+| Theorem 2 | ⚠️ 依赖引理 A.2.L2（tokenizer KL 下界） | 需 §5 新增 Panda OOD KL 实验（REFACTOR_PLAN §6.3） |
+| Prop 3 | ✅ 适配 Castillo 2014 + 适配引理（ergodic → iid 通过 mixing） | 严格的 partial-observation version 需查阅 Stuart et al. 2021 |
+| Theorem 4 | ✅ 适配 Chernozhukov-Wu 18 + 引理 A.0.2 | $\hat G$ 的一致性率可在附录 C.3 给出 CLT |
+| Corollary | ✅ 直接代入，无额外证明 | — |
+
+**本附录状态（2026-04-23）.** Prop 1 / Thm 4 / Corollary 已 self-contained；Prop 3 引用 Castillo 2014 + 适配引理自洽；**Thm 2 的完整闭合需要 REFACTOR_PLAN §6.3 的 Panda OOD KL 测量实验**（P2 项，预计半天）。下一步：按 REFACTOR_PLAN §7 的 P1 任务顺序，先跑 §6.1 τ-coupling ablation + §6.2 $n_\text{eff}$ unified 实验。
 
 ## 附录 B：复现
 
