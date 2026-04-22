@@ -55,6 +55,56 @@
 
 ## 3. 方法
 
+> **视角声明。** 本章把 M1/M2/M3/M4 四模块按**延迟流形** $\mathcal{M}_\tau$ 这一共同几何对象重新组织。读者若只关心"每个模块做什么"，可跳过 §3.0 直接从 §3.1 开始阅读；但 §3.0 是 §4 理论部分的几何骨架，对理解 Proposition 1-2 和新 Theorem（Sparsity-Noise Interaction）不可或缺。
+
+### 3.0 延迟流形作为中心对象（几何骨架）
+
+本文的四个模块表面上处理四个不同的子问题（插补 / 延迟选择 / 回归 / UQ），但它们共享一个中心对象——延迟流形 $\mathcal{M}_\tau$。这一小节给出后续讨论所需的几何与算子背景。
+
+**Takens 嵌入定理（回顾）.** 设动力系统 $f: \mathcal{X} \to \mathcal{X}$ 有一个 $d$ 维紧致遍历吸引子 $\mathcal{A} \subset \mathcal{X}$，$h: \mathcal{X} \to \mathbb{R}$ 是一个 generic 观测函数。对任意 $L > 2d$ 和 generic 延迟向量 $\tau = (\tau_1, \ldots, \tau_{L-1})$，延迟映射
+
+$$\Phi_\tau: x \mapsto \bigl( h(x),\, h(f^{-\tau_1}(x)),\, h(f^{-\tau_2}(x)),\, \ldots,\, h(f^{-\tau_{L-1}}(x)) \bigr) \in \mathbb{R}^L$$
+
+是 $\mathcal{A}$ 到 $\mathbb{R}^L$ 的一个**嵌入（diffeomorphism onto image）**。记其像集为**延迟流形**
+
+$$\mathcal{M}_\tau := \Phi_\tau(\mathcal{A}) \;\subset\; \mathbb{R}^L.$$
+
+**几何不变量.** 以下三个量是 $\mathcal{M}_\tau$ 的核心几何不变量，它们贯穿本文四个模块：
+
+1. **内蕴维度 $d_{KY}$** —— Kaplan-Yorke 维
+$$d_{KY} \;=\; k \;+\; \frac{\sum_{i=1}^{k}\lambda_i}{|\lambda_{k+1}|}, \qquad k = \max\Bigl\{j:\sum_{i=1}^{j}\lambda_i \ge 0\Bigr\}$$
+由 Lyapunov 谱 $\{\lambda_i\}$ 定义。Kaplan-Yorke 猜想（在 Lorenz63、Lorenz96、Rössler 等 benchmark 系统上已数值验证）断言 $d_{KY}$ 与吸引子 Hausdorff 维相等，并且在嵌入无退化时亦为 $\mathcal{M}_\tau$ 的内蕴维度。对 Lorenz63 $d_{KY} \approx 2.06$，Lorenz96-$N=20$ 下 $d_{KY} \approx 8$。
+
+2. **切丛结构 $T\mathcal{M}_\tau$** —— 由 Koopman 算子的谱决定。记 Koopman 算子
+$$\mathcal{K}: g(x) \mapsto g(f(x))$$
+作用于可观测函数空间；它是**线性**算子（即使 $f$ 非线性），谱分解后对 invariant subbundle 的作用给出了 $\mathcal{M}_\tau$ 的局部线性结构。
+
+3. **最优嵌入 $\tau^\star$** —— 由 MI-Lyap 目标（§3.1）的极值定义。直观地：$\tau$ 太小则 $\Phi_\tau$ 接近退化（相邻坐标相互冗余，$\mathcal{M}_\tau$ 近 self-intersection）；$\tau$ 太大则 $\Phi_\tau$ 过度拉伸（混沌下 $\|D\Phi_\tau\|$ 按 $e^{\lambda_1 \tau_\text{max}}$ 增长，数值上不稳）。最优 $\tau^\star$ 平衡这两端。
+
+**Koopman 算子在延迟坐标下的平凡化.** 关键观察是：在延迟坐标下 $\mathcal{K}$ 的作用退化为一个"左移"结构
+$$\mathcal{K}: (y_t, y_{t-\tau_1}, \ldots, y_{t-\tau_{L-1}}) \;\longmapsto\; (y_{t+1}, y_{t+1-\tau_1}, \ldots, y_{t+1-\tau_{L-1}}).$$
+这意味着预测 $y_{t+h}$ 等价于在 $\mathcal{M}_\tau$ 上沿 $\mathcal{K}^h$ 轨道前推一步。
+
+**四个模块的统一目标.** 在上述几何框架下，稀疏噪声混沌预测可统一为"**从退化观测重建 $\mathcal{M}_\tau$ 上的 Koopman 算子**"。四个模块是这一重建任务的互补子任务：
+
+| 模块 | 在 $\mathcal{M}_\tau$ 上的几何角色 |
+|---|---|
+| **M2（§3.1）** | 估计 $\mathcal{M}_\tau$ 的嵌入几何：选 $\tau^\star$ 让 $\Phi_\tau$ 不 self-intersect 也不过度拉伸 |
+| **M1（§3.2）** | 在 $\mathcal{M}_\tau$ 上做流形感知 score estimation：CSDI delay mask 以 M2 的 $\tau$ 为 anchor，让 attention 沿 $\mathcal{M}_\tau$ 切向共享信息 |
+| **M3（§3.3）** | 在 $\mathcal{M}_\tau$ 上回归 Koopman 算子：SVGP 的 Matérn 核直接拟合 $\mathcal{K}$ 的 pushforward |
+| **M4（§3.4）** | 用 Koopman 谱校准 PI：CP horizon growth $G(h)$ 在 $h\to\infty$ 时逼近 $e^{\lambda_1 h \Delta t}$（$\lambda_1$ 是 $\mathcal{K}|_{\mathcal{M}_\tau}$ 的谱顶） |
+
+**三个共享参数.** 四个模块通过以下三个几何量耦合：
+- 延迟向量 $\tau$：M2 选出 → M1 delay-mask 使用 → M3 坐标定义
+- Kaplan-Yorke 维 $d_{KY}$：M2 最优 L ← M1 score 收敛率 ← M3 后验收缩率（与环境维 $D$ 解耦）
+- Lyapunov 谱 $\{\lambda_i\}$：M2 惩罚项 ← M4 horizon growth ← 决定相变临界点
+
+**有效样本数 $n_\text{eff}$（§4 理论的关键参数）.** 在稀疏率 $s$、噪声比 $\sigma/\sigma_\text{attr}$ 下，context 窗口的有效样本数退化为
+$$n_\text{eff}(s, \sigma) \;=\; n \cdot (1-s) \cdot \frac{1}{1 + \sigma^2 / \sigma_\text{attr}^2}.$$
+第一项是稀疏率直接丢数据，第二项是高斯观测模型下的 Fisher 信息衰减（见 [Künsch 1984] 对部分可观测动力系统的严格处理；我们在附录 A.1 验证该公式在 Lorenz63 上的数值准确性）。$n_\text{eff}$ 将作为 Proposition 1 和 Proposition 2 的共同参数出现，把"稀疏率"和"噪声"两个因素统一为一个可解析处理的量。
+
+---
+
 ### 3.1 模块 M1 — 面向带噪观测的动力学感知 CSDI
 
 设 $x_{1:T} \in \mathbb{R}^{T\times D}$ 是潜在干净轨迹，$m \in \{0,1\}^T$ 是观测 mask，$y_t = x_t + \nu_t, \nu_t \sim \mathcal{N}(0, \sigma^2 I)$ 是观测时刻的带噪观测。我们要从 $p(x_{1:T} \mid y_{m=1}, m, \sigma)$ 采样。
@@ -440,6 +490,19 @@ CSDI M1 下 Lyap-emp 相对 Split 为 **2.3× 改善**（对比 AR-Kalman 下 3.
 ---
 
 ## 附录 A.0：符号与术语表
+
+### A.0.0 几何对象与算子（§3.0 核心符号）
+
+| 符号 | 名称 | 定义 / 说明 |
+|:-:|---|---|
+| $\mathcal{A}$ | 遍历吸引子 | $\mathcal{A} \subset \mathbb{R}^D$，$D$ 为系统维度（Lorenz63: $D=3$） |
+| $\Phi_\tau$ | 延迟嵌入映射 | $x \mapsto (h(x), h(f^{-\tau_1}(x)), \ldots, h(f^{-\tau_{L-1}}(x)))$，Takens 定理保证 $L>2d$ 时为 diffeomorphism |
+| $\mathcal{M}_\tau$ | **延迟流形** | $\mathcal{M}_\tau := \Phi_\tau(\mathcal{A}) \subset \mathbb{R}^L$，四模块共同的几何对象 |
+| $T\mathcal{M}_\tau$ | 切丛 | $\mathcal{M}_\tau$ 上的切向量场；由 Koopman 算子谱决定局部线性结构 |
+| $d_{KY}$ | Kaplan-Yorke 维 | $d_{KY} = k + (\sum_{i=1}^{k}\lambda_i)/|\lambda_{k+1}|$；Lorenz63 $\approx 2.06$、L96-$N=20$ $\approx 8$ |
+| $\mathcal{K}$ | Koopman 算子 | $\mathcal{K}: g(x) \mapsto g(f(x))$；延迟坐标下退化为左移，是四模块共同估计目标 |
+| $\tau^\star$ | 最优延迟向量 | MI-Lyap 目标极值点；几何上让 $\mathcal{M}_\tau$ 不 self-intersect 也不过度拉伸 |
+| $n_\text{eff}(s, \sigma)$ | **有效样本数** | $n \cdot (1-s) \cdot 1/(1+\sigma^2/\sigma_\text{attr}^2)$；§4 Prop 1/2 + 新 Theorem 的共同参数 |
 
 ### A.0.1 场景参数
 | 符号 | 含义 | 取值 |
