@@ -111,6 +111,20 @@
 
 **下一阶段 P1（~2 周）**：τ-coupling ablation + $n_\text{eff}$ unified 实验 + Prop 1 / Thm 2 formal 证明。
 
+### 阶段 6 — P1 跑实验 + 真实数据 + 英文版同步（2026-04-23 晚）
+
+**18 个 commit 总览（f04064f → 7ccd12f）**：P0 全部 + P1 大部分完成。
+
+**实验结果（诚实报告，含部分反驳 paper 原预言）**：
+- **τ-coupling**（15 runs）：**NULL 结果** B_current ≈ A_random ≈ C_mismatch ≈ D_equidist（±1%）。修正 §3.0 耦合 claim 强度从"推理时必需"降到"训练时隐式"。
+- **$n_\text{eff}$ unified**（40 runs）：**正交 failure modes** —— Ours 纯稀疏最好（0.204）/ 纯噪声最差（0.496）；Panda 纯稀疏最差（0.593）/ mixed 最好（0.514）。**U3 pure_sparse Panda/Ours = 2.90× 🔥**。修正 Theorem 2(c) 从"n_eff only"到"训练分布内 (s,σ) smooth"；Theorem 2(b) ambient OOD claim **得到实证支持**。
+
+**新 narrative**：S3 = sparse (Panda 弱点) × noise (Ours 弱点) 的**交集**，相变是两种 failure modes 的 intersection effect。
+
+**科学诚实**：没有强行让数据配合预期；paper 叙事因此更 nuanced 更强。
+
+**P1 剩余工作**：Panda OOD KL 辅助实验 / 英文版 §3.1-7 / Prop 1 常数校准 / Figs 生成。见 `session_notes/2026-04-23_refactor_plan_p0_complete.md` 完整记录。
+
 ---
 
 ## 三、累计 21 条可直接引用的 paper 硬数字
@@ -184,7 +198,7 @@
 
 | 优先级 | TODO | 工作量 | 障碍 | 入口文件 |
 |:-:|---|:-:|---|---|
-| 🔥🔥🔥 **最高** | **T0** paper 叙事重构 — **P0 完成 ✅ / P1 半完成 ✅📝（2026-04-23）** | 剩 ~1 周 | 需 GPU | [`REFACTOR_PLAN_zh.md`](REFACTOR_PLAN_zh.md) — P0 完成：Abstract / §1 / §2 / §3.0 / §3.1-4 / §4 四定理 / §6-§7；P1 完成一半：Appendix A formal 证明草稿（4 定理 + 引理）、τ-coupling ablation 脚本 + §5.X1 占位、n_eff unified 脚本 + §5.X2 占位。**P1 剩余：实际跑两个实验 + Prop 1 常数校准 + 英文版同步**。见 `session_notes/2026-04-23_refactor_plan_p0_complete.md` |
+| 🔥🔥🔥 **最高** | **T0** paper 叙事重构 — **P0 完成 ✅ / P1 大部分完成 ✅（2026-04-23 晚）** | 剩 2-3 天 | 无 | [`REFACTOR_PLAN_zh.md`](REFACTOR_PLAN_zh.md) — P0 完成；P1 完成：Appendix A formal 证明 + τ-coupling 跑完（null 结果）+ n_eff unified 跑完（pure_sparse U3 = 2.90× Panda/Ours 🔥）+ 英文版 Abstract/§1/§2/§3.0/§4 同步。**P1 剩余：Panda OOD KL + 英文 §3.1-7 + Prop 1 常数校准 + fig 生成**。见 `session_notes/2026-04-23_refactor_plan_p0_complete.md` |
 | 🔥 高 | **T1** Table 3 极端 harshness summary | 1 hr | 无 | `paper_draft_zh.md §5.8` 衍生，读 `pt_v2_with_panda_n5_small.json` |
 | 🔥 高 | **T2** Prop 1/2 + Thm 1 formal proofs（T0 子任务） | 5 天 | 纯写作 | `paper_draft_zh.md` Appendix A.1/A.2/A.3；参考 tech.md §0.3 §3.6 §4.5 + Tsybakov 2009 / Castillo 2014 / Chernozhukov 2018；**注意**：T0 会引入新 Theorem (Sparsity-Noise Interaction)，证明需配套调整 |
 | 🔥🔥 高 | **T3** Lorenz96 Phase Transition | 2-3 天 | CSDI 需 L96 重训 | 仿 `make_lorenz_dataset.py` 写 L96 版；改 `DynamicsCSDIConfig.data_dim`；复用 `phase_transition_pilot_v2.py`（调 D=40） |
