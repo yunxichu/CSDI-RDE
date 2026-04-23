@@ -1046,8 +1046,10 @@ python -m experiments.week2_modules.run_panda_ood_kl \
 
 **(s, σ) 正交分解实证已完成（§5.X3，90 runs 3×3 grid）.** 原本 §4 Theorem 2 (c) 声明的 "manifold predictor 按 $n_\text{eff}$ 平滑退化"被 4-point 实验（§5.X2）发现是 2.4× variation 而非塌陷。§5.X3 的 3×3 (s,σ) grid 实证 **Proposition 5（§4.2a 新）**：Ours 的 σ-channel 比 s-channel 强 32× (几乎完美 σ-only failure)，Panda 的 s-channel 比 σ-channel 强 1.84× (方向正确但边际)，Panda/Ours 比率在 (s=0.70, σ=0) 纯稀疏格达到 2.93× 峰值。相变本质被精确定性为：**Panda 的 sparsity-OOD 弱点与 Ours 的 noise-sensitivity 弱点的正交交集**。
 
+**Theorem 2(b) 引理 L2 已部分闭合（§5.X4，2026-04-23）.** 直接测量 patch-curvature 分布的 Jensen-Shannon 散度与 Wasserstein 距离发现：在 σ=0 线上，$s = 0.70 \to 0.85$ 之间 **JS 散度跃变 3.1×**（0.042 → 0.131），**linear-segment patch（curvature < 0.01）占比跃变 21×**（0.6% → 12.9%）—— 直接实证 lemma L2 的 "非物理直线段 hard threshold" 机制，方向性和数量级匹配；精确常数 $c$ 仍依赖 Panda tokenizer-internal 分析。
+
 **剩余 follow-up.**
-- **Panda OOD KL 测量**（闭合 Theorem 2(b) 引理 L2 的严格证明）：半天 GPU，见 REFACTOR_PLAN §6.3
+- **Panda tokenizer-internal 分析**：§5.X4 观察到 Panda 在 s=0.6 就有严重 NRMSE 劣势，而 KL hard threshold 在 s=0.85 —— 暗示 Panda 对较小 KL shift 也敏感，或有 tokenizer embedding 内部的其他 OOD 机制
 - **Prop 5 的 Panda 侧 hard threshold 外推**：$s > 0.7$ grid 点（0.85, 0.95），验证 Panda s-channel ratio 在更大 $s$ 下是否超过 2×
 - **τ-coupling 的跨系统验证**：Mackey-Glass 等真正 τ-sensitive 系统，验证"训练时耦合"机制在不同吸引子上的普适性
 
@@ -1063,13 +1065,14 @@ python -m experiments.week2_modules.run_panda_ood_kl \
 
 在 Lorenz63 主基准上，流水线达到 Panda 的 **2.2×**、Parrot 的 **7.1×**（S3）、Panda 的 **9.4×**（S4 with CSDI M1），7 个 harshness 场景覆盖率在 nominal 90% ±2% 之内，训练在 $N$ 上近线性 scale。Panda 实测 −85% 退化与 Prop 1 下界 −44% + Theorem 2(b) OOD −41% **数量级闭环**，S5/S6 所有方法共同归零（物理底线），证明优势 physically grounded。
 
-**Option C 三件精细化（§5.X1-X3，本工作新，顶会评审期待的深度实证）**：
+**Option C 四件精细化（§5.X1-X4，本工作新，顶会评审期待的深度实证）**：
 
 1. **相变 = 稀疏 × 噪声正交交集** (§5.X3, 3×3 grid × 90 runs)：把 $n_\text{eff}$ 单维度税分解为 (s, σ) 平面，发现 Ours 的 σ-channel 比 s-channel 强 **32×** (纯稀疏下 NRMSE 几乎不变)，Panda 的 s-channel 比 σ-channel 强 1.84×；Panda/Ours 比率峰值 **2.93×** 精确出现在纯稀疏格 (s=0.70, σ=0)——直接触发 Theorem 2(b) OOD 机制的最孤立观测。Proposition 5 把 Theorem 2(c) 从 "$n_\text{eff}$-only smooth decay" 精确化为 "orthogonal channels within training distribution"。
 2. **τ-coupling 是训练时的** (§5.X1/X1b)：inference-time τ override 对下游 NRMSE 无显著影响 (≤1%)；但训练后 delay_bias 的 effective τ={1,2,3,4} 与 M2 test-time 选的 τ_B={1,2,3,4} **100% 重合**，delay_alpha 放大 254×。τ 耦合从"inference-time knob"精确化为"training-time implicit learning"，四模块耦合 claim 从 hand-waving 变成 mechanistic evidence。
 3. **CSDI 三个 bug 作为几何必要条件**：非零初始化 / 每维中心化 / 贝叶斯软锚定，分别对应启用切丛 $T\mathcal{M}_\tau$ / 建立 DDPM 正确几何 / 正确流形投影。最后一个 fix 的价值随 $\sigma^2$ quadratic 放大（S2 +53% / S4 +110% / S6 10× VPT）——是 Theorem 2(b) 的直接实证。
+4. **Theorem 2(b) 引理 L2 部分闭合** (§5.X4)：测 Panda patch-curvature 分布的 JS 散度，在 $s = 0.70 \to 0.85$ 间跃变 3.1×，linear-segment patch 占比跃变 21×，直接实证"非物理直线段 hard threshold"机制。hard threshold 位置与 patch_length=16 几何条件吻合（expected-run-length 计算给出 $s^\star \approx 0.80$）。
 
-未来工作：**Panda OOD KL 测量**（闭合 Thm 2(b) L2 引理）、**Prop 5 的 s>0.7 hard threshold 外推**、**Mackey-Glass 跨系统 τ-coupling 验证**、**Lorenz96 / KS / dysts 的多系统 scaling 验证**、**真实数据 case study (EEG / reanalysis)**。
+未来工作：**Panda tokenizer-internal 分析**（解释 s=0.6 的 NRMSE 劣势先于 KL hard threshold）、**Prop 5 的 s>0.7 hard threshold 外推**、**Mackey-Glass 跨系统 τ-coupling 验证**、**Lorenz96 / KS / dysts 的多系统 scaling 验证**、**真实数据 case study (EEG / reanalysis)**。
 
 ---
 
