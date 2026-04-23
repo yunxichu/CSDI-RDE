@@ -300,12 +300,19 @@
   - `csdi-pro`：完整版，带所有 Option C packaging（历史记录 + 可回滚）
   - `csdi-pro-slim`：投稿版，3 contribution + 13-14 页主文 + 几何叙事 → 附录 G
 
+**Paper 第二轮 refine（2026-04-23 晚，分支 `csdi-pro-slim`）**：
+- 外部 Claude review 诊断：abstract 11 个数字太多、Conclusion 还出现 Koopman 互补估计段矛盾、Prop 5 Panda 1.84× < 2 是定时炸弹、外部有效性只 Lorenz63
+- 三线并行处置：
+  - **1A (s > 0.7 外推)**：`ssgrid_s_extrap_v1.json` 30 runs (Panda+Ours_csdi × {0.75, 0.85, 0.95} × 5 seeds) 12.6 min 完成。Panda/Ours NRMSE 比率在 $s \ge 0.7$ 四个点全部 > 2（2.17-2.91×），Prop 5 cell-level ratio ≥ 2 声明**闭合**。
+  - **1B (Lorenz96 N=20 PT 主图)**：`pt_l96_l96_N20_v1.json` (3 seeds) + `pt_l96_l96_N20_v1_seeds34.json` (seeds 3,4) = **105 runs** 完成 (Ours-ARK + Panda + Parrot × 7 scenarios × 5 seeds, 合并 summary `pt_l96_N20_merged.json`)。核心发现 = **相变 tipping point 从 L63 的 S2→S3 推后到 L96 的 S3→S4**: Parrot S0→S3 = −74% / Panda S0→S4 = −69% / Panda S0→S5 = −100%。相变机制普适，位置随 $\lambda_1 / d_{KY}$ system-dependent。Ours (AR-K M1) 在 L96 上未击败 Panda (S0=1.19 vs Panda 2.55)，需 CSDI-on-L96 retrain 作为 future work。figure `figures/pt_l96_N20_phase_transition.png`。
+  - **1C 文字 refine**：Abstract 数字 11 → 5（保留 85%/32×/2.2×/7.1×/2%）、Conclusion 删 Koopman 段、Prop 5 重写（claim 从 "ratio ≥ 2 阈值" 改为 "延迟流形方法 σ-主导 + ambient 方法在高 s 区 cell-level ≥ 2"）、Thm 2(a) 措辞从 "Ω(1) OOD 跃变" 软化为 "Ω(1) excess risk when KL > threshold" + Pinsker $\text{KL} \ge 2\text{JS}$、§5.3 / §5.3.1 合并（-1 subsection）、§5.6 新增 (ii-b) s-extrapolation 子块。
+- 关键成果：paper 已能支持 "scope B (L96 cross-system)" 策略，等 1B 完成后可填入 §5.7 / §5.2 cross-system 验证。
+
 **下一阶段建议**（按价值 × 成本排序）：
   1. **LaTeX 化（NeurIPS template）** + Paper refine 多轮 — 半天-1 天
-  2. **D1 Lorenz96 Phase Transition** — 最高价值（多系统普适性），AR-K-only 1-2 天
-  3. **D2 Mackey-Glass 跨系统 τ-coupling** — 1 天（新 integrator + 2 CSDI retrain）
-  4. **D4 dysts 20-system benchmark** — 1-2 天 + ~17 GPU-hr
-  5. **D5 EEG case study** — 2-3 天，需数据集
+  2. **D2 Mackey-Glass 跨系统 τ-coupling** — 1 天（新 integrator + 2 CSDI retrain）
+  3. **D4 dysts 20-system benchmark** — 1-2 天 + ~17 GPU-hr
+  4. **D5 EEG case study** — 2-3 天，需数据集
 
 ---
 

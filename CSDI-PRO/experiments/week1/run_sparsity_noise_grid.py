@@ -58,10 +58,13 @@ S_VALUES = [0.00, 0.35, 0.70]
 SIGMA_VALUES = [0.00, 0.50, 1.53]
 
 
-def build_grid() -> list[GridConfig]:
+def build_grid(s_values: list[float] | None = None,
+               sigma_values: list[float] | None = None) -> list[GridConfig]:
+    s_vals = S_VALUES if s_values is None else s_values
+    sig_vals = SIGMA_VALUES if sigma_values is None else sigma_values
     grid = []
-    for i, s in enumerate(S_VALUES):
-        for j, sig in enumerate(SIGMA_VALUES):
+    for i, s in enumerate(s_vals):
+        for j, sig in enumerate(sig_vals):
             grid.append(GridConfig(name=f"G{i}{j}_s{s:.2f}_n{sig:.2f}",
                                     sparsity=s, noise_std_frac=sig))
     return grid
@@ -136,20 +139,28 @@ def main():
     ap.add_argument("--tag", default="ssgrid_v1")
     ap.add_argument("--only_method", default=None,
                     help="If set, only run this method (for parallel-by-GPU split)")
+    ap.add_argument("--s_values", default=None,
+                    help="Comma-sep list of s values, e.g. '0.75,0.85,0.95' (overrides default grid)")
+    ap.add_argument("--sigma_values", default=None,
+                    help="Comma-sep list of sigma values (overrides default grid)")
     args = ap.parse_args()
 
     methods = [args.only_method] if args.only_method else args.methods
-    grid = build_grid()
+    s_vals = [float(x) for x in args.s_values.split(",")] if args.s_values else None
+    sig_vals = [float(x) for x in args.sigma_values.split(",")] if args.sigma_values else None
+    grid = build_grid(s_values=s_vals, sigma_values=sig_vals)
     if args.seeds is not None:
         seed_list = [int(s) for s in args.seeds.split(",") if s.strip()]
     else:
         seed_list = list(range(args.n_seeds))
     total = len(grid) * len(seed_list) * len(methods)
 
+    s_list = s_vals if s_vals is not None else S_VALUES
+    sig_list = sig_vals if sig_vals is not None else SIGMA_VALUES
     print(f"=== Sparsity × Noise 2D grid (paper §5.X3) ===")
     print(f"  {len(grid)} configs × seeds={seed_list} × {len(methods)} methods = {total} runs")
-    print(f"  s values     : {S_VALUES}")
-    print(f"  σ/σ_attr vals: {SIGMA_VALUES}")
+    print(f"  s values     : {s_list}")
+    print(f"  σ/σ_attr vals: {sig_list}")
     print(f"  Grid (n_eff/n):")
     for cfg in grid:
         print(f"    {cfg.name:22s}  s={cfg.sparsity:.2f}  σ={cfg.noise_std_frac:.2f}  "
@@ -187,8 +198,8 @@ def main():
     out_json = out_dir / f"{args.tag}{suffix}.json"
     out_json.write_text(json.dumps({
         "config_defs": [cfg.__dict__ for cfg in grid],
-        "s_values": S_VALUES,
-        "sigma_values": SIGMA_VALUES,
+        "s_values": s_list,
+        "sigma_values": sig_list,
         "seeds": seed_list,
         "methods": methods,
         "ckpt": args.ckpt,
