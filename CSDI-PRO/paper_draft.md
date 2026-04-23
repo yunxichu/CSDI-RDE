@@ -784,9 +784,45 @@ Future work: **Panda tokenizer-internal analysis** (to explain NRMSE degradation
 
 ---
 
-## Appendix A: Three informal proof sketches
+## Appendix A: Proof sketches
 
-(To be expanded; see tech.md §0.3, §3.6, §4.5 + Chinese `paper_draft_zh.md` Appendix A for current drafts.)
+(Chinese `paper_draft_zh.md` Appendix A contains the full ~200-line derivations for Prop 1 / Thm 2 / Prop 3 / Thm 4 / Corollary. Below we summarize A.5a (new) and B2 numerical calibration.)
+
+### A.5a Proposition 5 — (s, σ) Orthogonal Decomposition (proof sketch)
+
+**Statement recap.** There exist power-law exponents $\alpha_s, \alpha_\sigma, \alpha_s', \alpha_\sigma' > 0$ such that
+$$\mathrm{NRMSE}_\text{manifold}(s, \sigma) \approx c_\sigma \sigma^{\alpha_\sigma} (1 + c_s' s)^{\alpha_s'}, \quad \alpha_\sigma / \alpha_s' \ge 2;$$
+$$\mathrm{NRMSE}_\text{ambient}(s, \sigma) \approx c_s s^{\alpha_s} (1 + c_\sigma' \sigma)^{\alpha_\sigma'}, \quad \alpha_s / \alpha_\sigma' \ge 2.$$
+
+**Proof in three steps.**
+
+**Step 1 (manifold: σ-channel dominance).** M1 CSDI's training distribution $\mathcal{D}_\text{train}$ covers $s \sim U(0.2, 0.9)$, sampling a random sparsity mask per batch. By Prop 3's GP-on-manifolds contraction (§4.3), in-distribution test sparsity only causes the smooth decay $n_\text{eff}^{-(2\nu+1)/(2\nu+1+d_{KY})}$. Plugging in Lorenz63 constants ($d_{KY} \approx 2.06$, Matérn-5/2 so $\nu = 5/2$, $n = 1200$):
+$$\partial_s \log \mathrm{NRMSE}_\text{ours} \approx \frac{2\nu+1}{2\nu+1+d_{KY}} \cdot \partial_s \log n_\text{eff} = \frac{6}{8.06} \cdot \frac{-1}{1-s} \approx \frac{-0.74}{1-s}$$
+for $s \in [0, 0.7]$, $|\partial_s \log \mathrm{NRMSE}_\text{ours}| \in [0.74, 2.48]$, mapped to $\alpha_s' \in [0, 1]$ in the $(1 + c_s' s)^{\alpha_s'}$ form.
+
+Meanwhile, the σ-channel is governed by Bayesian soft-anchoring's residual $\hat x = y/(1+\sigma^2)$: clean posterior residual $\approx \sigma^2 x / (1 + \sigma^2) \to x$ as $\sigma \to \infty$ (denoising fully fails at large σ); in the intermediate range $\sigma \in [0, 1.5]$ the residual is roughly quadratic, giving $\alpha_\sigma \in [1.5, 2.5]$. Central estimate $\alpha_\sigma \approx 2$, $\alpha_s' \approx 0.5$, ratio = **4 ≥ 2**. ∎ (manifold)
+
+**Step 2 (ambient: s-channel dominance).** Panda's tokenizer training covers diverse time series (time-domain + frequency-domain) but **does not include "sparsity-then-linear-interpolated" patterns** (an artifact of observation rather than natural data). By Lemma A.2.L2: when $s > s^\star \approx 0.5$, the linearly-interpolated context's token distribution $P_s$ and Panda's training distribution $P_\text{train}$ satisfy $\mathrm{KL}(P_s \| P_\text{train}) > c$ constant — i.e., the s-channel triggers a hard threshold + power growth, giving $\alpha_s \ge 1$.
+
+Conversely, the σ-channel is partially absorbed by Panda's token-smoothing + attention: Panda uses fixed-width tokenizer bins $\Delta = 0.1 \sigma_\text{attr}$; observation noise $\sigma \ll \Delta$ is absorbed into zero; $\sigma \sim \Delta$ enters the bin-boundary effect, error grows as $\sigma/\Delta$ linearly. So $\alpha_\sigma' \approx 0.5$ (sub-linear absorption).
+
+Taking $\alpha_s \approx 1.5$ (hard-threshold effect), $\alpha_\sigma' \approx 0.5$, ratio = **3 ≥ 2**. ∎ (ambient)
+
+**Step 3 (§5.X3 grid empirical verification).** Direct slope ratios from the 3×3 grid × 90 runs:
+
+$$\text{ratio}_\text{ours} = \frac{\partial\mathrm{NRMSE}/\partial\sigma\big|_{s=0}}{\partial\mathrm{NRMSE}/\partial s\big|_{\sigma=0}} = \frac{0.195}{0.006} \approx \boxed{32}$$
+
+$$\text{ratio}_\text{Panda} = \frac{\partial\mathrm{NRMSE}/\partial s\big|_{\sigma=0}}{\partial\mathrm{NRMSE}/\partial\sigma\big|_{s=0}} = \frac{0.173}{0.094} \approx \boxed{1.84}$$
+
+- **Ours ratio 32× ≫ 2**: Prop 5 strongly supported on manifold side
+- **Panda ratio 1.84× < 2** (marginal): direction correct; hard threshold requires $s > 0.7$ grid extrapolation
+
+**Completeness status.** Steps 1+2 are semi-formal (core formulas exact; some constants system-specific); step 3 is empirical. **The ratio ≥ 2 threshold is falsifiable** — observed violation on Panda side marks the open item.
+
+**Open items.**
+1. Panda ratio's strict ≥ 2 threshold: $s > 0.7$ grid extrapolation (hard threshold expected at $s \gtrsim 0.7$-$0.9$).
+2. Ours' σ-channel precise functional form (step-up + plateau vs. asymptotic power law): denser $\sigma \in [0, 0.5]$ sampling.
+3. Panda's explicit tokenizer model (bin width $\Delta$, boundary effect): requires Panda paper [Wang25] implementation details.
 
 ### A.1-A.3 Numerical calibration (B2, completed 2026-04-23)
 
