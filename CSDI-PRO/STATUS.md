@@ -229,7 +229,7 @@
 | 状态 | 任务 | 工作量 | 入口 |
 |:-:|---|:-:|---|
 | ✅ | **B0** Appendix A formal 证明草稿（4 引理 + Prop1/Thm2/Prop3/Thm4/Corollary，~180 行数学）| 完成 | `paper_draft_zh.md Appendix A` |
-| ❌ | **B1** **Panda OOD KL 测量实验** — 测量 Panda tokenizer 在不同 (s,σ) 下的 token distribution KL 散度，闭合 Thm 2(b) 引理 L2（"非物理 token OOD" 的量化证据）| 0.5 天 | 新建 `experiments/week2_modules/run_panda_ood_kl.py` |
+| ✅ | **B1** **Panda OOD KL 测量实验** — patch 曲率分布 JS/W1 距离（不需 Panda forward pass），**实测 s=0.70→0.85 间 JS 3.1× 跃变 + linear-segment 占比 21× 跃变**。闭合 Theorem 2(b) lemma L2 的方向性和数量级（精确常数仍依赖 tokenizer internal 分析） | 完成（2026-04-23） | `experiments/week2_modules/run_panda_ood_kl.py` + `paper_draft_*.md §5.X4` |
 | ❌ | **B2** **Prop 1 常数 C₁ 数值校准** — bootstrap CI 验证 Ours −47% 在 Prop 3 预测内；数值确认 Fisher 退化公式 $n_\text{eff}$ 系数 | 0.5 天 | `paper_draft_zh.md Appendix A.1` |
 | ✅ | **B3** **Proposition 5 新增** — §4.2a 正式陈述 + 几何直觉 + 实证 slope ratios；Appendix A.5a 3 步 semi-formal 证明 + §5.X3 拟合数字 | 完成（2026-04-23） | `paper_draft_zh.md §4.2a` + `Appendix A.5a` |
 | ✅ | **B4** **Theorem 2 (d) 升级** — 加 orthogonal failure channels 子条件，关联到 Proposition 5 | 完成（2026-04-23） | `paper_draft_zh.md §4.2` |
@@ -280,11 +280,16 @@
 | **Option C + L96**（强化） | ~6 周 | 精简版 + D1 | Fig 1 升级为 L63 + L96 双 panels，审稿人泛化性反驳减半 |
 | **Option C + 全数据集**（天花板） | ~9 周 | 全部 Block | tech.md 100% 完成；全系统验证 |
 
-**当前状态（2026-04-23 更新）**：
+**当前状态（2026-04-23 完整 snapshot）**：
 - Block A 完成 A0-A6 全部 ✅ (6/6)
-- Block B 完成 B0/B3/B4 ✅ (3/5)，剩余 B1 Panda OOD KL / B2 Prop 1 常数
-- Block C 完成 C0/C1+C2/C5/C6 ✅ (5/7)，剩余 C3 Table 3 / C4 seed 扩展 / C1-ext 英文 A.5a
-- **下一步建议**：B1 Panda OOD KL（闭合 Thm 2(b) 引理 L2，半天）→ C1-ext 英文 A.5a（0.5 天）→ D 系列 Lorenz96 / dysts（外扩数据集，1-2 周）
+- Block B 完成 B0/B1/B3/B4 ✅ (4/5)，剩余 B2 Prop 1 常数校准
+- Block C 完成 C0/C1+C2/C5/C6 + 英文 §5.X4 ✅ (6/7)，剩余 C3 Table 3 / C4 seed 扩展 / C1-ext 英文 A.5a
+- **下一步建议**（按价值 × 成本排序）：
+  1. C3 Table 3 极端 harshness summary（1 小时，现有数据直接出）
+  2. B2 Prop 1 常数 C₁ 数值校准（半天，bootstrap CI）
+  3. C1-ext 英文 A.5a 证明同步（半天）
+  4. C4 τ-coupling seeds 扩展 3→8（2 小时 GPU）
+  5. D1 Lorenz96 Phase Transition（2-3 天，显著提升多系统说服力）
 
 ---
 
