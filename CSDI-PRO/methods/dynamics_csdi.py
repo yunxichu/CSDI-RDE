@@ -378,6 +378,7 @@ class DynamicsCSDIConfig:
     use_delay_mask: bool = True
     device: str = "cuda"
     data_center: tuple = (0.0, 0.0, 0.0)  # per-dim mean subtracted before /attractor_std
+    attractor_std: float = 8.51  # global scale (L63=8.51; L96 N=20 F=8≈3.639). Synced in fit().
 
 
 class DynamicsCSDI:
@@ -416,14 +417,71 @@ class DynamicsCSDI:
         save_every: int = 0,
         ckpt_dir=None,
         tag: str = "",
+        early_stop_patience: int = 0,
+        val_fraction: float = 0.05,
+        val_batches: int = 16,
     ) -> "DynamicsCSDI":
-        # Sync data_center from dataset so it is persisted in checkpoints.
+        """
+        early_stop_patience: if > 0, stop when VALIDATION loss hasn't improved for
+        that many consecutive epochs. 0 disables.
+
+        val_fraction: fraction of dataset split into held-out validation (default 5%).
+        val_batches: number of batches used per val pass (capped, for speed).
+        """
+        # Sync data_center AND attractor_std from dataset so both are persisted in checkpoints.
         if hasattr(dataset, "data_center"):
             self.cfg.data_center = tuple(float(x) for x in dataset.data_center)
-        loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=4,
+        if hasattr(dataset, "attractor_std"):
+            self.cfg.attractor_std = float(dataset.attractor_std)
+            print(f"  [dyn-csdi] cfg.attractor_std synced from dataset = {self.cfg.attractor_std:.4f}",
+                  flush=True)
+
+        # Split dataset into train/val
+        n_total = len(dataset)
+        n_val = max(int(n_total * val_fraction), batch_size * 4)
+        n_train = n_total - n_val
+        gen = torch.Generator().manual_seed(1337)  # fixed split
+        train_set, val_set = torch.utils.data.random_split(dataset, [n_train, n_val], generator=gen)
+        loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=4,
                             pin_memory=True, persistent_workers=True)
+        val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False, num_workers=2,
+                                pin_memory=True, persistent_workers=True)
+        print(f"  [dyn-csdi] train/val split: {n_train}/{n_val} (val_fraction={val_fraction})",
+              flush=True)
         opt = torch.optim.Adam(self.net.parameters(), lr=lr)
         sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=epochs)
+        best_val_loss = float("inf")
+        best_train_loss = float("inf")
+        epochs_since_best = 0
+        best_epoch = -1
+
+        def _compute_val_loss():
+            """Forward-only pass on val set; same loss as training (per-step noise MSE on missing positions)."""
+            self.net.eval()
+            vtot = 0.0; vn = 0; batches = 0
+            with torch.no_grad():
+                for batch in val_loader:
+                    if batches >= val_batches:
+                        break
+                    clean = batch["clean"].to(self.device)
+                    observed = batch["observed"].to(self.device)
+                    mask = batch["mask"].to(self.device)
+                    sigma = batch["sigma"].to(self.device)
+                    B, L, D = clean.shape
+                    t = torch.randint(0, self.schedule.num_steps, (B,), device=self.device)
+                    alpha_bar = self._alpha[t].view(B, 1, 1)
+                    noise = torch.randn_like(clean)
+                    noisy = (alpha_bar ** 0.5) * clean + (1 - alpha_bar) ** 0.5 * noise
+                    pred = self.net(noisy, observed, mask, t,
+                                     sigma_obs=sigma if self.cfg.use_noise_cond else None)
+                    tgt = 1.0 - mask
+                    denom = tgt.sum().clamp_min(1.0)
+                    loss = ((pred - noise) ** 2 * tgt).sum() / denom
+                    vtot += loss.item() * B; vn += B
+                    batches += 1
+            self.net.train()
+            return vtot / max(vn, 1)
+
         self.net.train()
         for ep in range(epochs):
             total = 0.0; n = 0
@@ -449,12 +507,35 @@ class DynamicsCSDI:
                 opt.zero_grad(); loss.backward(); opt.step()
                 total += loss.item() * B; n += B
             sched.step()
-            if verbose and (ep % 5 == 0 or ep == epochs - 1):
-                print(f"  [dyn-csdi] epoch {ep:3d} loss={total / n:.4f}", flush=True)
+            ep_train = total / max(n, 1)
+            ep_val = _compute_val_loss()
+            improved = ep_val < best_val_loss - 1e-6
+            if verbose and (ep % 1 == 0 or ep == epochs - 1):
+                mark = "  *best*" if improved else ""
+                print(f"  [dyn-csdi] epoch {ep:3d} train={ep_train:.4f} val={ep_val:.4f}{mark}  "
+                      f"(best_val={best_val_loss:.4f}@ep{best_epoch} patience={epochs_since_best}/{early_stop_patience or '-'})",
+                      flush=True)
             if save_every > 0 and ckpt_dir is not None and ep > 0 and ep % save_every == 0:
                 mid_path = Path(ckpt_dir) / f"dyn_csdi_{tag}_ep{ep}.pt"
                 self.save(mid_path)
                 print(f"  [ckpt] mid-save ep{ep} → {mid_path}", flush=True)
+            # Early stopping on VAL loss
+            best_train_loss = min(best_train_loss, ep_train)
+            if improved:
+                best_val_loss = ep_val
+                best_epoch = ep
+                epochs_since_best = 0
+                if ckpt_dir is not None:
+                    best_path = Path(ckpt_dir) / f"dyn_csdi_{tag}_best.pt"
+                    self.save(best_path)
+                    print(f"  [ckpt] best @ep{ep} val={ep_val:.4f} → {best_path}", flush=True)
+            else:
+                epochs_since_best += 1
+            if early_stop_patience > 0 and epochs_since_best >= early_stop_patience:
+                print(f"  [dyn-csdi] EARLY STOP at ep{ep}: {epochs_since_best} epochs "
+                      f"no val improvement. best_val={best_val_loss:.4f}@ep{best_epoch}",
+                      flush=True)
+                break
         self.net.eval()
         return self
 
@@ -467,8 +548,12 @@ class DynamicsCSDI:
         tau: np.ndarray | None = None,
         sigma: float | None = None,
         n_samples: int = 20,
-        attractor_std: float = 8.51,
+        attractor_std: float | None = None,
     ) -> np.ndarray:
+        # FIX: Prefer cfg.attractor_std (set during training) over any caller default.
+        # Legacy ckpts without cfg.attractor_std fall back to 8.51 for backward compat.
+        if attractor_std is None:
+            attractor_std = float(getattr(self.cfg, "attractor_std", 8.51))
         obs = np.asarray(observed, dtype=np.float32).copy()
         if mask is None:
             mask_arr = np.isfinite(obs).astype(np.float32)

@@ -36,17 +36,39 @@ def _gen_one(args):
 
 def generate(n_samples: int, seq_len: int, N: int, F: float,
              dt: float = 0.05, spinup: int = 1500,
-             n_workers: int = 16) -> np.ndarray:
-    """Independent integrator runs; each seed gives a distinct IC + spin-up."""
+             n_workers: int = 16, progress_every: int = 5000) -> np.ndarray:
+    """Independent integrator runs with streaming progress output.
+
+    Uses imap_unordered to stream results as workers finish; writes directly into
+    a pre-allocated array to avoid pickle-stacking overhead at the end.
+    """
+    import sys
     tasks = [(i, seq_len, N, F, dt, spinup) for i in range(n_samples)]
+    out = np.empty((n_samples, seq_len, N), dtype=np.float32)
     t0 = time.time()
+    done = 0
+    chunksize = max(1, n_samples // (n_workers * 32))
+    print(f"[gen] launching {n_workers} workers on {n_samples} tasks (chunksize={chunksize})",
+          flush=True)
     with Pool(n_workers) as pool:
-        trajs = pool.map(_gen_one, tasks, chunksize=max(1, n_samples // (n_workers * 8)))
+        # imap with enumerate to pair task indices with results
+        for i, traj in enumerate(pool.imap(_gen_one, tasks, chunksize=chunksize)):
+            out[i] = traj
+            done += 1
+            if done % progress_every == 0 or done == n_samples:
+                elapsed = time.time() - t0
+                rate = done / elapsed
+                eta = (n_samples - done) / max(rate, 1e-6)
+                pct = 100.0 * done / n_samples
+                print(f"[gen] {done:>7d}/{n_samples} ({pct:5.1f}%) "
+                      f"elapsed={elapsed:6.0f}s  rate={rate:6.1f}/s  ETA={eta:6.0f}s",
+                      flush=True)
+                sys.stdout.flush()
     elapsed = time.time() - t0
-    out = np.stack(trajs, axis=0).astype(np.float32)
-    print(f"[gen] {n_samples} windows × {seq_len} steps × {N} dims, "
-          f"{n_workers} workers, {elapsed:.1f} s ({elapsed / n_samples * 1000:.1f} ms/sample)")
-    print(f"[stat] mean={out.mean():.3f} std={out.std():.3f} shape={out.shape}")
+    print(f"[gen] DONE. {n_samples} windows × {seq_len} steps × {N} dims, "
+          f"{n_workers} workers, {elapsed:.1f} s ({elapsed / n_samples * 1000:.1f} ms/sample)",
+          flush=True)
+    print(f"[stat] mean={out.mean():.3f} std={out.std():.3f} shape={out.shape}", flush=True)
     return out
 
 

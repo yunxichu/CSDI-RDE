@@ -114,6 +114,8 @@ def main() -> None:
     ap.add_argument("--eval_F", type=float, default=8.0)
     ap.add_argument("--eval_dt", type=float, default=None,
                     help="dt for eval trajectories (default 0.025 L63 / 0.05 L96)")
+    ap.add_argument("--early_stop_patience", type=int, default=0,
+                    help="stop if training loss doesn't improve for this many epochs (0=disable)")
     args = ap.parse_args()
 
     if args.eval_dt is None:
@@ -151,7 +153,8 @@ def main() -> None:
     print(f"[data] dataset size={len(ds)}  cache={'yes' if args.cache_path else 'no (on-the-fly pool)'}")
     t0 = time.time()
     model.fit(ds, epochs=args.epochs, batch_size=args.batch_size, lr=args.lr, verbose=True,
-              save_every=args.save_every, ckpt_dir=CKPT_DIR, tag=tag)
+              save_every=args.save_every, ckpt_dir=CKPT_DIR, tag=tag,
+              early_stop_patience=args.early_stop_patience)
     train_time = time.time() - t0
     print(f"[train] total {train_time:.1f}s = {train_time/60:.1f} min")
 

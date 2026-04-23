@@ -61,7 +61,7 @@ FIG_DIR = REPO_ROOT / "experiments" / "week1" / "figures"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 
-METHOD_ORDER = ["ours", "panda", "parrot", "persist"]
+METHOD_ORDER = ["ours_csdi", "ours", "panda", "parrot", "persist"]
 
 # Reuse L63 S0-S6 (s, σ) harshness levels — the sparsity & noise levels are
 # system-agnostic by design (all reported as fraction of attractor std).
@@ -127,6 +127,12 @@ def run_pilot(
                         mean = full_pipeline_forecast(
                             observed, pred_len=pred_len, seed=seed,
                             bayes_calls=10, n_epochs=150,
+                        )
+                    elif method == "ours_csdi":
+                        # requires set_csdi_checkpoint() called upstream (via --csdi_ckpt)
+                        mean = full_pipeline_forecast(
+                            observed, pred_len=pred_len, seed=seed,
+                            imp_kind="csdi", bayes_calls=10, n_epochs=150,
                         )
                     elif method == "panda":
                         if not _HAS_PANDA:
@@ -234,7 +240,16 @@ def main() -> None:
     ap.add_argument("--methods", nargs="+",
                     default=["ours", "panda", "parrot", "persist"])
     ap.add_argument("--tag", default="l96_N20_v1")
+    ap.add_argument("--csdi_ckpt", default=None,
+                    help="L96 CSDI checkpoint path (required if 'ours_csdi' in --methods)")
     args = ap.parse_args()
+
+    if "ours_csdi" in args.methods:
+        if not args.csdi_ckpt:
+            raise SystemExit("--csdi_ckpt is required when 'ours_csdi' is in --methods")
+        from methods.csdi_impute_adapter import set_csdi_checkpoint
+        set_csdi_checkpoint(args.csdi_ckpt)
+        print(f"[pilot-l96] CSDI ckpt loaded: {args.csdi_ckpt}")
 
     records, attr_std = run_pilot(
         N=args.N, F=args.F,

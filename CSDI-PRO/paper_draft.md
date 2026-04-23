@@ -316,7 +316,16 @@ Data and scripts: `experiments/week1/results/ssgrid_v1_*.json` (orig 3×3 grid) 
 - Physically: L96's $\lambda_1 = 1.68$ is **1.85×** L63's $\lambda = 0.906$, making dense context more informative per step; Panda's training distribution includes more coupled-oscillator systems, pushing the tokenizer OOD threshold later.
 - The **mechanism is universal** (Theorem 2's $n_\text{eff}$ critical crossing + KL jump still apply) but the **precise tipping point is system-dependent** (varies with $\lambda_1$, $d_{KY}$, and foundation-model training coverage).
 
-**Important limitation.** Ours on L96 uses AR-Kalman M1 (matching §5.2 Fig 1's apples-to-apples baseline), whose expressiveness is insufficient for N=20 coupled oscillators; S0 VPT = 1.19 Λ lags Panda's 2.55 Λ and L63's Ours = 1.73 Λ. **Beating Panda/Parrot on L96 would require CSDI M1 retrained on L96 trajectories (new 512K dataset + hyperparameter tuning) — explicit future work.** The claim of this section is **"phase transition is cross-system universal"** (Panda/Parrot transition on L96 too), not "Ours dominates foundation models on L96."
+**Important limitation (2026-04-24 diagnostic + fix + localization).** We trained **L96-specific CSDI M1 checkpoints** (5 GPUs × val-loss early stopping, patience=20; channels ∈ {128, 192}, layers ∈ {8, 12}, variants ∈ {full, no_noise}) and isolated **two independent issues**:
+
+**Issue 1 — M1 inference bug (fixed).** The `csdi_impute_adapter` failed to propagate L96's `attractor_std=3.639` to `model.impute(...)`, so inference used the L63 default 8.51, wrong by **2.3×**. This compressed CSDI outputs to 0.43× true magnitude. After fix + ckpt cfg patch: on L96 S3, CSDI imputation RMSE = 1.42 vs linear 1.63 — **CSDI beats linear by 13%** (see Fig L96-impute). M1 is functioning correctly on L96.
+
+**Issue 2 — M3 SVGP autoregressive rollout architecture failure (not fixed; the real limitation).** Even with M1 fixed and good imputation quality, **the full pipeline still collapses to constant output on L96 N=20 under S0 (clean, no sparsity/noise)** (see Fig L96-collapse: ours_csdi / ours_ark / ours_ark_L17 m_inducing=512 all collapse on clean data). Root causes:
+1. **Autoregressive error compounds exponentially** — each step's SVGP posterior sample carries small error that accumulates over 128 steps to drift off the attractor;
+2. **Per-dim delay features flatten ring topology** — L96's ring coupling $\dot x_i = (x_{i+1} - x_{i-2})x_{i-1} - x_i + F$ is destroyed when we concatenate 20 × L delay features;
+3. **GP prior mean = 0 acts as an attractor** — once the rollout leaves the training manifold, SVGP returns to prior mean, producing zero output.
+
+**The claim of this section narrows to "phase transition is cross-system universal"** (Panda and Parrot both transition on L96). Our M1 (CSDI) is **validated to work correctly on L96** (13% better imputation than linear). Our M3 (SVGP-on-delay-coords + autoregressive rollout) architecture does not scale to L96 N=20 coupled systems — redesign candidates include Koopman spectral (EDMD) direct operator estimation, Graph NN that preserves ring topology, or Parrot-style attractor 1-NN retrieval — as explicit **future work**.
 
 See [Fig L96-PT](experiments/week1/figures/pt_l96_N20_phase_transition.png); data `experiments/week1/results/pt_l96_l96_N20_v1.json` + `pt_l96_l96_N20_v1_seeds34.json` (merge script `summarize_pt_l96.py`).
 

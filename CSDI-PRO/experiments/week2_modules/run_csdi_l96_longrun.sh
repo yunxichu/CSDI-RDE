@@ -17,13 +17,13 @@ CHANNELS="${6:-128}"
 LAYERS="${7:-8}"
 SAVE_EVERY="${8:-5}"
 
-CACHE="experiments/week2_modules/data/lorenz96_clean_1M_L128_N20.npz"
+CACHE="experiments/week2_modules/data/lorenz96_clean_512k_L128_N20.npz"
 LOGDIR="experiments/week2_modules/results"
 mkdir -p "$LOGDIR"
 
 if [ ! -f "$CACHE" ]; then
     echo "[ERROR] Dataset not found: $CACHE"
-    echo "  Run first: python -m experiments.week2_modules.make_lorenz96_dataset --n_samples 1000000 --N 20 --tag 1M_L128_N20 --n_workers 24"
+    echo "  Run first: python -m experiments.week2_modules.make_lorenz96_dataset --n_samples 512000 --N 20 --tag 1M_L128_N20 --n_workers 24"
     exit 1
 fi
 
@@ -32,8 +32,8 @@ echo "=== CSDI-L96 long-run training (5 GPUs) ==="
 echo "  tag=${TAG}  epochs=${EPOCHS_SHORT}/${EPOCHS_LONG}  batch=${BATCH}  lr=${LR}  ch=${CHANNELS}  layers=${LAYERS}"
 echo "  save_every=${SAVE_EVERY} epochs"
 echo "  cache=${CACHE}  (${CACHE_SIZE})"
-echo "  target steps @ 25ep = $(python -c "print(f'{1000000//${BATCH}*${EPOCHS_SHORT}:,}')")"
-echo "  target steps @ 50ep = $(python -c "print(f'{1000000//${BATCH}*${EPOCHS_LONG}:,}')")"
+echo "  target steps @ 25ep = $(python -c "print(f'{512000//${BATCH}*${EPOCHS_SHORT}:,}')")"
+echo "  target steps @ 50ep = $(python -c "print(f'{512000//${BATCH}*${EPOCHS_LONG}:,}')")"
 echo "  logs -> ${LOGDIR}/csdi_l96_{variant}_{tag}.log"
 
 launch() {
@@ -44,7 +44,7 @@ launch() {
     CUDA_VISIBLE_DEVICES=${gpu} nohup python -u -m experiments.week2_modules.train_dynamics_csdi \
         --variant ${variant} \
         --epochs ${epochs} \
-        --n_samples 1000000 \
+        --n_samples 512000 \
         --batch_size ${BATCH} \
         --seq_len 128 \
         --channels ${CHANNELS} \

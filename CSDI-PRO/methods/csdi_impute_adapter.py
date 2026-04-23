@@ -49,7 +49,8 @@ def set_csdi_checkpoint(ckpt_path: str | Path, device: str = "cuda") -> None:
 
 
 def csdi_impute(observed: np.ndarray, n_samples: int = 8, sigma_override: Optional[float] = None,
-                tau_override: Optional[np.ndarray] = None) -> np.ndarray:
+                tau_override: Optional[np.ndarray] = None,
+                attractor_std: Optional[float] = None) -> np.ndarray:
     """Run trained CSDI on a (T, D) observed window; return posterior mean.
 
     Input: observed with NaNs at missing steps.
@@ -95,7 +96,8 @@ def csdi_impute(observed: np.ndarray, n_samples: int = 8, sigma_override: Option
         pad = seq_len - T
         pad_obs = np.concatenate([obs_filled_zero, np.zeros((pad, D), dtype=np.float32)], axis=0)
         pad_mask = np.concatenate([mask, np.zeros((pad, D), dtype=np.float32)], axis=0)
-        samples = model.impute(pad_obs, pad_mask, sigma=sigma, n_samples=n_samples, tau=tau_arg)
+        samples = model.impute(pad_obs, pad_mask, sigma=sigma, n_samples=n_samples, tau=tau_arg,
+                                attractor_std=attractor_std)
         mu = samples.mean(axis=0)[:T]
         return mu
 
@@ -110,7 +112,8 @@ def csdi_impute(observed: np.ndarray, n_samples: int = 8, sigma_override: Option
             pad = seq_len - chunk_obs.shape[0]
             chunk_obs = np.concatenate([chunk_obs, np.zeros((pad, D), dtype=np.float32)], axis=0)
             chunk_mask = np.concatenate([chunk_mask, np.zeros((pad, D), dtype=np.float32)], axis=0)
-        samples = model.impute(chunk_obs, chunk_mask, sigma=sigma, n_samples=n_samples, tau=tau_arg)
+        samples = model.impute(chunk_obs, chunk_mask, sigma=sigma, n_samples=n_samples, tau=tau_arg,
+                                attractor_std=attractor_std)
         mu = samples.mean(axis=0)[:end - start]
         out[start:end] = mu
         start = end
