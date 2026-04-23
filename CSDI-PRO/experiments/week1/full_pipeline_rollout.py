@@ -22,12 +22,46 @@ import numpy as np
 from methods.dynamics_impute import impute
 from methods.mi_lyap import mi_lyap_bayes_tau, random_tau
 from models.svgp import MultiOutputSVGP, SVGPConfig
+from models.deep_edm import DeepEDMPredictor, DeepEDMConfig
+from models.fno_delay import FNOPredictor, FNOConfig
 
 _DEFAULTS = dict(
     L_embed=5, tau_max=30, bayes_calls=10,
     m_inducing=128, n_epochs=100, lr=1e-2,
     fast_tau=False,
+    # M3 backbone: "svgp" (legacy, collapses in high-D AR rollout),
+    #              "deepedm" (recommended for high-D), "fno" (alternative)
+    backbone="deepedm",
+    # DeepEDM/FNO knobs — only used when backbone != "svgp"
+    dm_d_model=128, dm_n_heads=4, dm_n_layers=3, dm_n_epochs=400,
+    dm_batch=256, dm_lr=1e-3, dm_patience=50,
+    fno_width=64, fno_modes=3, fno_layers=3, fno_n_epochs=400,
 )
+
+
+def _build_m3(cfg: dict, X_shape: tuple[int, int]):
+    """Build the M3 backbone per ``cfg['backbone']``. Returns a predictor with
+    ``.fit(X, Y)`` and ``.predict(X, return_std=True)`` matching SVGP's contract."""
+    bk = cfg.get("backbone", "deepedm")
+    if bk == "svgp":
+        n_train, feat_dim = X_shape
+        auto_m = min(n_train - 1, max(cfg["m_inducing"], 5 * feat_dim))
+        return MultiOutputSVGP(SVGPConfig(
+            m_inducing=auto_m, n_epochs=cfg["n_epochs"], lr=cfg["lr"], verbose=False,
+        ))
+    if bk == "deepedm":
+        return DeepEDMPredictor(DeepEDMConfig(
+            d_model=cfg["dm_d_model"], n_heads=cfg["dm_n_heads"], n_layers=cfg["dm_n_layers"],
+            n_epochs=cfg["dm_n_epochs"], batch_size=cfg["dm_batch"],
+            lr=cfg["dm_lr"], patience=cfg["dm_patience"], verbose=False,
+        ))
+    if bk == "fno":
+        return FNOPredictor(FNOConfig(
+            width=cfg["fno_width"], modes=cfg["fno_modes"], n_layers=cfg["fno_layers"],
+            n_epochs=cfg["fno_n_epochs"], batch_size=cfg["dm_batch"],
+            lr=cfg["dm_lr"], patience=cfg["dm_patience"], verbose=False,
+        ))
+    raise ValueError(f"unknown backbone {bk!r}; choose from svgp|deepedm|fno")
 
 
 def _build_delay_features(traj: np.ndarray, taus: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -94,20 +128,11 @@ def full_pipeline_forecast(
             spec = random_tau(L=cfg["L_embed"], tau_max=cfg["tau_max"], seed=seed)
     taus = spec.taus
 
-    # --- Module 3: SVGP on delta-coords --------------------------------------
+    # --- Module 3: delay-coord next-step predictor ---------------------------
     X, Y, _ = _build_delay_features(filled, taus)
     if X.shape[0] < 50:
         return np.repeat(filled[-1:, :], pred_len, axis=0)
-    # Auto-scale m_inducing with feature_dim: with too few inducing points in
-    # high-D (e.g. L96 N=20 -> 100-D features), Matern kernel value
-    # exp(-||x-x'||^2 / 2L^2) vanishes because ||x-x'|| ~ sqrt(D) >> L=1, causing
-    # GP output to collapse to Y.mean() (constant). Heuristic: >= 5x feature_dim
-    # inducing points, capped at n_train - 1. L63 (15-D) uses 128 unchanged.
-    n_train, feat_dim = X.shape
-    auto_m = min(n_train - 1, max(cfg["m_inducing"], 5 * feat_dim))
-    gp = MultiOutputSVGP(SVGPConfig(
-        m_inducing=auto_m, n_epochs=cfg["n_epochs"], lr=cfg["lr"], verbose=False,
-    )).fit(X, Y)
+    gp = _build_m3(cfg, X.shape).fit(X, Y)
 
     # Autoregressive rollout: each step queries the SVGP with delay coords derived
     # from the predicted history; the first ``max(taus)`` steps still reach back
@@ -180,12 +205,7 @@ def full_pipeline_ensemble_forecast(
             return preds, dict(gp=None, taus=taus, filled=filled)
         return preds
 
-    # Auto-scale m_inducing with feature dim (see full_pipeline_forecast for rationale)
-    n_train, feat_dim = X.shape
-    auto_m = min(n_train - 1, max(cfg["m_inducing"], 5 * feat_dim))
-    gp = MultiOutputSVGP(SVGPConfig(
-        m_inducing=auto_m, n_epochs=cfg["n_epochs"], lr=cfg["lr"], verbose=False,
-    )).fit(X, Y)
+    gp = _build_m3(cfg, X.shape).fit(X, Y)
 
     D = filled.shape[1]
     histories = np.tile(filled, (K, 1, 1)).astype(np.float32)  # [K, T, D]
