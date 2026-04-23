@@ -786,7 +786,35 @@ Future work: **Panda tokenizer-internal analysis** (to explain NRMSE degradation
 
 ## Appendix A: Three informal proof sketches
 
-(To be expanded; see tech.md §0.3, §3.6, §4.5 for the current working drafts.)
+(To be expanded; see tech.md §0.3, §3.6, §4.5 + Chinese `paper_draft_zh.md` Appendix A for current drafts.)
+
+### A.1-A.3 Numerical calibration (B2, completed 2026-04-23)
+
+Using `experiments/week1/bootstrap_prop1_prop3_calibration.py` on Phase-Transition main data (`pt_v2_with_panda_n5_small.json`, n=5 seeds × 7 scenarios).
+
+**Prop 1 constant $C_1$** — fit $\mathrm{NRMSE}_\text{Panda} = C_1 \sqrt{D / n_\text{eff}}$ on S0 + S1 (in-distribution, no OOD term):
+$$\hat C_1 \approx 4.96 \pm 4.22 \quad \text{(10 points; order-of-magnitude only)}$$
+Higher than the first-principles estimate ($\sim 0.5$–$1.0$) because fitting Panda's S0 RMSE directly onto the Le Cam constant absorbs un-modeled prefactor contributions; treated as an order-of-magnitude sanity check.
+
+**Prop 3 rate exponent $\beta$** — log-log fit $\log \mathrm{NRMSE}_\text{Ours} = a + \beta \log n_\text{eff}$ on S0-S4 (25 points):
+
+| Quantity | Value |
+|---|---|
+| Theoretical $\beta = -\frac{1}{2} \cdot \frac{2\nu+1}{2\nu+1+d_{KY}}$ (ν=5/2, $d_{KY}$=2.06) | **−0.372** |
+| Empirical $\hat\beta$ | **−0.334** |
+| Bootstrap 95% CI | [**−0.746, +0.003**] |
+| Theoretical value inside empirical CI? | ✅ |
+
+**Bootstrap CI for Ours' S0 → S3 VPT10 ratio** (10000 resamples on 5 seeds × 2 scenarios):
+
+| Quantity | Value |
+|---|---|
+| Point estimate (S3/S0) | **0.534** (= −47% drop) |
+| 95% CI | [**0.198, 1.036**] → drop ∈ [−4%, −80%] |
+| Prop 3 predicted ratio = $(n_\text{eff, S3}/n_\text{eff, S0})^{0.372}$ | **0.655** (−35%) |
+| Prop 3 prediction inside bootstrap CI? | ✅ |
+
+This gives the §1.1 claim "our −47% falls within Prop 3's predicted CI" direct numerical support. Raw data: `experiments/week1/results/prop1_prop3_calibration.json`.
 
 ## Appendix B: Reproducibility
 

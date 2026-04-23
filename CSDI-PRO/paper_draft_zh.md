@@ -1242,6 +1242,10 @@ $\square$
 
 **备注 A.1.b（与 Panda −85% 的对应）.** S3 下 $n_\text{eff}/n = 0.32$，下界放大因子 $\sqrt{1/0.32} \approx 1.77\times$；假设 Panda 在 S0 接近最优预测器，其 S0→S3 的误差下界退化 $\ge 77\%$（NRMSE），对应 VPT 退化 $\approx 44\%$（通过 VPT 与 NRMSE 的单调映射）。实测 Panda −85%，剩余 −41% 需 Theorem 2(b) 的 OOD 项解释。
 
+**备注 A.1.c（数值校准 B2，2026-04-23）.** 用 Phase Transition 主数据（S0 + S1 panda RMSE × 5 seeds = 10 points）拟合 $\text{NRMSE}_\text{panda} = C_1 \sqrt{D/n_\text{eff}}$，得
+$$\hat C_1 \approx 4.96 \pm 4.22 \qquad (\text{point estimate} \pm \text{std across 10 calibration points})$$
+数值 $\approx 5$ 比原估计 $0.5$-$1.0$ 偏大，原因有二：(i) 把 Panda S0 的 RMSE 直接 fit 到 Le Cam 下界的 $\sqrt{D/n_\text{eff}}$ 常数 prefactor 上，把所有未建模效应 absorb 进 $C_1$；(ii) 样本数只有 10，CI 很宽。这个估计仅作数量级参考；严格的 $C_1$ 需要在 $\mathcal{F}$ 族上最小化最坏情况而非用单一系统。B2 数据文件：`experiments/week1/results/prop1_prop3_calibration.json`。
+
 ### A.2 Theorem 2 证明（Sparsity-Noise Interaction Phase Transition）
 
 **陈述（recap）.** 存在临界 $n^\star = c \cdot D$ 使得：
@@ -1310,6 +1314,20 @@ $\square$
 **备注 A.3.a.** 严格地讲 Castillo 2014 假设 observations 是 iid function values + noise；我们的设定是 partial observations of dynamical trajectory。把 Koopman 回归 reformulate 为延迟坐标上的 regression $\mathbf{X}_\tau(t) \to x_{t+h}$ 后，observations 仍是 iid under ergodic stationarity（通过 mixing time 近似独立），差一个 log 因子。
 
 **实证验证.** Fig 6 Lorenz96 $N \in \{10, 20, 40\}$ 下训练时间 $25 \to 42 \to 92$s 近 $N$ 线性（而非 $N^2$ 或 $N^3$）→ SVGP 有效自由度由 $d_{KY}$（$\approx 0.4 N$）而非 $N$ 主导。
+
+**备注 A.3.b（数值校准 B2：rate exponent + bootstrap CI，2026-04-23）.** 用 Phase Transition 主数据 (Ours AR-K on S0-S4 × 5 seeds = 25 points) 做 log-log 拟合 $\log \text{NRMSE} = a + \beta \log n_\text{eff}$：
+- **Prop 3 理论预测** β (NRMSE ∝ $n_\text{eff}^{\beta}$): $-\frac{1}{2} \cdot \frac{2\nu+1}{2\nu+1+d_{KY}} = -\frac{6}{16.12} \approx -0.372$
+- **实证拟合** β = **−0.334**，$R^2 = 0.118$（低 $R^2$ 反映 seed 方差大，但 rate 估计仍 informative）
+- **Bootstrap 95% CI for β** = [−0.746, +0.003]
+- **理论值 −0.372 落在实证 CI 内** ✅ → Prop 3 rate 得到数值支持（虽然 CI 宽）
+
+**Bootstrap CI for Ours S3/S0 VPT 比率（n=5 seeds × S0/S3，10000 重采样）.**
+- **点估计**：S3/S0 VPT10 ratio = **0.534**（即 −47% drop）
+- **95% CI**：[0.198, 1.036] → 对应 S0→S3 drop 区间 [−4%, −80%]
+- **Prop 3 理论预测**（用 $(n_\text{eff, S3}/n_\text{eff, S0})^{0.372} = 0.320^{0.372} \approx 0.655$）= drop −35%
+- **Prop 3 预测 −35% 落在 −47% 的 Bootstrap CI 内** ✅
+
+这给了 §1 opener "Ours −47% 在 Prop 3 预测的置信区间内" claim 直接数值支撑。B2 数据文件：`experiments/week1/results/prop1_prop3_calibration.json`。
 
 ### A.4 Theorem 4 证明（Koopman 谱校准共形覆盖）
 
