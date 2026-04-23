@@ -3,7 +3,7 @@
 > **一张文档查清：做了什么、做到什么程度、还剩什么、下次怎么接**。
 > 合并自原 `DELIVERY.md` / `PROGRESS.md` / `TODO_tech_gap_zh.md` / `COMPLETE_WORK_LOG_zh.md`。
 >
-> **最后更新**：2026-04-23  ·  **分支**：`csdi-pro`  ·  **最新 commit**：`f9ffca3`（之后可能更新）
+> **最后更新**：2026-04-23（Option C 路径确立）  ·  **分支**：`csdi-pro`  ·  **最新 commit**：`7ccd12f`
 >
 > 其它文档：
 > - [README.md](README.md) — 项目导航入口
@@ -16,7 +16,9 @@
 
 ## 一、一句话结论
 
-> **Foundation models（Panda / Chronos / Parrot）在稀疏 + 噪声观测下 categorically phase-transition；我们的 4-module pipeline 做到 graceful degradation，在 S3（60% sparsity + 50% noise）主战场比 Panda 高 2.2×、比 Parrot 高 7.1×。CSDI M1 升级进一步把 S4 regime 的优势扩大到 9× Panda。**
+> **Foundation models（Panda / Chronos / Parrot）在稀疏 + 噪声观测下 categorically phase-transition；我们的 4-module pipeline 做到 graceful degradation，在 S3（60% sparsity + 50% noise）主战场比 Panda 高 2.2×、比 Parrot 高 7.1×。CSDI M1 升级进一步把 S4 regime 的优势扩大到 9× Panda。相变本质：sparsity-OOD（Panda 弱点）× noise-sensitivity（ours 弱点）的正交交集，两种方法在纯稀疏 U3 上分歧最大（2.90× = U3 Panda/Ours），这是 Theorem 2(b) OOD 机制的直接实证。**
+>
+> **投稿目标**：NeurIPS / ICML  **策略**：Option C — 把 null result（τ-coupling）和 partial result（n_eff non-collapse）做成正向贡献（§5.X3 正交分解 + 边界条件刻画），主线清晰，细节翔实，理论过硬。
 
 ---
 
@@ -111,6 +113,14 @@
 
 **下一阶段 P1（~2 周）**：τ-coupling ablation + $n_\text{eff}$ unified 实验 + Prop 1 / Thm 2 formal 证明。
 
+### 阶段 7 — 策略确立：Option C 路径，顶会目标（2026-04-23，当前状态）
+
+**策略决定**：时间充裕，目标 NeurIPS/ICML。采用 Option C——不把 null/partial result 藏进 Limitations，而是主动做成正向贡献：
+
+1. **§5.X1 τ-coupling null → 边界条件刻画**：当前解释（M1 learned bias 已吸收 τ）需要补实验验证。下一步：换一个真正 τ-sensitive 系统（Mackey-Glass）或在不同训练 τ 下重训 M1，把 null result 转成"τ 耦合是训练时归纳偏置，而非推理时旋钮"的 *characterization*，而非悬案。
+2. **§5.X2 n_eff non-collapse → §5.X3 (s,σ) 正交分解**：4 点数据（U1-U4）已经显示稀疏与噪声效应正交。扩展到 9-point (s,σ) grid，画 2D contour/heatmap，**把这个正交效应变成新的理论命题**（Proposition 5）并写入论文。这是最有价值的正向贡献：$n_\text{eff}$ 是充分统计量这一 claim 需要被精确否定和替代。
+3. **Theorem 2 升级**：从"(a)/(b)/(c)"三部分扩展，加入 (d) 关于 (s,σ) 正交分解的精确描述——sparse 和 noise 各有独立通道，两者不可通过单一 $n_\text{eff}$ 折叠。
+
 ### 阶段 6 — P1 跑实验 + 真实数据 + 英文版同步（2026-04-23 晚）
 
 **18 个 commit 总览（f04064f → 7ccd12f）**：P0 全部 + P1 大部分完成。
@@ -194,30 +204,83 @@
 
 ---
 
-## 五、10 项未完成 TODO（按价值 × 难度排序）
+## 五、TODO 全表（Option C 路径，顶会目标）
 
-| 优先级 | TODO | 工作量 | 障碍 | 入口文件 |
-|:-:|---|:-:|---|---|
-| 🔥🔥🔥 **最高** | **T0** paper 叙事重构 — **P0 完成 ✅ / P1 大部分完成 ✅（2026-04-23 晚）** | 剩 2-3 天 | 无 | [`REFACTOR_PLAN_zh.md`](REFACTOR_PLAN_zh.md) — P0 完成；P1 完成：Appendix A formal 证明 + τ-coupling 跑完（null 结果）+ n_eff unified 跑完（pure_sparse U3 = 2.90× Panda/Ours 🔥）+ 英文版 Abstract/§1/§2/§3.0/§4 同步。**P1 剩余：Panda OOD KL + 英文 §3.1-7 + Prop 1 常数校准 + fig 生成**。见 `session_notes/2026-04-23_refactor_plan_p0_complete.md` |
-| 🔥 高 | **T1** Table 3 极端 harshness summary | 1 hr | 无 | `paper_draft_zh.md §5.8` 衍生，读 `pt_v2_with_panda_n5_small.json` |
-| 🔥 高 | **T2** Prop 1/2 + Thm 1 formal proofs（T0 子任务） | 5 天 | 纯写作 | `paper_draft_zh.md` Appendix A.1/A.2/A.3；参考 tech.md §0.3 §3.6 §4.5 + Tsybakov 2009 / Castillo 2014 / Chernozhukov 2018；**注意**：T0 会引入新 Theorem (Sparsity-Noise Interaction)，证明需配套调整 |
-| 🔥🔥 高 | **T3** Lorenz96 Phase Transition | 2-3 天 | CSDI 需 L96 重训 | 仿 `make_lorenz_dataset.py` 写 L96 版；改 `DynamicsCSDIConfig.data_dim`；复用 `phase_transition_pilot_v2.py`（调 D=40） |
-| 🔥🔥 高 | **T4** KS PDE 场景 | 3-5 天 | 无 KS integrator | 新写 `experiments/week1/ks_utils.py`（ETDRK4 积分器）; 复用 PT 模板 |
-| 🔥🔥 高 | **T5** dysts 20 benchmark（Table 1）| 1-2 天 + ~17 GPU-hr | 无 | `pip install dysts`，新写 `experiments/week1/run_dysts_benchmark.py` |
-| 🟡 中 | **T6** FIM foundation model 接入 | 半天 | 无 | 仿 `baselines/panda_adapter.py` 写 `baselines/fim_adapter.py`，挂进 `phase_transition_pilot_v2.py` |
-| 🟡🟡 中 | **T7** EEG case study（Fig 9）| 2-3 天 | 需 EEG 数据 | CHB-MIT / TUSZ 数据集；新写 `experiments/week1/eeg_case_study.py` |
-| 🟢 低 | **T8** LaTeX 化（NeurIPS template） | 半天 | 无 | 新建 `paper/neurips2026.tex` + `paper/refs.bib` |
-| 🟢 低 | **T9** Paper 多轮 refine | 2-3 天 | 纯写作 | Abstract / Introduction / Discussion 扩充 |
+> 分 A/B/C/D/E 五个 Block，按依赖顺序排列。Block A/B 是 Option C 核心，必须先做。
 
-### 推荐 3 级路径
+---
 
-| 路径 | 时间 | 做什么 | 结果 |
+### Block A — Option C 核心实验（1-2 周，最高优先级）
+
+| 状态 | 任务 | 工作量 | 入口 |
+|:-:|---|:-:|---|
+| ✅ | **A0** τ-coupling ablation 跑完（S3 × 5 modes × 3 seeds = 15 runs）→ NULL 结果 | 完成 | `experiments/week2_modules/results/tau_coupling_*.json` |
+| ✅ | **A1** n_eff unified ablation 跑完（4 configs × 5 seeds × 2 methods = 40 runs）→ 正交 failure modes | 完成 | `experiments/week2_modules/results/neff_unified_*.json` |
+| ✅ | **A2** §5.X1 null result 诚实报告填入 paper（4 modes ≤ ±1% NRMSE 差异，修正 §3.0 耦合 claim 强度） | 完成 | `paper_draft_zh.md §5.X1` |
+| ✅ | **A3** §5.X2 正交 finding 填入 paper（U3 Panda/Ours = 2.90×，修正 Thm 2(c) 为 smooth 退化） | 完成 | `paper_draft_zh.md §5.X2` |
+| ❌ | **A4** **τ-coupling 边界条件验证** — 换 Mackey-Glass 或不同训练 τ 下重训 M1，验证 "训练时耦合 / 推理时不敏感" 假说；把 null result 从悬案变成 *characterization* | 1-2 天 | 新建 `experiments/week2_modules/run_tau_coupling_mackeyglass.py` 或 `run_tau_coupling_retrain.py` |
+| ❌ | **A5** **§5.X3 (s,σ) 正交分解实验** — 设计 3×3 grid（s ∈ {0, 0.35, 0.70} × σ ∈ {0, 0.50, 1.53}，共 9 configs × Ours + Panda × 5 seeds = 90 runs）| 1.5 天 GPU | 新建 `experiments/week2_modules/run_sparsity_noise_grid.py` |
+| ❌ | **A6** **生成 §5.X1/X2/X3 配套图** — X1: null result bar plot；X2: 4-config NRMSE comparison；X3: 2D heatmap / contour（Ours vs Panda failure frontier）| 0.5 天 | 新建 `plot_orthogonal_decomposition.py` |
+
+---
+
+### Block B — 理论严格化（1-2 周，与 A 并行）
+
+| 状态 | 任务 | 工作量 | 入口 |
+|:-:|---|:-:|---|
+| ✅ | **B0** Appendix A formal 证明草稿（4 引理 + Prop1/Thm2/Prop3/Thm4/Corollary，~180 行数学）| 完成 | `paper_draft_zh.md Appendix A` |
+| ❌ | **B1** **Panda OOD KL 测量实验** — 测量 Panda tokenizer 在不同 (s,σ) 下的 token distribution KL 散度，闭合 Thm 2(b) 引理 L2（"非物理 token OOD" 的量化证据）| 0.5 天 | 新建 `experiments/week2_modules/run_panda_ood_kl.py` |
+| ❌ | **B2** **Prop 1 常数 C₁ 数值校准** — bootstrap CI 验证 Ours −47% 在 Prop 3 预测内；数值确认 Fisher 退化公式 $n_\text{eff}$ 系数 | 0.5 天 | `paper_draft_zh.md Appendix A.1` |
+| ❌ | **B3** **Proposition 5 新增** — (s,σ) 正交分解定理：$n_\text{eff}$ 是必要非充分统计量；稀疏和噪声各有独立 failure channel（基于 A5 结果）| 2 天写作 | `paper_draft_zh.md §4` 新增 §4.5a；Appendix A 新增 A.5a |
+| ❌ | **B4** **Theorem 2 升级** — 加 (d) 子条件描述稀疏 vs. 噪声的正交效应，精确叙述 B_current null result 的理论含义 | 1 天写作 | `paper_draft_zh.md §4.2` |
+
+---
+
+### Block C — 论文完整化（1 周）
+
+| 状态 | 任务 | 工作量 | 入口 |
+|:-:|---|:-:|---|
+| ✅ | **C0** 英文版 Abstract + §1 + §2 + §3.0 + §4 同步 | 完成 | `paper_draft.md` |
+| ❌ | **C1** **英文版 §3.1-3.4 + §5 + §6 + §7 同步** | 2-3 天 | `paper_draft.md §3.1` 起 |
+| ❌ | **C2** **§5.X1 诚实 null result 英文版** + §5.X3 正交分解章节（基于 A4/A5 结果）| 0.5 天 | `paper_draft.md §5` |
+| ❌ | **C3** **Table 3 极端 harshness summary** | 1 hr | `pt_v2_with_panda_n5_small.json` → `paper_draft_zh.md §5.8` |
+| ❌ | **C4** **τ-coupling seeds 扩展**（3 → 5-10 seeds）— 给 reviewer 更强 statistical power | 2 hr GPU | 重跑 `run_tau_coupling_ablation.py --n_seeds 8` |
+| ❌ | **C5** **§6 / §7 更新** — 纳入 Option C 新叙事（相变 = 稀疏 × 噪声正交交集，Prop 5 含义）| 0.5 天 | `paper_draft_zh.md §6/§7` |
+| ❌ | **C6** **Abstract + §1 opener 更新** — 融入 Option C narrative（"两种方法弱点正交交集"取代单纯"graceful degradation"）| 1 hr | `paper_draft_zh.md §1/Abstract` |
+
+---
+
+### Block D — 多数据集（2-3 周，NeurIPS 强烈建议，不是必需）
+
+| 状态 | 任务 | 工作量 | 入口 |
+|:-:|---|:-:|---|
+| ❌ | **D1** **Lorenz96 Phase Transition**（T3）— L96 PT + CSDI 重训 | 2-3 天 | 仿 `make_lorenz_dataset.py` 写 L96 版 |
+| ❌ | **D2** **dysts 20 benchmark**（T5）— Table 1 | 1-2 天 | `pip install dysts`；新建 `run_dysts_benchmark.py` |
+| ❌ | **D3** **KS PDE 场景**（T4）| 3-5 天 | 新建 `experiments/week1/ks_utils.py` |
+| ❌ | **D4** **FIM 接入**（T6）| 半天 | 仿 `baselines/panda_adapter.py` |
+| ❌ | **D5** **EEG case study**（T7）| 2-3 天 | CHB-MIT / TUSZ 数据集 |
+
+---
+
+### Block E — 最终 Polish（1 周）
+
+| 状态 | 任务 | 工作量 | 入口 |
+|:-:|---|:-:|---|
+| ❌ | **E1** LaTeX 化（NeurIPS/ICML template）| 半天 | 新建 `paper/neurips2026.tex` |
+| ❌ | **E2** 参考文献整理（refs.bib）| 1 天 | `paper/refs.bib` |
+| ❌ | **E3** Paper 多轮 refine（审稿人视角过一遍）| 2-3 天 | 全文 |
+
+---
+
+### 推荐路径（顶会目标版）
+
+| 路径 | 时间估计 | 范围 | 预期结果 |
 |:-:|:-:|---|---|
-| **Level 0 叙事升级**（推荐起点） | ~3 周 | **T0 全做**（REFACTOR_PLAN P0+P1）+ T1 + T8 | 投 ICML/NeurIPS accept band（理论骨架 + τ-coupling 实证 + LaTeX）；T2/T9 包含在 T0 内 |
-| **Level 1 最短 submit** | ~1 周 | T1 + T2 + T8 + T9 | 投 NeurIPS/ICLR（放弃 L96/KS/dysts/EEG，写进 §6 Limitations）—— 不升级叙事 |
-| **Level 2 加强** | ~2 周 | Level 1 + T3 + T6 | Fig 1 升级为 L63 + L96 双 panels |
-| **Level 3 完整** | ~4 周 | Level 2 + T4 + T5 + T7 | tech.md 100% 完成 |
-| **Level 4 完整 + 叙事升级**（天花板） | ~7 周 | T0 + Level 3 | ICML/NeurIPS accept + 全系统验证（L63+L96+KS+dysts+EEG） |
+| **Option C 精简版**（推荐起点） | ~4 周 | Block A + B + C + E | NeurIPS/ICML accept band；主线完整；Option C 三件事全做 |
+| **Option C + L96**（强化） | ~6 周 | 精简版 + D1 | Fig 1 升级为 L63 + L96 双 panels，审稿人泛化性反驳减半 |
+| **Option C + 全数据集**（天花板） | ~9 周 | 全部 Block | tech.md 100% 完成；全系统验证 |
+
+**当前状态**：Block A 中 A0-A3 完成，Block B 中 B0 完成，Block C 中 C0 完成。**下一步：A4/A5 并行**（τ-coupling 边界验证 + (s,σ) grid 实验）。
 
 ---
 
