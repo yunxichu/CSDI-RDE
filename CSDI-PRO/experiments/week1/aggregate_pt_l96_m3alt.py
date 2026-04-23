@@ -20,6 +20,7 @@ SOURCES = {
     "m3alt": RESULTS / "pt_l96_l96_N20_m3alt_5seed.json",
     "panda": RESULTS / "pt_l96_l96_N20_panda_5seed.json",
     "ours_csdi": RESULTS / "pt_l96_l96_N20_ours_csdi_deepedm_5seed.json",
+    "ours_svgp": RESULTS / "pt_l96_l96_N20_ours_svgp_3seed.json",
 }
 
 SCENARIOS = ["S0", "S1", "S2", "S3", "S4", "S5", "S6"]
@@ -67,7 +68,7 @@ def fmt_drop(d_s0: dict, d_sk: dict, key: str = "vpt10_mean") -> str:
 
 if __name__ == "__main__":
     merged = merge_summaries(SOURCES)
-    method_order = ["ours_csdi", "ours_deepedm", "ours_fno", "panda", "parrot", "persist"]
+    method_order = ["ours_csdi", "ours_deepedm", "ours_fno", "ours_svgp", "panda", "parrot", "persist"]
     method_order = [m for m in method_order if m in merged]
     print("\n### Table — L96 N=20 VPT@1.0 (mean ± std over 5 seeds)\n")
     hdr = "| Method | " + " | ".join(SCENARIOS) + " |"

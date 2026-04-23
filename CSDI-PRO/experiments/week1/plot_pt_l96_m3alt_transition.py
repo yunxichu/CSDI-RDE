@@ -31,6 +31,7 @@ LINES = [
     ("ours_csdi",     "Ours (CSDI + DeepEDM)",     "C3", "-",  "s"),
     ("ours_deepedm",  "Ours (AR-K + DeepEDM)",     "C0", "-",  "D"),
     ("ours_fno",      "Ours (AR-K + FNO)",         "C2", "--", "^"),
+    ("ours_svgp",     "Ours (AR-K + SVGP, legacy)","C5", ":",  "P"),
     ("parrot",        "Parrot (1-NN delay)",       "C4", ":",  "v"),
     ("persist",       "Persist",                   "gray","-.", "x"),
 ]

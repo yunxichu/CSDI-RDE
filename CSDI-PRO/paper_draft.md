@@ -327,9 +327,12 @@ We swap M3 from SVGP to **DeepEDM** (Majeedi et al., ICML 2025, arXiv:2506.06454
 | **Ours (CSDI M1 + DeepEDM M3)** | 0.79 ± 0.22 | 0.97 ± 0.22 | 0.57 ± 0.38 | 0.67 ± 0.34 | **0.71 ± 0.72** | **0.74 ± 0.81** | **0.49 ± 0.64** |
 | Ours (AR-K + DeepEDM) | 1.08 ± 0.31 | 0.71 ± 0.22 | 0.45 ± 0.16 | 0.37 ± 0.74 | 0.32 ± 0.28 | 0.24 ± 0.29 | 0.00 |
 | Ours (AR-K + FNO) | 0.64 ± 0.20 | 0.66 ± 0.42 | 0.76 ± 0.51 | 0.17 ± 0.19 | 0.20 ± 0.11 | 0.03 ± 0.07 | 0.00 |
+| Ours (AR-K + SVGP, legacy, n=3) | 0.48 ± 0.44 | 0.48 ± 0.44 | 0.70 ± 0.35 | 0.14 ± 0.14 | 0.00 | 0.00 | 0.00 |
 | **Panda-72M** | **2.55 ± 1.75** | 2.28 ± 1.91 | 2.50 ± 2.29 | 1.18 ± 1.41 | 1.04 ± 1.32 | 0.00 | 0.00 |
 | Parrot | 0.52 ± 0.26 | 0.49 ± 0.13 | 0.40 ± 0.19 | 0.07 ± 0.10 | 0.12 ± 0.11 | 0.00 | 0.00 |
 | Persist | 0.39 ± 0.07 | 0.37 ± 0.04 | 0.30 ± 0.09 | 0.07 ± 0.10 | 0.10 ± 0.10 | 0.00 | 0.00 |
+
+The legacy-SVGP row uses 3 seeds (87s per SVGP fit, ~25 min total); values track the 5-seed methods and mainly quantify the gain from the M3 swap: at S0 DeepEDM gives the AR-K pipeline a **+125%** lift (0.48 → 1.08), at S3 **+164%** (0.14 → 0.37). SVGP goes to zero at S4-S6 whereas DeepEDM reaches 0.2-0.3 Λ at S4-S5 and CSDI + DeepEDM reaches 0.5-0.7 Λ at S4-S6.
 
 **S0 → S_k drops:**
 
@@ -337,6 +340,7 @@ We swap M3 from SVGP to **DeepEDM** (Majeedi et al., ICML 2025, arXiv:2506.06454
 |:-:|:-:|:-:|:-:|:-:|
 | Panda | −54% | −59% | **−100%** | **−100%** |
 | Parrot | −87% | −77% | **−100%** | **−100%** |
+| Ours (AR-K + SVGP, legacy) | −71% | **−100%** | **−100%** | **−100%** |
 | Ours (AR-K + DeepEDM) | −66% | −70% | −78% | −100% |
 | **Ours (CSDI + DeepEDM)** | **−15%** | **−11%** | **−6%** | **−38%** |
 
