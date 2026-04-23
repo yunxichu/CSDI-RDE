@@ -930,6 +930,78 @@ CUDA_VISIBLE_DEVICES=6 python -u -m experiments.week1.run_sparsity_noise_grid \
     --n_seeds 5 --only_method panda --tag ssgrid_v1
 ```
 
+### 5.X4 Panda OOD KL 测量：闭合 Theorem 2(b) 引理 L2
+
+> **状态（2026-04-23 完成）.** 实验脚本 `experiments/week2_modules/run_panda_ood_kl.py`；JSON: `panda_ood_kl_v1.json`（15 trajectories × 9 s 值 × 2 σ 值 = 18 configs）。**主发现：在 σ=0 线上，patch 曲率分布的 JS(sparse‖clean) 在 s = 0.70 → 0.85 之间出现 3.1× 跃变**（0.042 → 0.131）；linear-segment patch（curvature < 0.01）占比从 0.6% 跃升到 12.9%（21× 放大）—— 直接实证 Theorem 2(b) lemma L2 的"非物理直线段 hard threshold"机制。
+
+**动机.** Theorem 2(b) 的 OOD 跃变 claim 建立在引理 L2 之上：linear 插值的 sparse context 在 $s > s^\star$ 处产生非物理直线段，使 patch distribution 与 Panda 训练分布的 KL 超过常数阈值。本节给出 L2 的**量化实证**，闭合附录 A.2 的 open item。
+
+**设计.** Panda 使用 PatchTST（context_length=512, patch_length=16, non-overlap）. 直接测量不同 $(s, \sigma)$ 下 **linearly-interpolated context 的 patch distribution 与 clean-context patch distribution 的 distributional distance**。不需要 Panda forward pass —— Theorem 2(b) 的 L2 claim 是关于**输入 patch 空间**的 KL shift，与模型无关。
+
+**Metric（per-patch curvature）.** 对每个 16-length patch 计算均值二阶差分 $|\partial^2 x / \partial t^2|$ 作为局部非线性强度 proxy：
+- 干净 Lorenz63 轨迹 patch：高曲率（吸引子的扭转）—— mean ≈ 0.338
+- 线性插值段 patch：近零曲率（直线的二阶差分 = 0）
+- 高噪声 patch：高曲率（白噪声 dominating）
+
+然后计算与 reference (clean, s=0, σ=0) 的 Jensen-Shannon 散度 + Wasserstein-1 距离 + low-curvature 比例。
+
+**结果（σ=0 线，pure sparse 通道，9 s 值 × 15 trajectories = 480 clean patches / 480 per test config）.**
+
+| $s$ | mean curv | median curv | low_frac (<0.01) | **JS vs clean** | $W_1$ |
+|:-:|:-:|:-:|:-:|:-:|:-:|
+| 0.00 (ref) | 0.338 | 0.270 | 0.000 | 0.000 | 0.000 |
+| 0.10 | 0.336 | 0.280 | 0.000 | 0.006 | 0.003 |
+| 0.20 | 0.336 | 0.281 | 0.000 | 0.008 | 0.004 |
+| 0.35 | 0.328 | 0.277 | 0.000 | 0.025 | 0.011 |
+| 0.50 | 0.315 | 0.270 | 0.000 | 0.027 | 0.024 |
+| 0.60 (**S3 s**) | 0.299 | 0.253 | 0.000 | 0.029 | 0.039 |
+| **0.70** (**U3/G20 s**) | 0.274 | 0.225 | **0.006** | **0.042** | 0.064 |
+| **0.85** 🔥 | **0.175** | 0.149 | **0.129** (21× 跳) | **0.131** (3.1× 跳) | 0.163 |
+| 0.95 | 0.048 | 0.000 | **0.540** | **0.430** | 0.291 |
+
+**Hard threshold 位置：$s \approx 0.7 \to 0.85$.**
+- low-curvature patch 比例从 **0.6% → 12.9%**（21× 放大）
+- JS 散度从 **0.042 → 0.131**（3.1× 放大）
+- $W_1$ 从 0.064 → 0.163（2.5× 放大）
+- 这对应 "linearly-interpolated 段在 patch 宽度 16 内占主导" 的几何条件：$s > 1 - \text{patch\_length}/\text{expected\_run} \approx 0.80$（expected run-length between observations ≈ 1/(1−s) × patch 内 ≈ 3 个观测）
+
+**对 §5.X2 / §5.X3 的交叉验证.**
+- U3 (s=0.70, σ=0) / G20 (s=0.70, σ=0)：Panda NRMSE 0.593 / 0.592，JS 只有 0.042（相对 baseline 7×，但还未触发 hard threshold）。这说明 **Panda 在 s=0.70 的 NRMSE 大劣势还包括 tokenizer embedding 的其他 sensitivity**，不完全是 L2 linear-segment 机制。
+- 真正的 hard threshold 在 $s \approx 0.85$；完整 "Panda s-channel ratio ≥ 2" 预言需要在 $s > 0.85$ grid 验证（REFACTOR_PLAN 下一轮 follow-up）
+
+**结果（σ=0.5 噪声线，对照）.**
+
+当 σ > 0 时，曲率分布被噪声彻底重塑（noise 的二阶差分 dominating）：
+- s=0.0, σ=0.5: mean curv **8.27**（比 clean 的 0.34 大 24×），JS = 0.693（log 2, 最大理论值；分布完全不重叠）
+- 随 $s$ 增加，linear 插值稀释 noise，曲率降回，JS 也下降
+
+**这一对照说明 σ-channel 和 s-channel 是两种不同的 distribution-shift 机制**：
+- σ channel：把曲率分布整体 shift 到高值（添加白噪声的二阶差分）
+- s channel：把曲率分布双峰化（一部分 true dynamics + 一部分 linear segments）
+
+Panda 对两者的 downstream sensitivity 不对称（§5.X3 slope 数据表明 Panda 对 $s$ 更敏感）可解读为：**Panda 训练时见过噪声（tokenizer 的 smoothing bin 部分吸收），但未见过 linear-segment patch**。所以 linear segments 直接触发 OOD（即使 KL 量值较小），而 noise 被 tokenizer 部分过滤（即使 KL 量值大）。
+
+**对 §4.2 Theorem 2(b) / Appendix A.2.L2 的闭合.**
+
+| 原 open item | 本节证据 | 状态 |
+|---|---|---|
+| L2: 存在 $s^\star$ 使得 $s > s^\star$ 下 KL(sparse context ‖ training dist) > $c$ 常数 | 实测 $s \approx 0.7 \to 0.85$ 间 JS 3.1× 跃变，low-curv 比例 21× 跃变 | **部分闭合**（方向 + 数量级对；精确常数 $c$ 依赖 Panda tokenizer，需更多 tokenizer-internal 分析） |
+| linear-segment 是主要 OOD 机制 | 实测 σ=0 下 s=0.85 处 13% patches 是 linear 段；σ=0.5 下 noise 先吞掉曲率 | ✅ 支持（linear-segment fraction 在 s=0.85 突破阈值） |
+| threshold 位置 $s^\star = 0.5$（§3.0 / Theorem 2 之前 estimate） | 实测 $s^\star \approx 0.85$（低 curvature 占比 > 10% 的点） | ⚠️ 原 estimate 偏低；真正的 hard threshold 在 s ≈ 0.85，但 Panda 的 downstream NRMSE 影响在 s ≈ 0.6-0.7 就显著（说明 Panda 对小 KL shift 也敏感，或有其他 OOD 机制） |
+
+**实证 narrative（适合进入 §4.2 Theorem 2(b) 证明 + §6 讨论）.**
+
+> linear-segment fraction vs $s$ 是 step-like：$s < 0.7$ 下 <1%，$s > 0.85$ 下 >13%。对应的 patch distribution JS 散度在同 s 区间跃变 3.1×。这实证 Theorem 2(b) lemma L2 的 "非物理直线段 hard threshold" 机制，但 threshold 位置（$s \approx 0.85$）高于原 Theorem 2 的 estimate（$s \approx 0.5$）。Panda 在 $s=0.6$ 就出现严重 NRMSE 劣势，暗示 Panda 对较小 KL shift 也敏感 —— 或存在 tokenizer 内部的其他 OOD 机制（patch embedding 投影到 decision boundary 附近的 region）。完整闭合需要 Panda tokenizer-internal 分析（留作 follow-up）。
+
+**运行命令.**
+```bash
+python -m experiments.week2_modules.run_panda_ood_kl \
+    --n_trajectories 15 --s_values 0 0.1 0.2 0.35 0.5 0.6 0.7 0.85 0.95 \
+    --sigma_values 0 0.5 \
+    --out_json experiments/week2_modules/results/panda_ood_kl_v1.json
+# ~30 sec on CPU (no Panda forward pass needed)
+```
+
 ### 5.8 实验总结表
 
 所有 paper-relevant 实验的一张全局扫描表：
@@ -1275,7 +1347,7 @@ Panda 模型 $\log y = \log c + \alpha_s \log(s + \epsilon) + \alpha_\sigma' \lo
 | 定理 | 证明完备性 | open items |
 |---|---|---|
 | Prop 1 | ✅ self-contained（用 Le Cam + 引理 A.0.1） | 常数 $C_1$ 数值校准可留给附录 C.2 |
-| Theorem 2 | ⚠️ 依赖引理 A.2.L2（tokenizer KL 下界） | 需 §5 新增 Panda OOD KL 实验（REFACTOR_PLAN §6.3） |
+| Theorem 2 | ⚠️ 依赖引理 A.2.L2（tokenizer KL 下界） | **部分闭合（2026-04-23）**：§5.X4 实证 s=0.70→0.85 间 JS 3.1× 跃变、linear-segment 占比 21× 跃变；精确常数 $c$ 仍依赖 tokenizer-internal 分析（留待未来） |
 | Theorem 2 (d) | ⚠️ 依赖 Prop 5 | 见下 |
 | Prop 3 | ✅ 适配 Castillo 2014 + 适配引理（ergodic → iid 通过 mixing） | 严格的 partial-observation version 需查阅 Stuart et al. 2021 |
 | Theorem 4 | ✅ 适配 Chernozhukov-Wu 18 + 引理 A.0.2 | $\hat G$ 的一致性率可在附录 C.3 给出 CLT |
