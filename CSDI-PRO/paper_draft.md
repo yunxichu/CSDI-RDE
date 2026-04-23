@@ -82,7 +82,53 @@ The four modules superficially solve four distinct problems (imputation / embedd
 
 ## 3 Method
 
-### 3.1 Module 1 — Dynamics-Aware CSDI under Noisy Observations
+> **Perspective.** This section reorganizes the four modules around the **delay manifold** $\mathcal{M}_\tau$ as their common geometric object. Readers interested only in "what each module does" can skip §3.0 and start from §3.1; but §3.0 is the geometric scaffold underlying §4's theoretical framework, essential for Proposition 1 / Proposition 3 and the new Theorem 2 (Sparsity-Noise Interaction). Also note: M2 is presented **before** M1 because $\tau$ is an input to M1's delay mask.
+
+### 3.0 The Delay Manifold as the Central Object (geometric scaffold)
+
+The four modules of our pipeline appear to address four distinct sub-problems (imputation / embedding selection / regression / UQ), but they share a single central object: the delay manifold $\mathcal{M}_\tau$. This subsection provides the geometric and operator-theoretic background needed throughout.
+
+**Takens embedding theorem (recap).** Let $f: \mathcal{X} \to \mathcal{X}$ be a dynamical system with a compact ergodic attractor $\mathcal{A}$ of dimension $d$, and $h: \mathcal{X} \to \mathbb{R}$ a generic observation function. For any $L > 2d$ and generic delay vector $\tau = (\tau_1, \ldots, \tau_{L-1})$, the delay map
+
+$$\Phi_\tau: x \mapsto \bigl( h(x), h(f^{-\tau_1}(x)), \ldots, h(f^{-\tau_{L-1}}(x)) \bigr) \in \mathbb{R}^L$$
+
+is an **embedding (diffeomorphism onto image)** of $\mathcal{A}$ into $\mathbb{R}^L$. We call its image the **delay manifold** $\mathcal{M}_\tau := \Phi_\tau(\mathcal{A}) \subset \mathbb{R}^L$.
+
+**Geometric invariants.** The following three quantities are the core geometric invariants of $\mathcal{M}_\tau$ that thread through our four modules:
+
+1. **Intrinsic dimension $d_{KY}$** — the Kaplan-Yorke dimension
+$$d_{KY} = k + \frac{\sum_{i=1}^{k}\lambda_i}{|\lambda_{k+1}|}, \qquad k = \max\Bigl\{j:\sum_{i=1}^{j}\lambda_i \ge 0\Bigr\}$$
+defined from the Lyapunov spectrum $\{\lambda_i\}$. The Kaplan-Yorke conjecture (verified numerically on Lorenz63, Lorenz96, Rössler, etc.) identifies $d_{KY}$ with the attractor's Hausdorff dimension and with the intrinsic dimension of $\mathcal{M}_\tau$ when the embedding is non-degenerate. For Lorenz63 $d_{KY} \approx 2.06$; for Lorenz96-$N=20$, $d_{KY} \approx 8$.
+
+2. **Tangent-bundle structure $T\mathcal{M}_\tau$** — determined by the spectrum of the Koopman operator $\mathcal{K}: g(x) \mapsto g(f(x))$, which acts **linearly** on observable functions (even though $f$ is nonlinear) and whose spectral decomposition gives the local linear structure of $\mathcal{M}_\tau$.
+
+3. **Optimal embedding $\tau^\star$** — the extremum of the MI-Lyap objective (§3.1). Intuitively: if $\tau$ is too small, $\Phi_\tau$ is near-degenerate (adjacent coordinates are redundant, $\mathcal{M}_\tau$ is near self-intersection); if $\tau$ is too large, $\Phi_\tau$ over-stretches ($\|D\Phi_\tau\|$ grows as $e^{\lambda_1 \tau_\text{max}}$). The optimum $\tau^\star$ balances these.
+
+**Koopman operator trivializes in delay coordinates.** The key observation: in delay coordinates, $\mathcal{K}$'s action degenerates to a **left-shift**
+$$\mathcal{K}: (y_t, y_{t-\tau_1}, \ldots, y_{t-\tau_{L-1}}) \;\longmapsto\; (y_{t+1}, y_{t+1-\tau_1}, \ldots, y_{t+1-\tau_{L-1}}).$$
+Predicting $y_{t+h}$ is thus equivalent to pushing forward one step under $\mathcal{K}^h$ on $\mathcal{M}_\tau$.
+
+**Unified target of the four modules.** Under this framework, sparse-noisy chaotic forecasting unifies as "**recover the Koopman operator on $\mathcal{M}_\tau$ from degraded observations**":
+
+| Module | Geometric role on $\mathcal{M}_\tau$ |
+|---|---|
+| **M2 (§3.1)** | Estimates the embedding geometry of $\mathcal{M}_\tau$: selects $\tau^\star$ that neither self-intersects nor over-stretches |
+| **M1 (§3.2)** | Manifold-aware score estimation on $\mathcal{M}_\tau$: CSDI delay mask uses M2's $\tau$ as anchor, aligning attention along $T\mathcal{M}_\tau$ |
+| **M3 (§3.3)** | Regresses the Koopman operator on $\mathcal{M}_\tau$: SVGP Matérn kernel directly fits the pushforward of $\mathcal{K}$ |
+| **M4 (§3.4)** | Calibrates PIs via the Koopman spectrum: CP horizon growth $G(h) \to e^{\lambda_1 h \Delta t}$ as $h \to \infty$ |
+
+**Three shared parameters.** The modules couple through:
+- Delay vector $\tau$: M2 selects → M1 delay-mask uses → M3 coordinate definition
+- Kaplan-Yorke dimension $d_{KY}$: M2 optimal L ← M1 score convergence rate ← M3 posterior contraction (decoupled from ambient $D$)
+- Lyapunov spectrum $\{\lambda_i\}$: M2 penalty ← M4 horizon growth ← phase-transition threshold
+
+**Effective sample size $n_\text{eff}$ (key parameter of §4's theory).** Under sparsity $s$ and noise ratio $\sigma/\sigma_\text{attr}$, the context's effective sample count degrades as
+$$n_\text{eff}(s, \sigma) = n \cdot (1-s) \cdot \frac{1}{1 + \sigma^2 / \sigma_\text{attr}^2}.$$
+The first factor is direct data loss from sparsification; the second is Fisher-information decay under Gaussian observation [Künsch 1984] (rigorously handled for partially observed dynamical systems; Appendix A.1 verifies numerical accuracy on Lorenz63). $n_\text{eff}$ serves as the **common parameter** of Propositions 1, 3 and Theorem 2, unifying "sparsity" and "noise" into a single analytically tractable quantity.
+
+---
+
+### 3.1 Module M1 — Dynamics-Aware CSDI under Noisy Observations
 
 Let $x_{1:T} \in \mathbb{R}^{T\times D}$ be the latent clean trajectory, $m \in \{0,1\}^T$ the observation mask, and $y_t = x_t + \nu_t, \nu_t \sim \mathcal{N}(0, \sigma^2 I)$ the noisy observation at observed timesteps. We want samples from $p(x_{1:T} \mid y_{m=1}, m, \sigma)$.
 
