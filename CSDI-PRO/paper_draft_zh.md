@@ -1000,7 +1000,12 @@ python -m experiments.week2_modules.run_panda_ood_kl \
     --sigma_values 0 0.5 \
     --out_json experiments/week2_modules/results/panda_ood_kl_v1.json
 # ~30 sec on CPU (no Panda forward pass needed)
+
+python -m experiments.week2_modules.plot_panda_ood_kl
+# 生成 Figure X4 (JS vs s + linear-segment fraction vs s)
 ```
+
+**Figure X4**：`experiments/week2_modules/figures/panda_ood_kl_threshold.png`（两 panel：左 JS 散度曲线 + 3.1× 跃变注释；右 linear-segment 比例曲线 + 21× 跃变注释；S3/U3/G20 参考线）。
 
 ### 5.8 实验总结表
 
