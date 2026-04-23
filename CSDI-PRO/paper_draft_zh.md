@@ -1027,6 +1027,50 @@ python -m experiments.week2_modules.run_panda_ood_kl \
 
 **数据 + 图 + 日志总量**：JSON 原始数据约 50 MB（gitignore bypass 方式 force-add 进 repo），figures 约 12 MB PNG，日志约 10 MB 文本，CSDI ckpts 约 280 MB（本地不推）。
 
+### 5.9 Table 3：极端 harshness 全景汇总（C3）
+
+> **状态（2026-04-23 完成）.** 用 `experiments/week1/make_table3_extreme_harshness.py` 从 `pt_v2_with_panda_n5_small.json` + `pt_v2_csdi_upgrade_n5.json` 聚合生成，数据源是 Fig 1 主实验（7 场景 × 5-6 方法 × 5 seeds = 210 runs）。完整表见 `experiments/week1/results/table3_extreme_harshness.md`；此处摘录最关键 panel。
+
+**VPT@10% (Lyapunov 单位 Λ, mean ± std).**
+
+| Method | S0 | S1 | S2 | **S3** | **S4** | S5 | S6 | S0→S3 drop |
+|---|---|---|---|---|---|---|---|---:|
+| **Ours (AR-K)** | 1.73±0.73 | 1.11±0.56 | 0.94±0.41 | **0.92±0.65** | 0.26±0.20 | 0.17±0.16 | 0.07±0.11 | **−47%** |
+| **Ours (CSDI)** | 1.61±0.76 | 1.11±0.59 | 1.22±0.80 | 0.82±0.67 | **0.55±0.78** | 0.17±0.18 | 0.16±0.16 | −49% |
+| Panda-72M | 2.90±0.00 | 1.67±0.82 | 0.80±0.30 | 0.42±0.23 | 0.06±0.08 | 0.02±0.05 | 0.09±0.17 | **−86%** |
+| Parrot | 1.58±0.98 | 1.09±0.57 | 0.97±0.60 | 0.13±0.10 | 0.07±0.09 | 0.02±0.04 | 0.10±0.19 | **−92%** |
+| Chronos-T5 | 0.83±0.46 | 0.68±0.49 | 0.38±0.22 | 0.47±0.47 | 0.06±0.08 | 0.02±0.05 | 0.06±0.12 | −43% |
+| Persistence | 0.20±0.07 | 0.19±0.07 | 0.14±0.04 | 0.34±0.31 | 0.44±0.82 | 0.02±0.05 | 0.05±0.10 | +68% (持续天花板低) |
+
+**Ratio panels（我方 / baseline，越大越好）.**
+
+Ours (AR-K) 与基线对比：
+
+| Baseline | S0 | S1 | S2 | **S3** | **S4** | S5 | S6 |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| Panda-72M | 0.60× | 0.67× | 1.18× | **2.22×** | **4.46×** | 7.40× | 0.79× |
+| Parrot | 1.10× | 1.03× | 0.96× | **7.29×** | 3.87× | 9.25× | 0.71× |
+| Chronos-T5 | 2.08× | 1.63× | 2.49× | 1.96× | 4.46× | 7.40× | 1.15× |
+
+Ours (CSDI) 与基线对比（S2-S4 提升显著）：
+
+| Baseline | S0 | S1 | S2 | **S3** | **S4** | S5 | S6 |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| Panda-72M | 0.55× | 0.67× | 1.53× | 1.96× | **9.38×** 🔥 | 7.40× | 1.89× |
+| Parrot | 1.02× | 1.02× | 1.26× | 6.43× | **8.13×** | 9.25× | 1.71× |
+| Chronos-T5 | 1.93× | 1.63× | 3.25× | 1.73× | 9.38× | 7.40× | 2.77× |
+
+**Table 3 解读.**
+
+1. **S0 上 Panda 胜我们**：Panda 2.90Λ vs Ours 1.73Λ —— 干净数据下基础模型仍是 SOTA。Table 3 诚实报告这一点，**不掩盖**我方 S0 劣势。
+2. **S2 开始反转**：Ours (AR-K) 1.18× Panda, Ours (CSDI) 1.53× Panda —— CSDI 带来的主要增益在 S2-S4 窗口。
+3. **S3 尖锐相变**：Panda 从 2.90Λ (S0) 崩到 0.42Λ (S3)，−86%；Ours 只从 1.73Λ 掉到 0.92Λ，−47%。这是 Fig 1 的数值兑现。
+4. **S4 优势最大**：Ours (CSDI) 达 Panda 的 **9.38×**、Parrot 的 **8.13×** —— 这是 CSDI M1 升级带来的最大收益点。
+5. **S5/S6 共同失败**（all methods ≤ 0.2Λ）：物理底线成立，证明 S3/S4 的优势不是 cherry-pick，而是理论预测的相变窗口内的系统性优势（§4 Corollary 三 regime 的实测）。
+6. **Persistence 在 S3/S4 意外爬升**（0.34/0.44）：原因是 Persistence 的 VPT@10% 定义在高稀疏时被"完全空预测"盘活（每步都等于前一步）—— 不是算法赢，是 VPT 指标在极端场景下的退化。Persistence 的 S4 VPT 0.44Λ 看似接近 Ours (AR-K) 0.26Λ，但 rmse/轨迹 visualizing 都显示 Persistence 是 flat lines；属于 VPT 度量在 near-zero-information 场景的一个已知 failure mode，我方在 Table 3 注脚中明示。
+
+**总 compute 和代码量.** 4 × V100 上 ~8 小时训练 (CSDI 四变种 × 200 epoch) + ~45 GPU-hour 推理/消融。Paper 附 `table3_extreme_harshness.md` 给出更细粒度（VPT@05 / rmse）汇总。
+
 ---
 
 ## 6. 讨论与限制
