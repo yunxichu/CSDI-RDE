@@ -337,6 +337,8 @@ See [Fig L96-PT](experiments/week1/figures/pt_l96_N20_phase_transition.png); dat
 
 **Foundation-model fairness.** Panda / Chronos receive linearly-interp-filled observations rather than raw NaN context — an advantage offered to baselines. This setup is also precisely the trigger condition for Theorem 2(a)'s OOD jump: at $s > 0.5$, linear interpolation produces non-physical segments that foundation models treat as OOD. Using raw NaN input would only sharpen the transition.
 
+**Training-budget asymmetry (favors baselines).** Our CSDI M1 is trained on a single system per dataset — 512K independent-IC windows on Lorenz63 (197M samples), 1M windows on Lorenz96 N=20 (2.56B samples). Panda-72M [Wang25] is pretrained on **billions of time-series tokens** spanning 20+ chaotic systems in the dysts benchmark. Baseline training data is 1-3 orders of magnitude larger than ours; Panda's 72M parameters are ~57× ours (1.26M). **Our advantage is not training scale but method-scenario fit**: (i) M1 training explicitly samples $s \in U(0.2, 0.9) \times \sigma/\sigma_\text{attr} \in U(0, 1.5)$ — the sparse+noisy test regime is in-distribution by design; (ii) all four modules operate on the delay manifold $\mathcal{M}_\tau$, whose convergence rate is driven by $d_{KY}$ rather than ambient $D$ (§4 Thm 2(b)); (iii) Panda / Chronos tokenizers suffer OOD jumps at $s > 0.5$ linearly-interpolated context (§5.6 iii: JS 3.1× jump) — a failure mode no amount of extra pretraining fixes. Beating Panda/Parrot with less training data precisely demonstrates the OOD mechanism predicted by Theorem 2(a).
+
 ---
 
 ## 7 Conclusion

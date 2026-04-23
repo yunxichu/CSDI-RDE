@@ -43,19 +43,27 @@ VARIANTS = {
 }
 
 
-def evaluate(model: DynamicsCSDI, n_eval: int = 20, seq_len: int = 64, seed: int = 2026) -> dict:
+def evaluate(model: DynamicsCSDI, n_eval: int = 20, seq_len: int = 64, seed: int = 2026,
+              system: str = "lorenz63", N_l96: int = 20, F_l96: float = 8.0,
+              attractor_std: float = LORENZ63_ATTRACTOR_STD,
+              dt: float = 0.025) -> dict:
     """Impute on held-out random (sparsity, noise) samples and compare to linear / AR-Kalman."""
     rng = np.random.default_rng(seed)
     results = []
     for k in range(n_eval):
         seed_k = int(rng.integers(10_000, 100_000))
-        traj = integrate_lorenz63(seq_len, dt=0.025, seed=seed_k)
+        if system == "lorenz96":
+            from experiments.week1.lorenz96_utils import integrate_lorenz96
+            traj = integrate_lorenz96(seq_len, N=N_l96, F=F_l96, dt=dt, seed=seed_k)
+        else:
+            traj = integrate_lorenz63(seq_len, dt=dt, seed=seed_k)
         sparsity = float(rng.uniform(0.2, 0.90))
         noise_frac = float(rng.uniform(0.0, 1.2))
-        obs, mask = make_sparse_noisy(traj, sparsity=sparsity, noise_std_frac=noise_frac, seed=seed_k)
+        obs, mask = make_sparse_noisy(traj, sparsity=sparsity, noise_std_frac=noise_frac,
+                                       attractor_std=attractor_std, seed=seed_k)
 
         # Dynamics-CSDI
-        samples = model.impute(obs, mask, sigma=noise_frac * LORENZ63_ATTRACTOR_STD, n_samples=8)
+        samples = model.impute(obs, mask, sigma=noise_frac * attractor_std, n_samples=8)
         mu = samples.mean(0)
         rmse_dyn = float(np.sqrt(((mu - traj) ** 2).mean()))
 
@@ -95,7 +103,21 @@ def main() -> None:
                     help="save intermediate checkpoint every N epochs (0=disable)")
     ap.add_argument("--seed", type=int, default=0,
                     help="random seed for reproducible initialisation")
+    # L96 / generic system support
+    ap.add_argument("--data_dim", type=int, default=3,
+                    help="dimension of state (L63: 3, L96 N=20: 20)")
+    ap.add_argument("--attractor_std", type=float, default=LORENZ63_ATTRACTOR_STD,
+                    help="attractor std for (observed, clean) normalization")
+    ap.add_argument("--system", choices=["lorenz63", "lorenz96"], default="lorenz63",
+                    help="which system to use for eval-time trajectory generation")
+    ap.add_argument("--eval_N", type=int, default=20, help="Lorenz96 N for eval (if system=lorenz96)")
+    ap.add_argument("--eval_F", type=float, default=8.0)
+    ap.add_argument("--eval_dt", type=float, default=None,
+                    help="dt for eval trajectories (default 0.025 L63 / 0.05 L96)")
     args = ap.parse_args()
+
+    if args.eval_dt is None:
+        args.eval_dt = 0.05 if args.system == "lorenz96" else 0.025
 
     import torch as _torch
     _torch.manual_seed(args.seed)
@@ -103,7 +125,7 @@ def main() -> None:
     tag = args.tag or f"{args.variant}_ep{args.epochs}"
     cfg_kwargs = VARIANTS[args.variant]
     cfg = DynamicsCSDIConfig(
-        data_dim=3,
+        data_dim=args.data_dim,
         seq_len=args.seq_len,
         channels=args.channels,
         step_dim=128,
@@ -124,6 +146,7 @@ def main() -> None:
     ds = Lorenz63ImputationDataset(
         n_samples=args.n_samples, seq_len=args.seq_len, seed=0,
         cache_path=args.cache_path,
+        attractor_std=args.attractor_std,
     )
     print(f"[data] dataset size={len(ds)}  cache={'yes' if args.cache_path else 'no (on-the-fly pool)'}")
     t0 = time.time()
@@ -136,8 +159,10 @@ def main() -> None:
     model.save(ckpt_path)
     print(f"[ckpt] saved to {ckpt_path}")
 
-    print("\n[eval] imputation quality on 20 random Lorenz63 windows…")
-    res = evaluate(model, n_eval=20, seq_len=args.seq_len)
+    print(f"\n[eval] imputation quality on 20 random {args.system} windows…")
+    res = evaluate(model, n_eval=20, seq_len=args.seq_len,
+                    system=args.system, N_l96=args.eval_N, F_l96=args.eval_F,
+                    attractor_std=args.attractor_std, dt=args.eval_dt)
     res["variant"] = args.variant
     res["config"] = cfg.__dict__
     res["train_time_s"] = train_time
