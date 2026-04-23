@@ -667,6 +667,8 @@ CSDI M1 下 Lyap-emp 相对 Split 为 **2.3× 改善**（对比 AR-Kalman 下 3.
 
 **结果表（S3 × 3 seeds，mean ± std）.**
 
+> **扩展实验（C4，2026-04-23）.** n=8 seeds 版本 `tau_coupling_S3_n8_v2.json` 扩大 2.7× 统计力后 null 结果**更强化**：default vs B_current @h=1 差距从 n=3 的 −5.8% 缩小到 **−3.7%**，A/B/C/D 模式差距仍 ≤ 1.4%（完全被 seed 方差 ±6-9% 覆盖）。n=8 数据见本节末尾。
+
 | Mode | NRMSE@h=1 | NRMSE@h=4 | NRMSE@h=16 | NRMSE@h=64 | PICP@h=1 | Δ vs B_current @h=1 |
 |---|---:|---:|---:|---:|---:|---:|
 | **default** | 0.478 ± 0.097 | 0.502 ± 0.092 | 0.639 ± 0.047 | 0.732 ± 0.096 | 0.915 | **−5.8%** |
@@ -742,6 +744,36 @@ CUDA_VISIBLE_DEVICES=1 python -u -m experiments.week2_modules.run_tau_coupling_a
 # 15 runs × ~43s/run ≈ 11 min on V100
 # 总结：python experiments/week2_modules/analyze_tau_coupling.py <json>
 ```
+
+### 5.X1c C4 扩展：n=8 版本（2026-04-23）
+
+为排除 n=3 seed 方差导致 null 的可能性，把 seeds 扩到 n=8（2.7× 统计力），共 5 modes × 8 seeds = 40 runs。
+
+**结果表（S3 × 8 seeds，mean ± std）.**
+
+| Mode | NRMSE@h=1 | NRMSE@h=4 | NRMSE@h=16 | NRMSE@h=64 | PICP@h=1 | Δ vs B_current @h=1 |
+|---|---:|---:|---:|---:|---:|---:|
+| **default** | 0.541 ± 0.088 | 0.556 ± 0.083 | 0.635 ± 0.057 | 0.709 ± 0.081 | 0.888 | **−3.7%** |
+| A_random | 0.556 ± 0.066 | 0.568 ± 0.065 | 0.631 ± 0.059 | 0.700 ± 0.073 | 0.898 | −1.1% |
+| **B_current** | 0.562 ± 0.071 | 0.573 ± 0.071 | 0.634 ± 0.065 | 0.701 ± 0.077 | 0.884 | 0 (ref) |
+| C_mismatch | 0.557 ± 0.071 | 0.568 ± 0.069 | 0.628 ± 0.064 | 0.693 ± 0.082 | 0.888 | −0.9% |
+| D_equidist | 0.554 ± 0.068 | 0.566 ± 0.068 | 0.629 ± 0.063 | 0.692 ± 0.077 | 0.890 | −1.4% |
+
+**n=8 关键观察.**
+1. **A/B/C/D 之间差距 ≤ 1.4%**（h=1）、≤ 1.1%（h=4-64），**稳健 null**。
+2. **default 的优势进一步缩小**：n=3 时 −5.8% → n=8 时 −3.7%（h=1）、h≥16 甚至变正（+1.0%）—— default 的优势主要是 short-horizon、小样本 artifacts。
+3. **seed 方差稳定在 ±6-10%**（与 n=3 同量级），说明 n=3 的 null 不是 undersampling artifact，而是**真 null**。
+
+**n=3 vs n=8 对比（default vs B_current Δ NRMSE）.**
+
+| horizon | n=3 (Δ%) | n=8 (Δ%) |
+|:-:|---:|---:|
+| 1 | −5.8% | **−3.7%** |
+| 4 | −4.8% | −3.0% |
+| 16 | +4.8% | +0.1% |
+| 64 | +7.6% | +1.0% |
+
+增加样本让所有 Δ 向零收敛，**支持 §5.X1 + §5.X1b 的双重结论**：inference-time τ override 既不显著有益也不显著有害；learned delay_bias 的"effective τ = M2 的 τ_B" 使两者在数值上几乎等价。C4 把 n=3 的 null 从"可能是 undersampling"升级为 **statistically solid null**。
 
 ### 5.X2 $n_\text{eff}$ unified parameter 验证：谁在 $n_\text{eff}$ 曲线上？
 

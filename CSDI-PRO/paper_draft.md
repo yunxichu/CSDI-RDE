@@ -494,6 +494,18 @@ Ours (CSDI) vs baselines (note the S2-S4 amplification):
 
 **A/B/C/D differ by ≤ ±1%, far below the ±6-10% seed variance.** The coupling claim B > A/C/D is **not empirically supported** at inference time.
 
+**C4 extension (2026-04-23): n=8 version**. To rule out seed undersampling, we reran with 8 seeds × 5 modes = 40 runs. **Null is reinforced**:
+
+| Mode | NRMSE@h=1 | NRMSE@h=16 | Δ vs B_current @h=1 |
+|---|---:|---:|---:|
+| default | 0.541 ± 0.088 | 0.635 ± 0.057 | **−3.7%** (was −5.8% at n=3) |
+| A_random | 0.556 ± 0.066 | 0.631 ± 0.059 | −1.1% |
+| B_current | 0.562 ± 0.071 | 0.634 ± 0.065 | 0 (ref) |
+| C_mismatch | 0.557 ± 0.071 | 0.628 ± 0.064 | −0.9% |
+| D_equidist | 0.554 ± 0.068 | 0.629 ± 0.063 | −1.4% |
+
+All Δ values shrink toward zero with larger n; default's "advantage" is mostly short-horizon, small-sample artifacts (h≥16 Δ becomes +0.1% / +1.0%). This upgrades n=3's null from "possibly undersampling" to **statistically solid null**. Full n=8 data: `tau_coupling_S3_n8_v2.json`.
+
 **Interpretation.**
 - **Hypothesis 1 (learned bias has absorbed τ).** CSDI training has seen dynamically-correlated temporal structure (each L63 batch has intrinsic τ scale), so the `delay_bias + delay_alpha` has already learned the required temporal-coupling structure. Inference-time τ override merely *overwrites* this learned pattern, and `set_tau`'s construction (adding +0.5 where $|i-j| \in \tau$) is coarse enough that any reasonable τ introduces similar-magnitude attention bias. **M1-M2 coupling occurs at training time**, not at inference time.
 - **Hypothesis 2 (Lorenz63 × L=5's τ range is too narrow).** L63's effective time scale is 1-30 Δt (TAU_MAX=30), and L=5's τ vector has limited DoF; any τ set covers roughly the same scale. Higher-dim systems (Lorenz96, KS) with L=7-20 and larger $d_{KY}$ may show τ sensitivity.
