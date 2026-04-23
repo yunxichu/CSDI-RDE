@@ -51,22 +51,23 @@ from methods.mi_lyap import mi_lyap_bayes_tau, random_tau, robust_lyapunov
 def get_mode_tau(mode: str, tau_B, tau_C, seed: int):
     """Return the τ vector (length L-1, int) to feed to M1's delay mask for this mode.
 
-    Note: CSDI's set_tau() expects L-1 offsets (since the first coord at Δt=0 is
-    implicit). tau_B / tau_C from mi_lyap_bayes_tau are length L, with τ[0]=0.
-    We slice [1:] to get the L-1 non-zero offsets.
+    Note: mi_lyap_bayes_tau / random_tau / fraser_swinney_tau all return TauSpec.taus
+    of length L-1 (not L). So we pass tau_B / tau_C directly without slicing.
     """
     L = L_EMBED  # 5
     if mode == "default":
         return None
     if mode == "A_random":
+        # set_tau() uses a set of offsets, so ordering doesn't matter.
+        # np.sort returns C-contiguous ascending array (no negative strides).
         rng = np.random.default_rng(seed + 777)
-        return np.sort(rng.integers(1, TAU_MAX + 1, size=L - 1))[::-1]  # descending
+        return np.sort(rng.integers(1, TAU_MAX + 1, size=L - 1))
     if mode == "B_current":
-        return np.asarray(tau_B[1:], dtype=np.int64)
+        return np.ascontiguousarray(np.asarray(tau_B, dtype=np.int64))
     if mode == "C_mismatch":
-        return np.asarray(tau_C[1:], dtype=np.int64)
+        return np.ascontiguousarray(np.asarray(tau_C, dtype=np.int64))
     if mode == "D_equidist":
-        return np.array([16, 8, 4, 2], dtype=np.int64)  # 4 offsets for L=5
+        return np.array([2, 4, 8, 16], dtype=np.int64)  # 4 ascending offsets for L=5
     raise ValueError(f"unknown mode {mode!r}")
 
 

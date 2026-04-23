@@ -83,9 +83,11 @@ def csdi_impute(observed: np.ndarray, n_samples: int = 8, sigma_override: Option
         sigma = float(np.mean(sigmas))
 
     # τ override: convert to torch tensor once; DynamicsCSDI.impute() forwards to set_tau()
+    # .copy() ensures a C-contiguous array so torch.as_tensor doesn't trip on reversed /
+    # strided views (e.g. np.sort(...)[::-1] or slice-views of mi_lyap_bayes_tau output).
     tau_arg = None
     if tau_override is not None:
-        tau_arr = np.asarray(tau_override, dtype=np.int64)
+        tau_arr = np.ascontiguousarray(np.asarray(tau_override, dtype=np.int64))
         tau_arg = torch.as_tensor(tau_arr, dtype=torch.long, device=model.cfg.device)
 
     # If T > seq_len, process in non-overlapping chunks (last chunk may overlap to fit)
