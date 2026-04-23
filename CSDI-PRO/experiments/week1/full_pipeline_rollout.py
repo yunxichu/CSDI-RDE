@@ -98,8 +98,15 @@ def full_pipeline_forecast(
     X, Y, _ = _build_delay_features(filled, taus)
     if X.shape[0] < 50:
         return np.repeat(filled[-1:, :], pred_len, axis=0)
+    # Auto-scale m_inducing with feature_dim: with too few inducing points in
+    # high-D (e.g. L96 N=20 -> 100-D features), Matern kernel value
+    # exp(-||x-x'||^2 / 2L^2) vanishes because ||x-x'|| ~ sqrt(D) >> L=1, causing
+    # GP output to collapse to Y.mean() (constant). Heuristic: >= 5x feature_dim
+    # inducing points, capped at n_train - 1. L63 (15-D) uses 128 unchanged.
+    n_train, feat_dim = X.shape
+    auto_m = min(n_train - 1, max(cfg["m_inducing"], 5 * feat_dim))
     gp = MultiOutputSVGP(SVGPConfig(
-        m_inducing=cfg["m_inducing"], n_epochs=cfg["n_epochs"], lr=cfg["lr"], verbose=False,
+        m_inducing=auto_m, n_epochs=cfg["n_epochs"], lr=cfg["lr"], verbose=False,
     )).fit(X, Y)
 
     # Autoregressive rollout: each step queries the SVGP with delay coords derived
@@ -173,8 +180,11 @@ def full_pipeline_ensemble_forecast(
             return preds, dict(gp=None, taus=taus, filled=filled)
         return preds
 
+    # Auto-scale m_inducing with feature dim (see full_pipeline_forecast for rationale)
+    n_train, feat_dim = X.shape
+    auto_m = min(n_train - 1, max(cfg["m_inducing"], 5 * feat_dim))
     gp = MultiOutputSVGP(SVGPConfig(
-        m_inducing=cfg["m_inducing"], n_epochs=cfg["n_epochs"], lr=cfg["lr"], verbose=False,
+        m_inducing=auto_m, n_epochs=cfg["n_epochs"], lr=cfg["lr"], verbose=False,
     )).fit(X, Y)
 
     D = filled.shape[1]

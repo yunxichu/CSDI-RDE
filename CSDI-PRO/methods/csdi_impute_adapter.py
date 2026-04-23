@@ -26,6 +26,15 @@ from methods.dynamics_impute import estimate_noise_mad
 
 _GLOBAL_CSDI: Optional[DynamicsCSDI] = None
 _GLOBAL_CKPT: Optional[str] = None
+_GLOBAL_ATTR_STD: Optional[float] = None  # override for L96 etc.
+
+
+def set_csdi_attractor_std(std: Optional[float]) -> None:
+    """Global override for inference normalization. Useful when running L96 ckpts
+    whose cfg.attractor_std may not be set. Set to None to clear."""
+    global _GLOBAL_ATTR_STD
+    _GLOBAL_ATTR_STD = std if std is None else float(std)
+    print(f"[csdi-adapter] global attractor_std override = {_GLOBAL_ATTR_STD}")
 
 
 def set_csdi_checkpoint(ckpt_path: str | Path, device: str = "cuda") -> None:
@@ -68,6 +77,10 @@ def csdi_impute(observed: np.ndarray, n_samples: int = 8, sigma_override: Option
     assert _GLOBAL_CSDI is not None, "call set_csdi_checkpoint() first"
     model = _GLOBAL_CSDI
     seq_len = model.cfg.seq_len
+
+    # Apply global attractor_std override if caller didn't specify
+    if attractor_std is None and _GLOBAL_ATTR_STD is not None:
+        attractor_std = _GLOBAL_ATTR_STD
     obs = np.asarray(observed, dtype=np.float32)
     T, D = obs.shape
 
