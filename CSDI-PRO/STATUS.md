@@ -3,7 +3,7 @@
 > **一张文档查清：做了什么、做到什么程度、还剩什么、下次怎么接**。
 > 合并自原 `DELIVERY.md` / `PROGRESS.md` / `TODO_tech_gap_zh.md` / `COMPLETE_WORK_LOG_zh.md`。
 >
-> **最后更新**：2026-04-23（Option C 路径确立）  ·  **分支**：`csdi-pro`  ·  **最新 commit**：`7ccd12f`
+> **最后更新**：2026-04-23（Option C Block A/B/C 主体完成）  ·  **分支**：`csdi-pro`  ·  **最新 commit**：`3910949`
 >
 > 其它文档：
 > - [README.md](README.md) — 项目导航入口
@@ -218,9 +218,9 @@
 | ✅ | **A1** n_eff unified ablation 跑完（4 configs × 5 seeds × 2 methods = 40 runs）→ 正交 failure modes | 完成 | `experiments/week2_modules/results/neff_unified_*.json` |
 | ✅ | **A2** §5.X1 null result 诚实报告填入 paper（4 modes ≤ ±1% NRMSE 差异，修正 §3.0 耦合 claim 强度） | 完成 | `paper_draft_zh.md §5.X1` |
 | ✅ | **A3** §5.X2 正交 finding 填入 paper（U3 Panda/Ours = 2.90×，修正 Thm 2(c) 为 smooth 退化） | 完成 | `paper_draft_zh.md §5.X2` |
-| ❌ | **A4** **τ-coupling 边界条件验证** — 换 Mackey-Glass 或不同训练 τ 下重训 M1，验证 "训练时耦合 / 推理时不敏感" 假说；把 null result 从悬案变成 *characterization* | 1-2 天 | 新建 `experiments/week2_modules/run_tau_coupling_mackeyglass.py` 或 `run_tau_coupling_retrain.py` |
-| ❌ | **A5** **§5.X3 (s,σ) 正交分解实验** — 设计 3×3 grid（s ∈ {0, 0.35, 0.70} × σ ∈ {0, 0.50, 1.53}，共 9 configs × Ours + Panda × 5 seeds = 90 runs）| 1.5 天 GPU | 新建 `experiments/week2_modules/run_sparsity_noise_grid.py` |
-| ❌ | **A6** **生成 §5.X1/X2/X3 配套图** — X1: null result bar plot；X2: 4-config NRMSE comparison；X3: 2D heatmap / contour（Ours vs Panda failure frontier）| 0.5 天 | 新建 `plot_orthogonal_decomposition.py` |
+| ✅ | **A4** **τ-coupling 边界验证（lightweight 版）** — 提取 full_v6_center 学到的 delay_bias，反对角 profile peaks = {1,2,3,4}，与 M2 τ_B = {1,2,3,4} **100% 重合**。§5.X1b 正向 evidence 写入 paper | 完成（2026-04-23） | `experiments/week2_modules/analyze_learned_delay_bias.py` + `paper_draft_zh.md §5.X1b` |
+| ✅ | **A5** **§5.X3 (s,σ) 正交分解实验** — 3×3 grid × 2 methods × 5 seeds = 90 runs（5 GPU 并行 ~10 min）。**Ours σ/s slope ratio 32×**，**Panda s/σ slope ratio 1.84×**，**Panda/Ours peak 2.93× 在 G20**（对齐 §5.X2 U3 = 2.90×） | 完成（2026-04-23） | `experiments/week1/run_sparsity_noise_grid.py` + `results/ssgrid_v1_*.json` |
+| ✅ | **A6** **生成 §5.X3 figure** — ssgrid_orthogonal_decomposition.png（Ours/Panda heatmap + ratio panel + slope 注释）+ summary.json | 完成 | `experiments/week1/plot_orthogonal_decomposition.py` + `figures/ssgrid_orthogonal_decomposition.png` |
 
 ---
 
@@ -231,8 +231,8 @@
 | ✅ | **B0** Appendix A formal 证明草稿（4 引理 + Prop1/Thm2/Prop3/Thm4/Corollary，~180 行数学）| 完成 | `paper_draft_zh.md Appendix A` |
 | ❌ | **B1** **Panda OOD KL 测量实验** — 测量 Panda tokenizer 在不同 (s,σ) 下的 token distribution KL 散度，闭合 Thm 2(b) 引理 L2（"非物理 token OOD" 的量化证据）| 0.5 天 | 新建 `experiments/week2_modules/run_panda_ood_kl.py` |
 | ❌ | **B2** **Prop 1 常数 C₁ 数值校准** — bootstrap CI 验证 Ours −47% 在 Prop 3 预测内；数值确认 Fisher 退化公式 $n_\text{eff}$ 系数 | 0.5 天 | `paper_draft_zh.md Appendix A.1` |
-| ❌ | **B3** **Proposition 5 新增** — (s,σ) 正交分解定理：$n_\text{eff}$ 是必要非充分统计量；稀疏和噪声各有独立 failure channel（基于 A5 结果）| 2 天写作 | `paper_draft_zh.md §4` 新增 §4.5a；Appendix A 新增 A.5a |
-| ❌ | **B4** **Theorem 2 升级** — 加 (d) 子条件描述稀疏 vs. 噪声的正交效应，精确叙述 B_current null result 的理论含义 | 1 天写作 | `paper_draft_zh.md §4.2` |
+| ✅ | **B3** **Proposition 5 新增** — §4.2a 正式陈述 + 几何直觉 + 实证 slope ratios；Appendix A.5a 3 步 semi-formal 证明 + §5.X3 拟合数字 | 完成（2026-04-23） | `paper_draft_zh.md §4.2a` + `Appendix A.5a` |
+| ✅ | **B4** **Theorem 2 (d) 升级** — 加 orthogonal failure channels 子条件，关联到 Proposition 5 | 完成（2026-04-23） | `paper_draft_zh.md §4.2` |
 
 ---
 
@@ -241,12 +241,12 @@
 | 状态 | 任务 | 工作量 | 入口 |
 |:-:|---|:-:|---|
 | ✅ | **C0** 英文版 Abstract + §1 + §2 + §3.0 + §4 同步 | 完成 | `paper_draft.md` |
-| ❌ | **C1** **英文版 §3.1-3.4 + §5 + §6 + §7 同步** | 2-3 天 | `paper_draft.md §3.1` 起 |
-| ❌ | **C2** **§5.X1 诚实 null result 英文版** + §5.X3 正交分解章节（基于 A4/A5 结果）| 0.5 天 | `paper_draft.md §5` |
+| ✅ | **C1+C2** **英文版 §5.X1/X1b/X2/X3 + §4.2(d) + §4.2a Prop 5 + §6 + §7 同步** | 完成（2026-04-23） | `paper_draft.md §4.2/§4.2a/§5.X1-X3/§6/§7` |
 | ❌ | **C3** **Table 3 极端 harshness summary** | 1 hr | `pt_v2_with_panda_n5_small.json` → `paper_draft_zh.md §5.8` |
 | ❌ | **C4** **τ-coupling seeds 扩展**（3 → 5-10 seeds）— 给 reviewer 更强 statistical power | 2 hr GPU | 重跑 `run_tau_coupling_ablation.py --n_seeds 8` |
-| ❌ | **C5** **§6 / §7 更新** — 纳入 Option C 新叙事（相变 = 稀疏 × 噪声正交交集，Prop 5 含义）| 0.5 天 | `paper_draft_zh.md §6/§7` |
-| ❌ | **C6** **Abstract + §1 opener 更新** — 融入 Option C narrative（"两种方法弱点正交交集"取代单纯"graceful degradation"）| 1 hr | `paper_draft_zh.md §1/Abstract` |
+| ✅ | **C5** **§6 / §7 更新** — 纳入 Option C 新叙事（中英文）| 完成（2026-04-23） | `paper_draft_zh.md / paper_draft.md §6/§7` |
+| ✅ | **C6** **Abstract + §1 opener 更新** — 融入 Option C narrative（正交交集 / 训练时 τ 耦合）| 完成（2026-04-23） | `paper_draft_zh.md / paper_draft.md Abstract/§1` |
+| ❌ | **C1-ext** **英文版 Appendix A.5a** — 对齐中文 A.5a 步骤 1/2/3 | 0.5 天 | `paper_draft.md Appendix A` |
 
 ---
 
@@ -280,7 +280,11 @@
 | **Option C + L96**（强化） | ~6 周 | 精简版 + D1 | Fig 1 升级为 L63 + L96 双 panels，审稿人泛化性反驳减半 |
 | **Option C + 全数据集**（天花板） | ~9 周 | 全部 Block | tech.md 100% 完成；全系统验证 |
 
-**当前状态**：Block A 中 A0-A3 完成，Block B 中 B0 完成，Block C 中 C0 完成。**下一步：A4/A5 并行**（τ-coupling 边界验证 + (s,σ) grid 实验）。
+**当前状态（2026-04-23 更新）**：
+- Block A 完成 A0-A6 全部 ✅ (6/6)
+- Block B 完成 B0/B3/B4 ✅ (3/5)，剩余 B1 Panda OOD KL / B2 Prop 1 常数
+- Block C 完成 C0/C1+C2/C5/C6 ✅ (5/7)，剩余 C3 Table 3 / C4 seed 扩展 / C1-ext 英文 A.5a
+- **下一步建议**：B1 Panda OOD KL（闭合 Thm 2(b) 引理 L2，半天）→ C1-ext 英文 A.5a（0.5 天）→ D 系列 Lorenz96 / dysts（外扩数据集，1-2 周）
 
 ---
 
