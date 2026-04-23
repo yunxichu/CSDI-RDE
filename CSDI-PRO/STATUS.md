@@ -230,7 +230,7 @@
 |:-:|---|:-:|---|
 | ✅ | **B0** Appendix A formal 证明草稿（4 引理 + Prop1/Thm2/Prop3/Thm4/Corollary，~180 行数学）| 完成 | `paper_draft_zh.md Appendix A` |
 | ✅ | **B1** **Panda OOD KL 测量实验** — patch 曲率分布 JS/W1 距离（不需 Panda forward pass），**实测 s=0.70→0.85 间 JS 3.1× 跃变 + linear-segment 占比 21× 跃变**。闭合 Theorem 2(b) lemma L2 的方向性和数量级（精确常数仍依赖 tokenizer internal 分析） | 完成（2026-04-23） | `experiments/week2_modules/run_panda_ood_kl.py` + `paper_draft_*.md §5.X4` |
-| ❌ | **B2** **Prop 1 常数 C₁ 数值校准** — bootstrap CI 验证 Ours −47% 在 Prop 3 预测内；数值确认 Fisher 退化公式 $n_\text{eff}$ 系数 | 0.5 天 | `paper_draft_zh.md Appendix A.1` |
+| ✅ | **B2** **Prop 1 常数 C₁ 数值校准 + Prop 3 rate + bootstrap CI** — 实证 β = −0.334 (CI [−0.746, +0.003])，理论 −0.372 ✅ 在 CI 内；Ours S3/S0 ratio CI [0.198, 1.036]，Prop 3 预测 0.655 ✅ 在 CI 内。C₁ = 4.96 ± 4.22 (量级 sanity check) | 完成（2026-04-23） | `experiments/week1/bootstrap_prop1_prop3_calibration.py` + `paper_draft_*.md Appendix A.1/A.3` |
 | ✅ | **B3** **Proposition 5 新增** — §4.2a 正式陈述 + 几何直觉 + 实证 slope ratios；Appendix A.5a 3 步 semi-formal 证明 + §5.X3 拟合数字 | 完成（2026-04-23） | `paper_draft_zh.md §4.2a` + `Appendix A.5a` |
 | ✅ | **B4** **Theorem 2 (d) 升级** — 加 orthogonal failure channels 子条件，关联到 Proposition 5 | 完成（2026-04-23） | `paper_draft_zh.md §4.2` |
 
@@ -242,11 +242,12 @@
 |:-:|---|:-:|---|
 | ✅ | **C0** 英文版 Abstract + §1 + §2 + §3.0 + §4 同步 | 完成 | `paper_draft.md` |
 | ✅ | **C1+C2** **英文版 §5.X1/X1b/X2/X3 + §4.2(d) + §4.2a Prop 5 + §6 + §7 同步** | 完成（2026-04-23） | `paper_draft.md §4.2/§4.2a/§5.X1-X3/§6/§7` |
-| ❌ | **C3** **Table 3 极端 harshness summary** | 1 hr | `pt_v2_with_panda_n5_small.json` → `paper_draft_zh.md §5.8` |
-| ❌ | **C4** **τ-coupling seeds 扩展**（3 → 5-10 seeds）— 给 reviewer 更强 statistical power | 2 hr GPU | 重跑 `run_tau_coupling_ablation.py --n_seeds 8` |
+| ✅ | **C3** **Table 3 极端 harshness summary** — 7 场景 × 6 方法 × 5 seeds full panel, Ours (CSDI) S4 = 9.38× Panda / 8.13× Parrot | 完成（2026-04-23） | `experiments/week1/make_table3_extreme_harshness.py` + `paper_draft_*.md §5.9` |
+| ✅ | **C4** **τ-coupling seeds 扩展** 3 → 8 — null 更强化（A/B/C/D 差 ≤ 1.4%，default vs B_current 从 −5.8% 缩到 −3.7%） | 完成（2026-04-23） | `experiments/week2_modules/results/tau_coupling_S3_n8_v2.json` + `paper_draft_zh.md §5.X1c` |
 | ✅ | **C5** **§6 / §7 更新** — 纳入 Option C 新叙事（中英文）| 完成（2026-04-23） | `paper_draft_zh.md / paper_draft.md §6/§7` |
 | ✅ | **C6** **Abstract + §1 opener 更新** — 融入 Option C narrative（正交交集 / 训练时 τ 耦合）| 完成（2026-04-23） | `paper_draft_zh.md / paper_draft.md Abstract/§1` |
-| ❌ | **C1-ext** **英文版 Appendix A.5a** — 对齐中文 A.5a 步骤 1/2/3 | 0.5 天 | `paper_draft.md Appendix A` |
+| ✅ | **C1-ext** **英文版 Appendix A.5a** — 对齐中文 A.5a 步骤 1/2/3 + B2 校准段 | 完成（2026-04-23） | `paper_draft.md Appendix A.5a/A.1-A.3` |
+| ✅ | **C7** **Figure X4** — Panda OOD KL hard-threshold 可视化（2 panels: JS vs s + linear-seg fraction vs s）| 完成（2026-04-23） | `experiments/week2_modules/plot_panda_ood_kl.py` + `figures/panda_ood_kl_threshold.png` |
 
 ---
 
@@ -281,15 +282,17 @@
 | **Option C + 全数据集**（天花板） | ~9 周 | 全部 Block | tech.md 100% 完成；全系统验证 |
 
 **当前状态（2026-04-23 完整 snapshot）**：
-- Block A 完成 A0-A6 全部 ✅ (6/6)
-- Block B 完成 B0/B1/B3/B4 ✅ (4/5)，剩余 B2 Prop 1 常数校准
-- Block C 完成 C0/C1+C2/C5/C6 + 英文 §5.X4 ✅ (6/7)，剩余 C3 Table 3 / C4 seed 扩展 / C1-ext 英文 A.5a
-- **下一步建议**（按价值 × 成本排序）：
-  1. C3 Table 3 极端 harshness summary（1 小时，现有数据直接出）
-  2. B2 Prop 1 常数 C₁ 数值校准（半天，bootstrap CI）
-  3. C1-ext 英文 A.5a 证明同步（半天）
-  4. C4 τ-coupling seeds 扩展 3→8（2 小时 GPU）
-  5. D1 Lorenz96 Phase Transition（2-3 天，显著提升多系统说服力）
+- **Block A 完成 A0-A6 全部 ✅ (6/6)**
+- **Block B 完成 B0-B4 全部 ✅ (5/5)** — B2 Prop 1 C₁ + Prop 3 rate + bootstrap CI 校准已闭合
+- **Block C 完成 C0-C7 全部 ✅ (8/8)** — 中英对齐，Table 3 + C4 n=8 扩展 + Fig X4 全部到位
+- **投稿就绪度**：paper 中英 narrative 融入 Option C 四件精细化；13 条实证新数据（slope ratios / JS jumps / 100% τ overlap / bootstrap CI）全部支持理论 claim；12 张 paper-grade figures
+
+**下一阶段建议**（按价值 × 成本排序）：
+  1. **D1 Lorenz96 Phase Transition** — 最高价值（多系统普适性），需新 infra（L96 VPT/PILOT/CSDI 重训或 AR-K-only 版）。AR-K-only 版 1-2 天；full CSDI 版 3-5 天
+  2. **D2 Mackey-Glass 跨系统 τ-coupling** — 闭合"training-time coupling"跨系统 claim，1 天（新 integrator + 2 CSDI retrain + τ-coupling 测试）
+  3. **D3 LaTeX 化（NeurIPS template）** + Paper refine 多轮 — 半天-1 天
+  4. **D4 dysts 20-system benchmark (Table 1)** — 1-2 天 + ~17 GPU-hr
+  5. **D5 EEG case study** — 2-3 天，需数据集（CHB-MIT / TUSZ）
 
 ---
 
