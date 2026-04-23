@@ -3,7 +3,7 @@
 > **一张文档查清：做了什么、做到什么程度、还剩什么、下次怎么接**。
 > 合并自原 `DELIVERY.md` / `PROGRESS.md` / `TODO_tech_gap_zh.md` / `COMPLETE_WORK_LOG_zh.md`。
 >
-> **最后更新**：2026-04-23（Option C Block A/B/C 主体完成）  ·  **分支**：`csdi-pro`  ·  **最新 commit**：`3910949`
+> **最后更新**：2026-04-23（paper slim 重构完成，新分支 `csdi-pro-slim`）  ·  **两个分支**：`csdi-pro`（完整版 Option C，15 commits）/ **`csdi-pro-slim`（精简 paper 版，2 个额外 commit，-1200 净行）**  ·  **当前分支**：`csdi-pro-slim`
 >
 > 其它文档：
 > - [README.md](README.md) — 项目导航入口
@@ -282,17 +282,30 @@
 | **Option C + 全数据集**（天花板） | ~9 周 | 全部 Block | tech.md 100% 完成；全系统验证 |
 
 **当前状态（2026-04-23 完整 snapshot）**：
-- **Block A 完成 A0-A6 全部 ✅ (6/6)**
-- **Block B 完成 B0-B4 全部 ✅ (5/5)** — B2 Prop 1 C₁ + Prop 3 rate + bootstrap CI 校准已闭合
-- **Block C 完成 C0-C7 全部 ✅ (8/8)** — 中英对齐，Table 3 + C4 n=8 扩展 + Fig X4 全部到位
-- **投稿就绪度**：paper 中英 narrative 融入 Option C 四件精细化；13 条实证新数据（slope ratios / JS jumps / 100% τ overlap / bootstrap CI）全部支持理论 claim；12 张 paper-grade figures
+- **Block A 完成 A0-A6 全部 ✅ (6/6)** — 核心实验（τ-coupling / (s,σ) grid / Fig）
+- **Block B 完成 B0-B4 全部 ✅ (5/5)** — 理论闭合 + bootstrap CI 校准
+- **Block C 完成 C0-C7 全部 ✅ (8/8)** — 中英对齐 + Table 3 + C4 n=8 扩展 + Fig X4
+
+**Paper 精简重构（2026-04-23 下午，分支 `csdi-pro-slim`）**：
+- **诊断**：完整版 paper 超载（15 个 contribution / 14 个实验 / "几何必要条件"类过度 packaging）
+- **精简方案**（文档见 `改进方案2`）：
+  - 3 条贡献（机制+分解 / 方法 / 实证）替代 7-条
+  - 合并 Prop 1 + Theorem 2；降级 Prop 3 为 Thm 2 (b)；删 Corollary；Thm 4 下沉 A.4
+  - 删 §3.0 "延迟流形中心对象" 整节；删每模块的"几何定位" block
+  - "三个 bug" → "三处稳定性改善"（不再自嘲）
+  - 合并 §5.X2/X3/X4 → 新 §5.6；τ-coupling/τ-stab/scaling 下沉附录 E/F
+  - 新增附录 G："延迟流形视角" — pipeline 的几何数学诠释（optional reading）
+- **结果**：中文 paper_draft_zh.md −568 净行；英文 paper_draft.md −350 净行
+- **两个 branch 的用法**：
+  - `csdi-pro`：完整版，带所有 Option C packaging（历史记录 + 可回滚）
+  - `csdi-pro-slim`：投稿版，3 contribution + 13-14 页主文 + 几何叙事 → 附录 G
 
 **下一阶段建议**（按价值 × 成本排序）：
-  1. **D1 Lorenz96 Phase Transition** — 最高价值（多系统普适性），需新 infra（L96 VPT/PILOT/CSDI 重训或 AR-K-only 版）。AR-K-only 版 1-2 天；full CSDI 版 3-5 天
-  2. **D2 Mackey-Glass 跨系统 τ-coupling** — 闭合"training-time coupling"跨系统 claim，1 天（新 integrator + 2 CSDI retrain + τ-coupling 测试）
-  3. **D3 LaTeX 化（NeurIPS template）** + Paper refine 多轮 — 半天-1 天
-  4. **D4 dysts 20-system benchmark (Table 1)** — 1-2 天 + ~17 GPU-hr
-  5. **D5 EEG case study** — 2-3 天，需数据集（CHB-MIT / TUSZ）
+  1. **LaTeX 化（NeurIPS template）** + Paper refine 多轮 — 半天-1 天
+  2. **D1 Lorenz96 Phase Transition** — 最高价值（多系统普适性），AR-K-only 1-2 天
+  3. **D2 Mackey-Glass 跨系统 τ-coupling** — 1 天（新 integrator + 2 CSDI retrain）
+  4. **D4 dysts 20-system benchmark** — 1-2 天 + ~17 GPU-hr
+  5. **D5 EEG case study** — 2-3 天，需数据集
 
 ---
 
