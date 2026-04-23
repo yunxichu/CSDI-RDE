@@ -61,7 +61,10 @@ FIG_DIR = REPO_ROOT / "experiments" / "week1" / "figures"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 
-METHOD_ORDER = ["ours_csdi", "ours", "panda", "parrot", "persist"]
+METHOD_ORDER = [
+    "ours_csdi", "ours", "ours_deepedm", "ours_fno", "ours_svgp",
+    "panda", "parrot", "persist",
+]
 
 # Reuse L63 S0-S6 (s, σ) harshness levels — the sparsity & noise levels are
 # system-agnostic by design (all reported as fraction of attractor std).
@@ -124,15 +127,33 @@ def run_pilot(
                     elif method == "persist":
                         mean = persistence_forecast(ctx_filled, pred_len)
                     elif method == "ours":
+                        # default: M1=AR-Kalman, M3=deepedm (post §5.7 fix)
                         mean = full_pipeline_forecast(
                             observed, pred_len=pred_len, seed=seed,
-                            bayes_calls=10, n_epochs=150,
+                            bayes_calls=10, n_epochs=150, backbone="deepedm",
+                        )
+                    elif method == "ours_deepedm":
+                        mean = full_pipeline_forecast(
+                            observed, pred_len=pred_len, seed=seed,
+                            bayes_calls=10, backbone="deepedm",
+                        )
+                    elif method == "ours_fno":
+                        mean = full_pipeline_forecast(
+                            observed, pred_len=pred_len, seed=seed,
+                            bayes_calls=10, backbone="fno",
+                        )
+                    elif method == "ours_svgp":
+                        # Kept for §5.7 negative-baseline comparison
+                        mean = full_pipeline_forecast(
+                            observed, pred_len=pred_len, seed=seed,
+                            bayes_calls=10, n_epochs=150, backbone="svgp",
                         )
                     elif method == "ours_csdi":
                         # requires set_csdi_checkpoint() called upstream (via --csdi_ckpt)
                         mean = full_pipeline_forecast(
                             observed, pred_len=pred_len, seed=seed,
                             imp_kind="csdi", bayes_calls=10, n_epochs=150,
+                            backbone="deepedm",
                         )
                     elif method == "panda":
                         if not _HAS_PANDA:
@@ -247,9 +268,13 @@ def main() -> None:
     if "ours_csdi" in args.methods:
         if not args.csdi_ckpt:
             raise SystemExit("--csdi_ckpt is required when 'ours_csdi' is in --methods")
-        from methods.csdi_impute_adapter import set_csdi_checkpoint
+        from methods.csdi_impute_adapter import set_csdi_checkpoint, set_csdi_attractor_std
         set_csdi_checkpoint(args.csdi_ckpt)
+        # CRITICAL: override attractor_std so inference uses L96's 3.639 (not L63 default 8.51)
+        attr_std_l96 = lorenz96_attractor_std(N=args.N, F=args.F)
+        set_csdi_attractor_std(attr_std_l96)
         print(f"[pilot-l96] CSDI ckpt loaded: {args.csdi_ckpt}")
+        print(f"[pilot-l96] CSDI inference attractor_std override: {attr_std_l96:.4f}")
 
     records, attr_std = run_pilot(
         N=args.N, F=args.F,
