@@ -95,20 +95,20 @@ def run_config(cfg: NeffConfig, seed: int, method: str, ckpt: str | None,
                                     lam_hat=lam_hat * dt, dt=dt,
                                     cp_kind="lyap", growth="empirical")
     elif method == "panda":
-        # Placeholder: wire in panda adapter. The adapter expects linear-interp context.
+        # Panda adapter signature: panda_forecast(ctx_filled, pred_len, device) → [pred_len, D]
+        # Gives median point forecast; no PICP/MPIW (single-sample).
         from baselines.panda_adapter import panda_forecast
-        # Linear interp NaNs for panda
         from methods.dynamics_impute import impute
         ctx_filled = impute(obs, kind="linear")
-        forecast = panda_forecast(ctx_filled, horizon=pred_len)
-        # Compute NRMSE/VPT directly
-        from metrics.chaos_metrics import nrmse as chaos_nrmse
+        forecast = panda_forecast(ctx_filled, pred_len=pred_len)  # (pred_len, D)
         horizons = [1, 4, 16, 64]
         metrics = {}
         for h in horizons:
             if h > forecast.shape[0]:
                 continue
-            rmse = float(np.sqrt(np.mean((forecast[h-1] - future_true[h-1]) ** 2)))
+            # Point-wise NRMSE at step h to match ours_csdi convention
+            err_sq = float(np.mean((forecast[h-1] - future_true[h-1]) ** 2))
+            rmse = float(np.sqrt(err_sq))
             metrics[h] = dict(nrmse=rmse / LORENZ63_ATTRACTOR_STD, picp=None, mpiw=None)
         lam_hat = None
     else:
