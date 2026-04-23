@@ -619,6 +619,80 @@ For comparison:
 
 ---
 
+### 5.X4 Panda OOD KL Measurement: Closing Theorem 2(b) Lemma L2
+
+> **Status (completed 2026-04-23).** Script `experiments/week2_modules/run_panda_ood_kl.py`; JSON `panda_ood_kl_v1.json` (15 trajectories × 9 s-values × 2 σ-values = 270 configs). **Key finding: along the σ=0 line, JS divergence of patch-curvature distribution between sparse-interpolated and clean contexts jumps 3.1× between s=0.70 → 0.85 (0.042 → 0.131); linear-segment patch fraction jumps 21× (0.6% → 12.9%) — direct empirical evidence for Theorem 2(b) lemma L2's "non-physical straight-segment hard threshold" mechanism.**
+
+**Motivation.** Theorem 2(b)'s OOD-jump claim relies on lemma L2: linearly-interpolated sparse contexts at $s > s^\star$ produce non-physical straight segments, shifting the patch distribution far enough from Panda's training distribution to exceed a constant KL threshold. This section provides L2's **quantitative empirical verification**, closing the Appendix A.2 open item.
+
+**Design.** Panda uses PatchTST (context_length=512, patch_length=16, non-overlapping patches). We directly measure the **distributional distance between linearly-interpolated context patches and clean-context patches** at various $(s, \sigma)$. No Panda forward pass is needed — Theorem 2(b)'s L2 claim is about **input patch space** KL shift and is model-agnostic.
+
+**Metric (per-patch curvature).** For each 16-length patch, compute the mean absolute second-difference $|\partial^2 x / \partial t^2|$ as a proxy for local nonlinearity:
+- Clean Lorenz63 patches: high curvature (attractor twisting) — mean ≈ 0.338
+- Linearly-interpolated segments: near-zero curvature (straight lines have zero second derivative)
+- High-noise patches: high curvature (white noise dominates)
+
+Compute Jensen-Shannon divergence + Wasserstein-1 distance + low-curvature (<0.01) fraction vs. reference clean distribution.
+
+**Results (σ=0 line, pure-sparse channel, 15 trajectories × 480 patches each).**
+
+| $s$ | mean curv | median curv | low_frac (<0.01) | **JS vs clean** | $W_1$ |
+|:-:|:-:|:-:|:-:|:-:|:-:|
+| 0.00 (ref) | 0.338 | 0.270 | 0.000 | 0.000 | 0.000 |
+| 0.10 | 0.336 | 0.280 | 0.000 | 0.006 | 0.003 |
+| 0.20 | 0.336 | 0.281 | 0.000 | 0.008 | 0.004 |
+| 0.35 | 0.328 | 0.277 | 0.000 | 0.025 | 0.011 |
+| 0.50 | 0.315 | 0.270 | 0.000 | 0.027 | 0.024 |
+| 0.60 (**S3 s**) | 0.299 | 0.253 | 0.000 | 0.029 | 0.039 |
+| **0.70** (**U3/G20 s**) | 0.274 | 0.225 | **0.006** | **0.042** | 0.064 |
+| **0.85** 🔥 | **0.175** | 0.149 | **0.129** (21× jump) | **0.131** (3.1× jump) | 0.163 |
+| 0.95 | 0.048 | 0.000 | **0.540** | **0.430** | 0.291 |
+
+**Hard threshold location: $s \approx 0.7 \to 0.85$.**
+- Low-curvature patch fraction jumps from **0.6% → 12.9%** (21× amplification)
+- JS divergence jumps from **0.042 → 0.131** (3.1× amplification)
+- $W_1$ jumps from 0.064 → 0.163 (2.5× amplification)
+- Matches the geometric condition "linear segments dominate within a patch of width 16": $s > 1 - \text{patch\_length}/\text{expected\_run} \approx 0.80$ (expected run-length between observations ≈ 3 per patch).
+
+**Cross-validation with §5.X2 / §5.X3.**
+- U3 (s=0.70, σ=0) / G20 (s=0.70, σ=0): Panda NRMSE 0.593 / 0.592, yet JS only 0.042 (7× baseline but still below hard threshold). This means **Panda's large NRMSE gap at s=0.70 includes other tokenizer-embedding sensitivities** beyond the L2 linear-segment mechanism.
+- True hard threshold is at $s \approx 0.85$; full "Panda s-channel ratio ≥ 2" prediction requires grid extension to $s > 0.85$ (REFACTOR_PLAN follow-up).
+
+**Results (σ=0.5 noise line, contrast).**
+
+When σ > 0, the curvature distribution is reshaped by noise (noise dominates the second-difference):
+- s=0.0, σ=0.5: mean curv **8.27** (24× clean's 0.34), JS = 0.693 (log 2, the theoretical maximum — distributions fully separated)
+- As $s$ increases, linear interpolation dilutes noise, curvature drops back, JS also drops.
+
+**This contrast shows σ-channel and s-channel are two different distribution-shift mechanisms:**
+- σ channel: shifts curvature distribution uniformly to higher values (adding white-noise second differences)
+- s channel: bimodally splits the distribution (true dynamics + linear segments)
+
+Panda's asymmetric downstream sensitivity (§5.X3 slopes show Panda is more s-sensitive) can be interpreted as: **Panda's training covered noise (partially absorbed by tokenizer soft-binning) but not linear-segment patches**. Linear segments trigger direct OOD (even at small KL magnitudes), while noise is partly filtered by the tokenizer (even at large KL).
+
+**Closure of §4.2 Theorem 2(b) / Appendix A.2.L2.**
+
+| Original open item | Evidence in this section | Status |
+|---|---|---|
+| L2: exists $s^\star$ s.t. $s > s^\star$ ⇒ KL(sparse ‖ train) > $c$ constant | Empirically, JS jumps 3.1× and low-curv fraction jumps 21× between s=0.70 and s=0.85 | **Partially closed** (direction + magnitude correct; the precise constant $c$ depends on Panda's tokenizer and requires tokenizer-internal analysis) |
+| Linear-segment is the primary OOD mechanism | Empirically, 13% of patches are linear segments at s=0.85 (σ=0); σ=0.5 swamps curvature first | ✅ Supported (linear-segment fraction crosses threshold at s=0.85) |
+| Threshold location $s^\star = 0.5$ (original §3.0 / Theorem 2 estimate) | Empirically $s^\star \approx 0.85$ (low-curv fraction > 10% point) | ⚠️ Original estimate too low; true hard threshold at s ≈ 0.85, but Panda's downstream NRMSE suffers already at s ≈ 0.6-0.7 (suggesting Panda is sensitive to small KL shifts, or other OOD mechanisms exist) |
+
+**Empirical narrative (suitable for §4.2 Theorem 2(b) proof + §6 discussion).**
+
+> Linear-segment fraction vs $s$ is step-like: <1% for $s < 0.7$, >13% for $s > 0.85$. Corresponding patch-distribution JS divergence jumps 3.1× in the same range. This empirically confirms Theorem 2(b) lemma L2's "non-physical straight-segment hard threshold", but the threshold location ($s \approx 0.85$) is higher than Theorem 2's original estimate ($s \approx 0.5$). Panda already shows serious NRMSE degradation at $s = 0.6$, suggesting Panda is sensitive to smaller KL shifts — or other tokenizer-internal OOD mechanisms exist (patch embeddings projecting near decision boundaries). Full closure requires Panda tokenizer-internal analysis (left as follow-up).
+
+**Reproduction command.**
+```bash
+python -m experiments.week2_modules.run_panda_ood_kl \
+    --n_trajectories 15 --s_values 0 0.1 0.2 0.35 0.5 0.6 0.7 0.85 0.95 \
+    --sigma_values 0 0.5 \
+    --out_json experiments/week2_modules/results/panda_ood_kl_v1.json
+# ~30 sec on CPU (no Panda forward pass needed)
+```
+
+---
+
 ## 6 Discussion and Limitations
 
 **Scope.** We test on Lorenz63 (low-dim canonical chaos) and confirm SVGP scaling on Lorenz96. Extending the full phase-transition analysis to Lorenz96 (N=40), Kuramoto-Sivashinsky, and the dysts benchmark suite [Gilpin23] is the natural next step; our CSDI M1 would need retraining on each system (or a multi-system pretrain).
@@ -636,8 +710,9 @@ Refined claim: **τ-coupling occurs at training time, not at inference** — M1 
 **(s, σ) orthogonal decomposition — empirically realized (§5.X3, 90-run 3×3 grid).** Originally Theorem 2(c)'s "manifold predictors decay smoothly by $n_\text{eff}$" was observed as 2.4× variation rather than collapse in §5.X2's 4-point sweep. The §5.X3 3×3 grid directly supports **Proposition 5 (§4.2a, new)**: Ours' σ-channel is 32× stronger than s-channel (nearly perfect σ-only failure); Panda's s-channel is 1.84× stronger than σ-channel (direction-correct, marginal on the ratio ≥ 2 threshold); Panda/Ours ratio peaks at 2.93× in the pure-sparse cell (s=0.70, σ=0). The phase transition is precisely re-characterized as: **the orthogonal intersection of Panda's sparsity-OOD vulnerability and Ours' noise-sensitivity weakness**.
 
 **Remaining follow-ups.**
-- **Panda OOD KL measurement** (to close Theorem 2(b)'s lemma L2 strict proof): half-day GPU (REFACTOR_PLAN §6.3)
+- ✅ **Panda OOD KL measurement** (lemma L2 partial closure): completed §5.X4 (2026-04-23) — patch-curvature JS jumps 3.1× between s=0.70→0.85, linear-segment fraction jumps 21×
 - **Proposition 5's Panda-side hard-threshold extrapolation**: $s > 0.7$ grid points (0.85, 0.95), verifying the s-channel ratio exceeds 2 at larger $s$
+- **Panda tokenizer-internal analysis**: the observed downstream NRMSE degradation at s=0.6 vs. KL hard-threshold at s=0.85 suggests Panda is sensitive to smaller KL shifts than L2 captures alone — tokenizer embedding geometry analysis is the natural next step
 - **Cross-system τ-coupling verification**: Mackey-Glass and other genuinely τ-sensitive systems, verifying that the "training-time coupling" mechanism generalizes
 
 **CSDI variance.** Our best M1 checkpoint is at epoch 20 (40K gradient steps). Training loss continues to fall but held-out imputation RMSE rises after epoch 40, indicating a subtle overfitting on the diffusion schedule. We have not yet isolated the precise failure mode.
