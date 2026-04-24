@@ -28,7 +28,6 @@ METHODS_DISPLAY = {
 LINES = [
     ("panda",             "Panda-72M",             "C1", "-",  "o"),
     ("ours_csdi_deepedm", "Ours (CSDI + DeepEDM)", "C3", "-",  "s"),
-    ("ours_csdi_fno",     "Ours (CSDI + FNO)",     "C2", "--", "^"),
     ("ours_csdi_svgp",    "Ours (CSDI + SVGP)",    "C5", ":",  "P"),
     ("parrot",            "Parrot",                "C4", ":",  "v"),
     ("persist",           "Persist",               "gray","-.", "x"),
@@ -46,7 +45,7 @@ def main(tag: str = "mg_5seed"):
     print("\n### Table — Mackey-Glass VPT@1.0 (mean ± std)\n")
     print("| Method | " + " | ".join(SCENARIOS) + " |")
     print("|:---|" + ":-:|" * len(SCENARIOS))
-    for m in ["ours_csdi_deepedm", "ours_csdi_svgp", "ours_csdi_fno",
+    for m in ["ours_csdi_deepedm", "ours_csdi_svgp",
               "panda", "parrot", "persist"]:
         if m not in merged:
             continue

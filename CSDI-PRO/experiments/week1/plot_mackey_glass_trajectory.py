@@ -68,13 +68,9 @@ def run_all():
             obs, pred_len=PRED_LEN, seed=SEED,
             imp_kind="csdi", bayes_calls=10, backbone="deepedm",
         )
-        pred_fno = full_pipeline_forecast(
-            obs, pred_len=PRED_LEN, seed=SEED,
-            imp_kind="csdi", bayes_calls=10, backbone="fno",
-        )
         pred_panda = panda_forecast(ctx_filled, pred_len=PRED_LEN) if HAS_PANDA else None
         results[sc.name] = dict(
-            fut=fut_true, svgp=pred_svgp, deepedm=pred_deepedm, fno=pred_fno,
+            fut=fut_true, svgp=pred_svgp, deepedm=pred_deepedm,
             panda=pred_panda, sc=sc, keep=mask.mean(),
         )
     return results
@@ -98,8 +94,6 @@ def plot(results):
                         alpha=0.85, label="Panda-72M")
             ax.plot(t[sl], d["svgp"][sl, 0], color="C5", linewidth=1.1,
                     linestyle=":", alpha=0.85, label="Ours (CSDI + SVGP)")
-            ax.plot(t[sl], d["fno"][sl, 0], color="C2", linewidth=1.1,
-                    linestyle="--", alpha=0.85, label="Ours (CSDI + FNO)")
             ax.plot(t[sl], d["deepedm"][sl, 0], color="C3", linewidth=1.5,
                     alpha=0.95, label="Ours (CSDI + DeepEDM)")
             if c == 0:

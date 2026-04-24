@@ -62,7 +62,8 @@ OUT_DIR.mkdir(parents=True, exist_ok=True)
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 
 METHOD_ORDER = [
-    "ours_csdi", "ours", "ours_deepedm", "ours_fno", "ours_svgp",
+    "ours_csdi_deepedm", "ours_csdi_svgp", "ours_csdi",
+    "ours", "ours_deepedm", "ours_fno", "ours_svgp",
     "panda", "parrot", "persist",
 ]
 
@@ -154,6 +155,17 @@ def run_pilot(
                             observed, pred_len=pred_len, seed=seed,
                             imp_kind="csdi", bayes_calls=10, n_epochs=150,
                             backbone="deepedm",
+                        )
+                    elif method == "ours_csdi_deepedm":
+                        mean = full_pipeline_forecast(
+                            observed, pred_len=pred_len, seed=seed,
+                            imp_kind="csdi", bayes_calls=10, backbone="deepedm",
+                        )
+                    elif method == "ours_csdi_svgp":
+                        mean = full_pipeline_forecast(
+                            observed, pred_len=pred_len, seed=seed,
+                            imp_kind="csdi", bayes_calls=10, n_epochs=150,
+                            backbone="svgp",
                         )
                     elif method == "panda":
                         if not _HAS_PANDA:
@@ -265,9 +277,9 @@ def main() -> None:
                     help="L96 CSDI checkpoint path (required if 'ours_csdi' in --methods)")
     args = ap.parse_args()
 
-    if "ours_csdi" in args.methods:
+    if any(m.startswith("ours_csdi") for m in args.methods):
         if not args.csdi_ckpt:
-            raise SystemExit("--csdi_ckpt is required when 'ours_csdi' is in --methods")
+            raise SystemExit("--csdi_ckpt is required when any ours_csdi_* method is selected")
         from methods.csdi_impute_adapter import set_csdi_checkpoint, set_csdi_attractor_std
         set_csdi_checkpoint(args.csdi_ckpt)
         # CRITICAL: override attractor_std so inference uses L96's 3.639 (not L63 default 8.51)

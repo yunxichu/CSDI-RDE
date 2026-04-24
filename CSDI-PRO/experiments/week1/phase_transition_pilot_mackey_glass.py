@@ -229,7 +229,7 @@ def main() -> None:
                     help="larger than L63/L96 because MG λ is weaker (1024 × 1.0 × 0.006 ≈ 6 Λ)")
     ap.add_argument("--dt", type=float, default=MACKEY_GLASS_DT)
     ap.add_argument("--methods", nargs="+",
-                    default=["ours_csdi_svgp", "ours_csdi_deepedm", "ours_csdi_fno",
+                    default=["ours_csdi_svgp", "ours_csdi_deepedm",
                              "panda", "parrot", "persist"])
     ap.add_argument("--tag", default="mg_v1")
     ap.add_argument("--csdi_ckpt", default=None,
