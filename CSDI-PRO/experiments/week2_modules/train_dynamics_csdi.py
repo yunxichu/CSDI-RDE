@@ -61,6 +61,12 @@ def evaluate(model: DynamicsCSDI, n_eval: int = 20, seq_len: int = 64, seed: int
         elif system == "rossler":
             from systems.rossler import integrate_rossler
             traj = integrate_rossler(seq_len, dt=dt, seed=seed_k)
+        elif system == "kuramoto":
+            from systems.kuramoto import integrate_kuramoto
+            traj = integrate_kuramoto(seq_len, dt=dt, seed=seed_k)
+        elif system == "chua":
+            from systems.chua import integrate_chua
+            traj = integrate_chua(seq_len, dt=dt, seed=seed_k)
         else:
             traj = integrate_lorenz63(seq_len, dt=dt, seed=seed_k)
         sparsity = float(rng.uniform(0.2, 0.90))
@@ -114,7 +120,8 @@ def main() -> None:
                     help="dimension of state (L63: 3, L96 N=20: 20)")
     ap.add_argument("--attractor_std", type=float, default=LORENZ63_ATTRACTOR_STD,
                     help="attractor std for (observed, clean) normalization")
-    ap.add_argument("--system", choices=["lorenz63", "lorenz96", "mackey_glass", "rossler"],
+    ap.add_argument("--system", choices=["lorenz63", "lorenz96", "mackey_glass",
+                                           "rossler", "kuramoto", "chua"],
                     default="lorenz63",
                     help="which system to use for eval-time trajectory generation")
     ap.add_argument("--eval_N", type=int, default=20, help="Lorenz96 N for eval (if system=lorenz96)")
@@ -132,6 +139,10 @@ def main() -> None:
             args.eval_dt = 1.0
         elif args.system == "rossler":
             args.eval_dt = 0.1
+        elif args.system == "kuramoto":
+            args.eval_dt = 0.1
+        elif args.system == "chua":
+            args.eval_dt = 0.02
         else:
             args.eval_dt = 0.025
 
