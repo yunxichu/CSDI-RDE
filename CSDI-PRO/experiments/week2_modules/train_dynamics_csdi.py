@@ -55,6 +55,9 @@ def evaluate(model: DynamicsCSDI, n_eval: int = 20, seq_len: int = 64, seed: int
         if system == "lorenz96":
             from experiments.week1.lorenz96_utils import integrate_lorenz96
             traj = integrate_lorenz96(seq_len, N=N_l96, F=F_l96, dt=dt, seed=seed_k)
+        elif system == "mackey_glass":
+            from systems.mackey_glass import integrate_mackey_glass
+            traj = integrate_mackey_glass(seq_len, dt=dt, seed=seed_k)
         else:
             traj = integrate_lorenz63(seq_len, dt=dt, seed=seed_k)
         sparsity = float(rng.uniform(0.2, 0.90))
@@ -108,7 +111,7 @@ def main() -> None:
                     help="dimension of state (L63: 3, L96 N=20: 20)")
     ap.add_argument("--attractor_std", type=float, default=LORENZ63_ATTRACTOR_STD,
                     help="attractor std for (observed, clean) normalization")
-    ap.add_argument("--system", choices=["lorenz63", "lorenz96"], default="lorenz63",
+    ap.add_argument("--system", choices=["lorenz63", "lorenz96", "mackey_glass"], default="lorenz63",
                     help="which system to use for eval-time trajectory generation")
     ap.add_argument("--eval_N", type=int, default=20, help="Lorenz96 N for eval (if system=lorenz96)")
     ap.add_argument("--eval_F", type=float, default=8.0)
@@ -119,7 +122,12 @@ def main() -> None:
     args = ap.parse_args()
 
     if args.eval_dt is None:
-        args.eval_dt = 0.05 if args.system == "lorenz96" else 0.025
+        if args.system == "lorenz96":
+            args.eval_dt = 0.05
+        elif args.system == "mackey_glass":
+            args.eval_dt = 1.0
+        else:
+            args.eval_dt = 0.025
 
     import torch as _torch
     _torch.manual_seed(args.seed)
