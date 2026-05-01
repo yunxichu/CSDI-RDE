@@ -15,7 +15,7 @@ Glocal-IB) remains optional camera-ready follow-up.
 | `bd2ccc6` | 2026-05-01 | docs(P1) — record Chronos native horizon and L96 SAITS follow-up in `P1_RESULTS.md` |
 | `290e38b` | 2026-05-01 | Submission-prep QA freeze — traceability sidecar, reviewer-sim fixes |
 | `0fb2945` | 2026-05-01 | Reviewer-handoff polish — sidecar freeze-commit references + §6.2 §3.2 pointer hygiene |
-| **`<P2 commit>`** | **2026-05-02** | **P2 freeze** — §4.3 cell-list rewrite + DeepEDM unified justification + L96 SP82 extended to 30 seeds (CSDI − SAITS = +0.31 [+0.07, +0.56] strict-positive on means) + Jena Climate hourly real-sensor case study (§6.6 boundary: SAITS − linear strict-negative at vh@1.0 across SP55–SP82, defines lever's chaotic-attractor scope) |
+| **`2850470`** | **2026-05-02** | **P2 freeze** — §4.3 cell-list rewrite + DeepEDM unified justification + L96 SP82 extended to 30 seeds (CSDI − SAITS = +0.31 [+0.07, +0.56] strict-positive on means) + Jena Climate hourly real-sensor case study (§6.6 boundary: SAITS − linear strict-negative at vh@1.0 across SP55–SP82, defines lever's chaotic-attractor scope) |
 
 The current submission-ready freeze is the P2 round. External reviewers
 should pull the latest commit on `csdi-pro-m3-alt` and read the four

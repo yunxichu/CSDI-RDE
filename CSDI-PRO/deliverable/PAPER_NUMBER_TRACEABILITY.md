@@ -2,7 +2,7 @@
 
 Every quantitative claim in **Abstract / §1 / §3 / §4 / §6.4 / §6.6** of
 `paper_draft_en.md` traced to its source JSON or figure markdown. Built
-in the submission-prep QA pass at `290e38b`; extended at the P2 freeze
+in the submission-prep QA pass at `290e38b`; extended at the P2 freeze `2850470`
 (2026-05-02) for the L96 30-seed and Jena Climate real-sensor additions.
 
 **Use.** Before any future numerical edit to the paper, look up the
