@@ -14,6 +14,10 @@ blocker.
 | `695dbad` | 2026-05-01 | P1.1 / P1.2 / P1.3 — pretrained SAITS L63 + Chronos mini-frontier + EnKF upper bound |
 | `c3f1256` | 2026-05-01 | P1.4 / P1.5 — Chronos pred_len=64 native horizon + SAITS-pretrained L96 N=20 cross-system |
 | `bd2ccc6` | 2026-05-01 | docs(P1) — record Chronos native horizon and L96 SAITS follow-up in `P1_RESULTS.md` |
+| **`290e38b`** | **2026-05-01** | **Submission-prep QA freeze** — traceability sidecar, reviewer-sim fixes (Chronos plural, "12–34×", "generalises" softening, CSDI-stochasticity disclosure), Appendix D figure-path fixes |
+
+The current submission-ready freeze is `290e38b`. External reviewers
+should pull this commit and read the four files listed below.
 
 Authoritative drafts:
 
@@ -25,6 +29,30 @@ Authoritative milestone narratives:
 - `deliverable/SUBMISSION_PREP_PLAN.md` — reviewer-perspective P0/P1/P2/P3 plan
 - `deliverable/P1_RESULTS.md` — per-experiment P1 results (P1.1/P1.2/P1.3 +
   P1.4/P1.5 follow-ups recorded by `bd2ccc6`)
+- `deliverable/PAPER_NUMBER_TRACEABILITY.md` — every headline number
+  traced to its source JSON / figure (built at `290e38b`)
+
+---
+
+## 0. External reviewer entry point
+
+If you are reading the paper for the first time:
+
+1. Read `deliverable/paper/paper_draft_en.md` end-to-end (≈ 30 min).
+2. Sanity-check any number that looks load-bearing against
+   `deliverable/PAPER_NUMBER_TRACEABILITY.md` — every abstract / §1 /
+   §3 / §4 / §6.4 number is mapped to the underlying result-JSON.
+3. Spot-check the patched-protocol claims by opening a JSON listed in
+   the traceability table; the per-seed records are at the top level
+   under `records`, the aggregated cell statistics under `summary`, and
+   the paired-bootstrap CIs under `contrasts`.
+4. The story has been narrowed twice — first away from a four-module
+   pipeline to a sparse-observation forecastability frontier
+   (commit `c99c978`), then again under reviewer-defense pressure into
+   "corpus-pretrained structured imputation is the lever" (commit
+   `c3f1256`). Both narrowings are intentional; the archive at
+   `deliverable/paper/paper_draft_en_archive_2026-04-30.md` keeps the
+   pre-pivot text for context.
 
 ---
 

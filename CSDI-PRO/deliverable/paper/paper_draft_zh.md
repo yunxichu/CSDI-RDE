@@ -245,7 +245,7 @@ CI 在 mean 上为 95% bootstrap，在 survival probability 上为 Wilson 95%。
 
 ### 6.2 论文不主张什么
 
-我们**不**主张预训练混沌 forecaster 本质上坏掉了——救援结果显示它们在 corruption-aware 填补之下高度可恢复。我们**不**主张 CSDI 是唯一能 work 的 imputer——而是：在我们以匹配 corpus 预训测试的 imputer（linear、Kalman、CSDI、SAITS）之中，CSDI 在 L63 transition band 上给出最强的 paired CSDI − linear 增益（§4.4）。我们**不**主张机制被完全刻画——raw-patch 与 Panda-token 距离-到-clean 解释入口带；底部带的 survival 受这些距离 informed 但不能简化为它们。我们**不**主张普适跨所有 foundation forecaster——Panda-72M 是 headline；Chronos 在 L63 稀疏度线上作为跨 foundation-model 证据被报告（§3.2），TimesFM / Lag-Llama 未评测。
+我们**不**主张预训练混沌 forecaster 本质上坏掉了——救援结果显示它们在 corruption-aware 填补之下高度可恢复。我们**不**主张 CSDI 是唯一能 work 的 imputer——而是：在我们以匹配 corpus 预训测试的 imputer（linear、Kalman、CSDI、SAITS）之中，CSDI 在 L63 transition band 上给出最强的 paired CSDI − linear 增益（§4.4）。我们**不**主张机制被完全刻画——raw-patch 与 Panda-token 距离-到-clean 解释入口带；底部带的 survival 受这些距离 informed 但不能简化为它们。我们**不**主张普适跨所有 foundation forecaster——Panda-72M 是 headline；Chronos 在 L63 稀疏度线上作为跨 foundation 观察被报告（§6.4 — Chronos 停在低 VPT 平台、不展示 Panda 的 transition 形状），TimesFM / Lag-Llama 未评测。
 
 ### 6.3 Scope condition
 
@@ -315,10 +315,10 @@ CI 在 mean 上为 95% bootstrap，在 survival probability 上为 Wilson 95%。
 | 11 | MG / Chua scope-boundary | Mackey-Glass、Chua | S0–S6 | 同 #10 | 5 | `pt_{mg,chua}_*_5seed.json` | `deliverable/figures_isolation/`（boundary 子集）|
 | 12 | 替代 imputer C0 sanity（per-instance）| L63 | SP65 | linear、SAITS、BRITS、CSDI | 5 | `panda_altimputer_l63sp65_partial_5seed.json` | log-only；附录 sanity |
 | 13 | **预训练替代 imputer（P1.1 + P1.5 跨系统）** | L63、L96 N=20 | L63 SP65 + SP82、L96 SP82 | linear、SAITS-pretrained、CSDI | 10 | `panda_altimputer_l63_sp65_sp82_pretrained_10seed_chunked.json`、`panda_altimputer_l96_sp82_pretrained_10seed.json` | §4.4 + 附录 C |
-| 14 | **Chronos mini-frontier（P1.2）** | L63 | SP55, SP65, SP75, SP82 | linear、CSDI（forecaster: Chronos，`pred_len ∈ {64, 128}`）| 5 | `chronos_frontier_l63_chronos_l63_sp55_sp82_5seed.json`、`..._5seed_pl64.json` | §3.2 / §6.4 跨 foundation-model 观察；pred_len=64 确认负面结果不是 Chronos OOD horizon 的 artefact |
+| 14 | **Chronos mini-frontier（P1.2）** | L63 | SP55, SP65, SP75, SP82 | linear、CSDI（forecaster: Chronos，`pred_len ∈ {64, 128}`）| 5 | `chronos_frontier_l63_chronos_l63_sp55_sp82_5seed.json`、`..._5seed_pl64.json` | §6.4 跨 foundation 观察；pred_len=64 确认负面结果不是 Chronos OOD horizon 的 artefact |
 | 15 | **EnKF 已知动力学上界（P1.3）** | L63 | SP55–SP82, NO020, NO050 | EnKF（真实向量场，100 ensemble members）| 5 | `enkf_l63_enkf_l63_v2_5seed.json` | §6.5 / 附录 B 参考 |
 
-#1–#9 是 §3 / §4 / §6 引用的 patched 协议锁定数。#10 是用旧 S0–S6 corruption pipeline（`make_sparse_noisy`）的 cross-system 复制，作为**辅助**方向证据；#1–#6 / #8 / #9 的 v2 协议数为权威。#11 提供 §6.3 scope condition。#12 是附录 sanity（per-instance 训练，对 SAITS / BRITS 不公）。#13–#15 是 P1 reviewer-defense 实验：预训练 SAITS 替代 imputer 对照（§4.4 / 附录 C）、Chronos 跨 foundation mini-frontier（§3.2 / §6.4）、EnKF 已知动力学上界（§6.5 / 附录 B）。
+#1–#9 是 §3 / §4 / §6 引用的 patched 协议锁定数。#10 是用旧 S0–S6 corruption pipeline（`make_sparse_noisy`）的 cross-system 复制，作为**辅助**方向证据；#1–#6 / #8 / #9 的 v2 协议数为权威。#11 提供 §6.3 scope condition。#12 是附录 sanity（per-instance 训练，对 SAITS / BRITS 不公）。#13–#15 是 P1 reviewer-defense 实验：预训练 SAITS 替代 imputer 对照（§4.4 / 附录 C）、Chronos 跨 foundation mini-frontier（§6.4）、EnKF 已知动力学上界（§6.5 / 附录 B）。
 
 ### B.3 聚合脚本
 

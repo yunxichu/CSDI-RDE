@@ -629,8 +629,9 @@ characterized; raw-patch and Panda-token distance to clean explains the
 entrance band, while floor-band survival is informed by but not reducible to
 those distances. We do not claim universality across all foundation
 forecasters; Panda-72M is the headline. Chronos is reported on the L63
-sparsity line as cross-foundation-model evidence (§3.2), but TimesFM /
-Lag-Llama are not evaluated.
+sparsity line as cross-foundation observation (§6.4) — Chronos sits at
+a low-VPT plateau and does not exhibit Panda's transition shape — and
+TimesFM / Lag-Llama are not evaluated.
 
 ### 6.3 Scope conditions
 
@@ -796,7 +797,7 @@ repository root.
 | 11 | MG / Chua scope-boundary cases | Mackey-Glass, Chua | S0–S6 | same as #10 | 5 | `pt_{mg,chua}_*_5seed.json` | `deliverable/figures_isolation/` (boundary subset) |
 | 12 | Alt-imputer per-instance sanity | L63 | SP65 | linear, SAITS, BRITS, CSDI | 5 | `panda_altimputer_l63sp65_partial_5seed.json` | log-only; Appendix E sanity |
 | 13 | **Pretrained alt-imputer (P1.1 + P1.5 cross-system)** | L63, L96 N=20 | L63 SP65 + SP82, L96 SP82 | linear, SAITS-pretrained, CSDI | 10 | `panda_altimputer_l63_sp65_sp82_pretrained_10seed_chunked.json`, `panda_altimputer_l96_sp82_pretrained_10seed.json` | §4.4 + Appendix C |
-| 14 | **Chronos mini-frontier (P1.2)** | L63 | SP55, SP65, SP75, SP82 | linear, CSDI (forecaster: Chronos, `pred_len ∈ {64, 128}`) | 5 | `chronos_frontier_l63_chronos_l63_sp55_sp82_5seed.json`, `..._5seed_pl64.json` | §3.2 / §6.4 cross-foundation observation; pred_len=64 confirms negative is not an artefact of Chronos OOD horizon |
+| 14 | **Chronos mini-frontier (P1.2)** | L63 | SP55, SP65, SP75, SP82 | linear, CSDI (forecaster: Chronos, `pred_len ∈ {64, 128}`) | 5 | `chronos_frontier_l63_chronos_l63_sp55_sp82_5seed.json`, `..._5seed_pl64.json` | §6.4 cross-foundation observation; pred_len=64 confirms negative is not an artefact of Chronos OOD horizon |
 | 15 | **EnKF known-dynamics upper bound (P1.3)** | L63 | SP55–SP82, NO020, NO050 | EnKF (true vector field, 100 members) | 5 | `enkf_l63_enkf_l63_v2_5seed.json` | §6.5 / Appendix B reference |
 
 Items 1–9 are the patched-protocol locked numbers cited in §3 / §4 / §6.
@@ -807,7 +808,7 @@ are authoritative. Item 11 supplies §6.3 scope conditions. Item 12 is
 Appendix E sanity (per-instance training, biased against SAITS / BRITS by
 design). Items 13–15 are the P1 reviewer-defense experiments: pretrained
 SAITS alt-imputer comparison including the L96 survival replication
-(§4.4 / Appendix C), Chronos cross-foundation mini-frontier (§3.2 / §6.4),
+(§4.4 / Appendix C), Chronos cross-foundation mini-frontier (§6.4),
 and EnKF known-dynamics upper bound
 (§6.5 / Appendix B).
 

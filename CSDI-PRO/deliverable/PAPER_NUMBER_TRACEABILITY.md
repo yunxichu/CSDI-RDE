@@ -2,7 +2,7 @@
 
 Every quantitative claim in **Abstract / §1 / §3 / §4 / §6.4** of
 `paper_draft_en.md` traced to its source JSON or figure markdown. Built
-in the submission-prep QA pass; commit at this freeze: `bd2ccc6`.
+in the submission-prep QA pass; commit at this freeze: `290e38b`.
 
 **Use.** Before any future numerical edit to the paper, look up the
 number here and update the source as well — never edit the paper number
