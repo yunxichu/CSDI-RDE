@@ -109,7 +109,7 @@ v2 corruption grid 把稀疏度与观测噪声解耦。纯稀疏度（$\sigma = 
 
 矩阵回答一个 reviewer 关键问题：Panda 失败是因为 ambient 基础模型本质不适合混沌，还是因为送给 Panda 的 corrupted context 本身就是个糟糕的 forecasting 对象？
 
-答案是后者，但带一个转折：CSDI **经常**救回 Panda。在 L96 N=20 S4（旧 5-seed S0–S6 协议）：`CSDI → Panda` 把 mean VPT 从 0.52 提升到 3.60，$\Pr(\mathrm{VPT}>0.5)$ 从 60% 升到 100%，paired-bootstrap 增益 +3.07 Λ，CI [+0.57, +6.45]。L96 N=10 S4 增益 +1.11 [+0.08, +2.22]。L63 S2 增益 +0.82 [+0.32, +1.37]。Rössler 绝对 VPT 较低但 CSDI 方向稳定为正，DeepEDM 上尤其明显。
+答案是后者。Cell 级别的权威证据来自 §3.2 与 §4.4 的 v2 协议数（10-seed Figure 1 grid；30-seed L96 SP82 alt-imputer）；一个更粗的 5-seed S0–S6 隔离扫描（旧 `make_sparse_noisy` corruption 流水线，Figure 2）跨 L63 / L96 / Rössler / Kuramoto 复制 direction-of-effect，详细数字见附录 B。
 
 矩阵把 DeepEDM 在主文中的角色锁定到一个硬事实：在 L96 N=20 v2 cross-system 复制中，**DeepEDM 是 SP55–SP82 transition band 上每个 cell 都拿到严格正 paired CSDI − linear CI 的唯一 forecaster**，SP82 处 +0.43、[+0.29, +0.57]。在同一 band 上，Panda mean 被极少数 lucky linear seed 主导（§4.3），所以高维下最干净的 cross-system CSDI − linear 证据走的是延迟坐标通道而非 ambient 通道。这正是 DeepEDM 留在主文而不进附录的原因，但**不**过度主张其支配性：在低维 cell（如 L63 SP65）上 `CSDI → Panda` 才是绝对 VPT 最强的 cell，§3.2 / §4.4 主张并不依赖 DeepEDM。
 
@@ -277,20 +277,40 @@ CI 在 mean 上为 95% bootstrap，在 survival probability 上为 Wilson 95%。
 
 ### 6.6 真实传感器 case study：Jena Climate（杠杆的边界）
 
-为在真实多变量传感器流上压力测试 §4.4 的"corpus-pretrained 结构化 imputation 是 lever"主张，我们在公开的 Jena Climate 2009–2016 数据集（14 个数值大气特征，10 分钟采样，下采样到小时；train 2009–2014, val 2015, test 2016，详见附录 C.2）上跑同一稀疏-context-fill 协议。Forecaster：Chronos-bolt-small（Jena 不在 Panda 的混沌预训领域）。Imputer：linear 与 SAITS-pretrained-on-Jena（在 train split 上预训，val MAE 0.62 z-units）。10 seeds × {SP55, SP65, SP75, SP82}，$n_{ctx} = 512$ 小时，$pred_{len} = 64$ 小时。度量：normalized valid horizon vh@τ —— 跨 z-scored 特征的 per-step RMSE 保持 ≤ τ 的最大 lead-step。
+为在真实多变量传感器流上压力测试 §4.4 的"corpus-pretrained 结构化 imputation 是 lever"主张，我们在公开的 Jena Climate 2009–2016 数据集（14 个数值大气特征，10 分钟采样，下采样到小时；train 2009–2014, val 2015, test 2016，详见附录 C.2）上跑同一稀疏-context-fill 协议。我们额外纳入：(a) **clean-context 上界**（不 corrupt，ctx_true → forecaster 直接），作为任何 imputer-then-forecaster 路径能希望达到的天花板；(b) **跨 forecaster 控制**（Chronos-bolt-small *和* Panda-72M），用以区分"imputation 轴"效应与 forecaster-specific 弱点。Imputer：linear 与 SAITS-pretrained-on-Jena（在 train split 上预训，val MAE 0.62 z-units）。10 seeds × {SP55, SP65, SP75, SP82}，$n_{ctx} = 512$ 小时，$pred_{len} = 64$ 小时。度量：normalized valid horizon vh@τ —— 跨 14 个 z-scored 特征的 per-step RMSE 保持 ≤ τ 的最大 lead-step。
 
-| Cell | SP55 vh@1.0 mean | SP65 | SP75 | SP82 |
-|:--|:-:|:-:|:-:|:-:|
-| `linear → Chronos` | 51.1 | 50.9 | 48.5 | 50.9 |
-| `SAITS-pretrained → Chronos` | 34.4 | 32.1 | 27.5 | 27.3 |
+**Clean-context 上界与跨 forecaster.**
 
-Paired-bootstrap on means（5000 resamples，$n = 10$，每个 cell）：SAITS-pretrained − linear 在 vh@1.0 上**严格负**（SP55 −16.7 [−28.2, −5.8]，SP65 −18.8 [−29.7, −8.2]，SP75 −21.0 [−34.3, −8.6]，SP82 −23.6 [−39.2, −8.6]）。linear 在 vh@0.5 上对 SAITS-pretrained 的优势在 SP55–SP65 也是严格正，SP75–SP82 跨 0。
+| | clean | linear | SAITS-pretrained |
+|:--|:-:|:-:|:-:|
+| `→ Chronos`（vh@1.0 mean，SP55–SP82 平均）| 51.1 | 50.6（avg）| 30.3（avg）|
+| `→ Panda`（vh@1.0 mean，SP55–SP82 平均）| 46.4 | 43.2（avg）| 35.2（avg）|
 
-**读.** §4.4 lever **不**适用于 Jena。我们归因于 Jena 强烈的日 / 周周期性：小时尺度天气被确定性日循环主导，linear 插值已经"免费"保留了周期性，Chronos 不论补全细节都能拾取这种周期结构；而在含噪真实语料上 fit 的 SAITS imputer 反而引入 sample-specific artefacts，使填补 context 偏离周期模式、伤害 Chronos。这干净地界定了 §4.4 主张：
+两个事实凸显：
 
-> **Corpus-pretrained-imputation 救援在混沌吸引子主导的系统（L63、L96）上可观察 —— 这种系统中 linear 插值会破坏 foundation forecaster 依赖的局部几何结构。在周期主导的真实数据流（Jena 小时）上，linear 插值本身已经是主导模式的强归纳偏置，learned imputer 反而可能净有害。**
+1. **Linear-fill ≈ clean-context** 在两个 forecaster 上都成立。Chronos 上 per-cell linear-fill mean（51.1 / 50.9 / 48.5 / 50.9）跟踪 clean 上界（51.1）在 1–3 vh-units 之内；Panda 上 linear means（45.7 / 41.8 / 46.0 / 39.2）也保持在 clean 46.4 的 1–7 之内。Linear 插值已经保留了主导日循环的足够信号，让 forecaster 触及 clean-context 天花板。
+2. **SAITS-pretrained 把两个 forecaster 都拖到 clean 之下.** Chronos 上 mean vh@1.0 跌到 27–34；Panda 上跌到 30–39。Paired SAITS − linear 在 vh@1.0 上（5000-resample bootstrap，$n = 10$）：
 
-前沿故事因此是**混沌系统性质**，不是普适的稀疏-context-fill 主张。我们把这一 case study 留在 §6 而不提到 §3，因为它是一个**负向**结果，定义了主张的边界，而 headline 前沿陈述（§3.2）保持不变。来源：`experiments/week1/results/jena_real_sensor_jena_real_sensor_10seed.json`。
+| Cell | Chronos paired Δ（95% CI）| Panda paired Δ（95% CI）|
+|:--|:-:|:-:|
+| SP55 | −16.7 [−28.2, −5.8] ↓ | −6.3 [−16.6, +3.0] ≈ |
+| SP65 | −18.8 [−29.7, −8.2] ↓ | −4.1 [−12.9, +5.2] ≈ |
+| SP75 | −21.0 [−34.3, −8.6] ↓ | −12.0 [−20.0, −4.7] ↓ |
+| SP82 | −23.6 [−39.2, −8.6] ↓ | −9.7 [−19.9, −0.9] ↓ |
+
+SAITS-hurts 模式是**跨 forecaster 的** —— 在 Chronos 上每个 cell 都严格负，在 Panda 上 SP75 与 SP82 严格负、SP55 / SP65 方向负 —— 因此这**不是** Chronos-specific artefact。Clean-context 上界还排除了"forecaster 自身是瓶颈、SAITS 只是恰好在噪声平台一侧"的假设：SAITS-fill 与 clean 的差距在 Chronos 上是 17–24 vh-units、Panda 上是 7–17，远超 seed-to-seed 噪声。
+
+**读.** §4.4 lever **不**适用于 Jena，且机制**不是** "Chronos 太弱"：
+
+> Linear 插值已经在 Jena hourly 上达到 clean-context 预测天花板，因为主导时间结构是确定性日周期性，linear 已经"免费"保留了它。在含噪真实语料上 fit 的 SAITS imputer 引入 sample-specific 高频 artefacts，把填补 context 推**离** forecaster 依赖的周期模式，所以两个 forecaster 都跌破 clean。learned imputer 没有 headroom 可以救援。
+
+这干净地界定了 §4.4 主张：
+
+> **Corpus-pretrained-imputation 救援在混沌吸引子主导的系统（L63、L96）上可观察 —— 这种系统中 linear 插值会破坏 foundation forecaster 依赖的局部几何结构。在周期主导的真实数据流（Jena 小时）上，linear 插值已经达到 clean-context 天花板，corpus-pretrained imputer 在两类 forecaster（broad time-series 的 Chronos 和 chaos-pretrained 的 Panda）上都净有害。**
+
+前沿故事因此是**混沌系统性质**，不是普适的稀疏-context-fill 主张。我们把这一 case study 留在 §6 而不提到 §3，因为它是一个**负向**结果，定义了主张的边界，而 headline 前沿陈述（§3.2）保持不变。来源：
+- Chronos + clean 上界：`experiments/week1/results/jena_real_sensor_jena_chronos_with_clean_upper_10seed.json`
+- Panda 跨 forecaster 控制：`experiments/week1/results/jena_real_sensor_jena_panda_with_clean_upper_10seed.json`
 
 ---
 
@@ -341,13 +361,18 @@ Paired-bootstrap on means（5000 resamples，$n = 10$，每个 cell）：SAITS-p
 | 10 | Cross-system 隔离矩阵（legacy）| L63、L96 N=10/20、Rössler、Kuramoto | S0–S6 | linear/Kalman/CSDI × Panda/DeepEDM（6）| 5 | `pt_{l63,l96_iso_l96N{10,20},rossler_iso_rossler,kuramoto}_*_5seed.json` | `deliverable/figures_isolation/*_heatmap.png`、`*_bars.png`、`*.md` |
 | 11 | MG / Chua scope-boundary | Mackey-Glass、Chua | S0–S6 | 同 #10 | 5 | `pt_{mg,chua}_*_5seed.json` | `deliverable/figures_isolation/`（boundary 子集）|
 | 12 | 替代 imputer C0 sanity（per-instance）| L63 | SP65 | linear、SAITS、BRITS、CSDI | 5 | `panda_altimputer_l63sp65_partial_5seed.json` | log-only；附录 sanity |
-| 13 | **预训练替代 imputer（P1.1 + P1.5 跨系统）** | L63、L96 N=20 | L63 SP65 + SP82、L96 SP82 | linear、SAITS-pretrained、CSDI | 10 | `panda_altimputer_l63_sp65_sp82_pretrained_10seed_chunked.json`、`panda_altimputer_l96_sp82_pretrained_10seed.json` | §4.4 + 附录 C |
+| 13 | **预训练替代 imputer（P1.1 + P1.5 + P2.2 30-seed）** | L63、L96 N=20 | L63 SP65 + SP82、L96 SP82 | linear、SAITS-pretrained、CSDI | L63: 10, L96: **30** | `panda_altimputer_l63_sp65_sp82_pretrained_10seed_chunked.json`、`panda_altimputer_l96_sp82_pretrained_30seed.json` | §4.4 + 附录 C |
 | 14 | **Chronos mini-frontier（P1.2）** | L63 | SP55, SP65, SP75, SP82 | linear、CSDI（forecaster: Chronos，`pred_len ∈ {64, 128}`）| 5 | `chronos_frontier_l63_chronos_l63_sp55_sp82_5seed.json`、`..._5seed_pl64.json` | §6.4 跨 foundation 观察；pred_len=64 确认负面结果不是 Chronos OOD horizon 的 artefact |
 | 15 | **EnKF 已知动力学上界（P1.3）** | L63 | SP55–SP82, NO020, NO050 | EnKF（真实向量场，100 ensemble members）| 5 | `enkf_l63_enkf_l63_v2_5seed.json` | §6.5 / 附录 B 参考 |
+| 16 | **真实传感器 case study（P2.1 + P3.A clean-upper / 跨 forecaster）** | Jena Climate 2009–2016 | SP55, SP65, SP75, SP82（hourly, $n_{ctx}=512$, $pred_{len}=64$）| clean、linear、SAITS-pretrained-on-Jena × {Chronos-bolt-small, Panda-72M} | 10 | `jena_real_sensor_jena_chronos_with_clean_upper_10seed.json`、`jena_real_sensor_jena_panda_with_clean_upper_10seed.json` | §6.6 边界 case study 加 clean-context 上界 + 跨 forecaster 控制；度量为 z-RMSE 单位下的 normalized valid horizon vh@τ |
 
 #1–#9 是 §3 / §4 / §6 引用的 patched 协议锁定数。#10 是用旧 S0–S6 corruption pipeline（`make_sparse_noisy`）的 cross-system 复制，作为**辅助**方向证据；#1–#6 / #8 / #9 的 v2 协议数为权威。#11 提供 §6.3 scope condition。#12 是附录 sanity（per-instance 训练，对 SAITS / BRITS 不公）。#13–#15 是 P1 reviewer-defense 实验：预训练 SAITS 替代 imputer 对照（§4.4 / 附录 C）、Chronos 跨 foundation mini-frontier（§6.4）、EnKF 已知动力学上界（§6.5 / 附录 B）。
 
-### B.3 聚合脚本
+### B.3 复现性说明：CSDI 采样器随机性跨 §3.2 / §4.3 / §4.4
+
+CSDI 是条件分数扩散 imputer；其 `impute(...)` 调用是随机的，所以**相同**的 corruption draws 上独立运行会产生略有不同的 filled context、进而略有不同的 per-seed VPT。§3.2（Figure 1 v2 grid）、§4.3（jitter 控制）、§4.4（替代 imputer）的锁定数来自三次独立 CSDI 推理 run，各自有独立的 sampler seed。L63 SP65 paired CSDI − linear 在 §3.2 / §1 是 +1.64，在 §4.3 是 +1.65，在 §4.4 是 +1.67；三者 CI 重叠，定性结论（L63 入口带 paired CSDI − linear 严格正）稳定。同一 caveat 也适用于 §3.2 L96 SP82 跨系统复制（Panda median 0.50 → 1.05）与 §4.4 L96 SP82 替代 imputer 对照（10 seeds 时 median 0.50 → 1.13；30 seeds 时 0.25 → 1.26）之间的小差：相同 v2 corruption seed scheme、相同 Panda checkpoint，但独立 CSDI 推理 run。我们没有跨实验冻结 diffusion seed；逐 seed VPT 的差（typically < 0.5 Λ）反映 CSDI 采样器随机性，**不是**协议漂移。所有实验都作为独立 JSON 发布（附录 B.2 行 1 / 4 / 13），per-run 数字可重新派生。
+
+### B.4 聚合脚本
 
 每个聚合器以 `python -m experiments.week1.<script>` 运行：
 

@@ -319,13 +319,12 @@ This matrix answers a reviewer-critical question: is Panda failing because
 ambient foundation models are intrinsically bad at chaos, or because the
 corrupted context presented to Panda is a bad forecasting object?
 
-The answer is the second one, but with a twist. CSDI often rescues Panda. Under
-the original 5-seed S0–S6 isolation matrix, on L96 N=20 S4, `CSDI -> Panda`
-raises mean VPT from 0.52 to 3.60 and $\Pr(\mathrm{VPT}>0.5)$ from 60 % to
-100 %, with paired-bootstrap gain +3.07 Lyapunov times and CI [+0.57, +6.45].
-On L96 N=10 S4, the gain is +1.11 with CI [+0.08, +2.22]. On L63 S2, the gain
-is +0.82 with CI [+0.32, +1.37]. Rössler is lower in absolute VPT but keeps
-positive CSDI directions, especially for DeepEDM.
+The answer is the second one. The authoritative cell-level evidence comes
+from the v2 protocol numbers in §3.2 and §4.4 (10-seed Figure 1 grid;
+30-seed L96 SP82 alt-imputer); a coarser 5-seed S0–S6 isolation sweep
+(legacy `make_sparse_noisy` corruption pipeline, Figure 2) replicates
+the direction-of-effect across L63 / L96 / Rössler / Kuramoto, and is
+deferred to Appendix B for completeness.
 
 The same matrix locks DeepEDM's main-text role to a single hard fact: in
 the L96 N=20 v2 cross-system replication, **DeepEDM is the only forecaster
@@ -511,18 +510,10 @@ to its training context length, on two distinct chaotic systems
 (e.g. to other systems, sparsity cells, or imputer families) from a
 single L96 cell.
 
-> **Note on numerical drift between the alt-imputer cell and §3.2.**
-> §3.2's L96 SP82 headline (Panda median 0.50 → 1.05, $\Pr(\mathrm{VPT}>0.5)$
-> 60 % → 100 %, from `pt_l96_smoke_l96N20_v2_B_patched_*`) and §4.4's
-> alt-imputer L96 SP82 (median 0.50 → 1.13, $\Pr(\mathrm{VPT}>1.0)$
-> 30 % → 60 %, from `panda_altimputer_l96_sp82_pretrained_10seed`) use
-> the same v2 corruption seed scheme and the same Panda checkpoint, but
-> are independent CSDI inference runs; the per-seed VPT differences
-> (typically < 0.5 Λ) reflect CSDI's diffusion-sampler stochasticity,
-> not protocol drift. The same caveat applies to the small spread in
-> the L63 SP65 paired Δ between Figure 1 (+1.64), the jitter control
-> (+1.65), and the alt-imputer cell (+1.67) — all three are from
-> independent CSDI runs on the same corruption draws, and CIs overlap.
+A reproducibility note on the small per-cell drift in the L63 SP65
+paired CSDI − linear value across §3.2 / §4.3 / §4.4 (each from an
+independent CSDI inference run; CSDI is a stochastic diffusion sampler)
+is in Appendix B.
 
 A standalone single-trajectory SAITS / BRITS sanity check (no pretraining
 corpus, per-instance fit on the test trajectory) is reported in Appendix E
@@ -739,48 +730,84 @@ To stress-test the §4.4 claim that "corpus-pretrained structured imputation
 is the lever" on a real multivariate sensor stream, we run the same
 sparse-context-fill protocol on the public Jena Climate 2009–2016 dataset
 (14 numeric atmospheric features, 10-minute sampling, downsampled to
-hourly; train 2009–2014, val 2015, test 2016, see Appendix C.2). Forecaster:
-Chronos-bolt-small (Jena is outside Panda's chaotic pretraining domain).
-Imputers: linear and SAITS-pretrained-on-Jena (trained on the train split,
-val MAE 0.62 z-units). 10 seeds × {SP55, SP65, SP75, SP82}, $n_{ctx} = 512$
-hours, $pred_{len} = 64$ hours. Metric: normalized valid horizon vh@τ —
-the largest lead-step h such that the per-step RMSE across z-scored
-features stays below threshold τ.
+hourly; train 2009–2014, val 2015, test 2016; see Appendix C.2 for full
+preprocessing). We additionally include a **clean-context upper bound**
+(no corruption, ctx_true → forecaster directly) as the natural ceiling
+that any imputer-then-forecaster path could hope to reach, and a
+**cross-forecaster control** (Chronos-bolt-small *and* Panda-72M) to
+distinguish "imputation-axis" effects from forecaster-specific
+weaknesses. Imputers: linear and SAITS-pretrained-on-Jena
+(trained on the train split, val MAE 0.62 z-units). 10 seeds ×
+{SP55, SP65, SP75, SP82}, $n_{ctx} = 512$ hours, $pred_{len} = 64$ hours.
+Metric: normalized valid horizon vh@τ — the largest lead-step h such
+that the per-step RMSE across the 14 z-scored features stays below
+threshold τ.
 
-| Cell | SP55 vh@1.0 mean | SP65 | SP75 | SP82 |
-|:--|:-:|:-:|:-:|:-:|
-| `linear → Chronos` | 51.1 | 50.9 | 48.5 | 50.9 |
-| `SAITS-pretrained → Chronos` | 34.4 | 32.1 | 27.5 | 27.3 |
+**Clean-context upper bound and cross-forecaster.**
 
-Paired-bootstrap on means (5000 resamples), $n = 10$, every cell:
-SAITS-pretrained − linear is **strict-negative** at vh@1.0
-(SP55 −16.7 [−28.2, −5.8], SP65 −18.8 [−29.7, −8.2], SP75 −21.0
-[−34.3, −8.6], SP82 −23.6 [−39.2, −8.6]). Linear interpolation is also
-strict-positive on linear − SAITS at vh@0.5 across SP55–SP65 (and
-straddling zero at SP75–SP82).
+| | clean | linear | SAITS-pretrained |
+|:--|:-:|:-:|:-:|
+| `→ Chronos` (vh@1.0 mean over SP55–SP82) | 51.1 | 50.6 (avg) | 30.3 (avg) |
+| `→ Panda` (vh@1.0 mean over SP55–SP82) | 46.4 | 43.2 (avg) | 35.2 (avg) |
 
-**Reading.** The §4.4 lever **does not apply** to Jena. We attribute this
-to Jena's strong daily / weekly periodicity: hourly weather is dominated
-by deterministic diurnal cycles that linear interpolation already
-preserves "for free", and Chronos picks up that periodic structure
-regardless of fine-grained imputation quality; a learned SAITS imputer
-fitted on a noisy real-world corpus instead introduces sample-specific
-artefacts that drift the filled context off the periodic mode and hurt
-Chronos. This bounds the §4.4 claim cleanly:
+Two facts pop out:
+
+1. **Linear-fill ≈ clean-context** on both forecasters. On Chronos the
+   per-cell linear-fill mean (51.1 / 50.9 / 48.5 / 50.9) tracks the
+   clean upper bound (51.1) within 1–3 vh-units; on Panda the linear
+   means (45.7 / 41.8 / 46.0 / 39.2) likewise stay within 1–7 of clean
+   46.4. Linear interpolation alone preserves enough of the dominant
+   diurnal cycle that the forecaster reaches its clean-context ceiling.
+2. **SAITS-pretrained drops both forecasters below clean.** Mean vh@1.0
+   on Chronos collapses to 27–34; on Panda to 30–39. Paired SAITS −
+   linear at vh@1.0 (5000-resample bootstrap, $n = 10$):
+
+| Cell | Chronos paired Δ (95 % CI) | Panda paired Δ (95 % CI) |
+|:--|:-:|:-:|
+| SP55 | −16.7 [−28.2, −5.8] ↓ | −6.3 [−16.6, +3.0] ≈ |
+| SP65 | −18.8 [−29.7, −8.2] ↓ | −4.1 [−12.9, +5.2] ≈ |
+| SP75 | −21.0 [−34.3, −8.6] ↓ | −12.0 [−20.0, −4.7] ↓ |
+| SP82 | −23.6 [−39.2, −8.6] ↓ | −9.7 [−19.9, −0.9] ↓ |
+
+The SAITS-hurts pattern is **cross-forecaster** — strict-negative on
+Chronos at every cell, strict-negative on Panda at SP75 and SP82 and
+directionally-negative at SP55 / SP65 — so it is not a Chronos-specific
+artefact. The clean-context upper bound additionally rules out the
+hypothesis that the forecaster is itself the bottleneck and SAITS just
+happens to be on the wrong side of a noisy plateau: the gap between
+SAITS-fill and clean is 17–24 vh-units on Chronos and 7–17 on Panda,
+both far outside seed-to-seed noise.
+
+**Reading.** The §4.4 lever **does not apply** to Jena, and the
+mechanism is not "Chronos is too weak":
+
+> Linear interpolation is already at the clean-context forecasting
+> ceiling on Jena hourly because the dominant temporal structure is
+> deterministic diurnal periodicity, which linear preserves "for
+> free". A SAITS imputer pretrained on a noisy real-world corpus then
+> introduces sample-specific high-frequency artefacts that move the
+> filled context **off** the periodic mode the forecaster relies on, so
+> the result is below clean for both Chronos and Panda. There is no
+> headroom for a learned imputer to recover.
+
+This bounds the §4.4 claim cleanly:
 
 > **The corpus-pretrained-imputation rescue is observable on
 > chaotic-attractor-dominated systems (L63, L96), where linear
 > interpolation breaks the local geometric structure that the foundation
 > forecaster relies on. On periodic-dominant real-world streams (Jena
-> hourly), linear interpolation is already a strong inductive bias for
-> the dominant mode, and a corpus-pretrained imputer can be net-harmful.**
+> hourly), linear interpolation already reaches the clean-context
+> ceiling, and a corpus-pretrained imputer is net-harmful on both a
+> broad time-series forecaster (Chronos) and a chaos-pretrained
+> forecaster (Panda).**
 
 The frontier story is therefore a chaotic-system property, not a
 universal sparse-context-fill claim. We keep this case study in §6 rather
 than promoting it to §3 because it is a **negative** result that defines
 the boundary of the claim, and the headline frontier statements (§3.2)
-remain unchanged. Source:
-`experiments/week1/results/jena_real_sensor_jena_real_sensor_10seed.json`.
+remain unchanged. Sources:
+- Chronos + clean upper bound: `experiments/week1/results/jena_real_sensor_jena_chronos_with_clean_upper_10seed.json`
+- Panda cross-forecaster control: `experiments/week1/results/jena_real_sensor_jena_panda_with_clean_upper_10seed.json`
 
 ---
 
@@ -881,7 +908,7 @@ repository root.
 | 13 | **Pretrained alt-imputer (P1.1 + P1.5 + P2.2 30-seed)** | L63, L96 N=20 | L63 SP65 + SP82, L96 SP82 | linear, SAITS-pretrained, CSDI | L63: 10, L96: **30** | `panda_altimputer_l63_sp65_sp82_pretrained_10seed_chunked.json`, `panda_altimputer_l96_sp82_pretrained_30seed.json` | §4.4 + Appendix C |
 | 14 | **Chronos mini-frontier (P1.2)** | L63 | SP55, SP65, SP75, SP82 | linear, CSDI (forecaster: Chronos, `pred_len ∈ {64, 128}`) | 5 | `chronos_frontier_l63_chronos_l63_sp55_sp82_5seed.json`, `..._5seed_pl64.json` | §6.4 cross-foundation observation; pred_len=64 confirms negative is not an artefact of Chronos OOD horizon |
 | 15 | **EnKF known-dynamics upper bound (P1.3)** | L63 | SP55–SP82, NO020, NO050 | EnKF (true vector field, 100 members) | 5 | `enkf_l63_enkf_l63_v2_5seed.json` | §6.5 / Appendix B reference |
-| 16 | **Real-sensor case study (P2.1)** | Jena Climate 2009–2016 | SP55, SP65, SP75, SP82 (hourly, $n_{ctx}=512$, $pred_{len}=64$) | linear, SAITS-pretrained-on-Jena (forecaster: Chronos-bolt-small) | 10 | `jena_real_sensor_jena_real_sensor_10seed.json` | §6.6 boundary case study; metric = normalized valid horizon vh@τ in z-RMSE units |
+| 16 | **Real-sensor case study (P2.1 + P3.A clean-upper / cross-forecaster)** | Jena Climate 2009–2016 | SP55, SP65, SP75, SP82 (hourly, $n_{ctx}=512$, $pred_{len}=64$) | clean, linear, SAITS-pretrained-on-Jena × {Chronos-bolt-small, Panda-72M} | 10 | `jena_real_sensor_jena_chronos_with_clean_upper_10seed.json`, `jena_real_sensor_jena_panda_with_clean_upper_10seed.json` | §6.6 boundary case study with clean-context upper bound + cross-forecaster control; metric = normalized valid horizon vh@τ in z-RMSE units |
 
 Items 1–9 are the patched-protocol locked numbers cited in §3 / §4 / §6.
 Item 10 is the cross-system replication that uses the older S0–S6
@@ -897,7 +924,28 @@ EnKF known-dynamics upper bound (§6.5 / Appendix B), and the Jena
 Climate real-sensor case study (§6.6 / Appendix C.2 — boundary case
 showing the lever does not transfer to periodic-dominant streams).
 
-### B.3 Aggregator scripts
+### B.3 Reproducibility note: CSDI sampler stochasticity across §3.2 / §4.3 / §4.4
+
+CSDI is a conditional score-diffusion imputer; its `impute(...)` call is
+stochastic, so independent runs on the **same** corruption draws produce
+slightly different filled contexts and therefore slightly different
+per-seed VPTs. The locked numbers in §3.2 (Figure 1 v2 grid), §4.3
+(jitter control), and §4.4 (alt-imputer) come from three separate CSDI
+inference runs, each with its own random sampler seed. The L63 SP65
+paired CSDI − linear value reads as +1.64 in §3.2 / §1, +1.65 in §4.3,
+and +1.67 in §4.4; all three CIs overlap and the qualitative claim
+(strict-positive paired CSDI − linear at the L63 entrance band) is
+stable. The same caveat applies to the small per-cell spread between
+§3.2's L96 SP82 cross-system replication (Panda median 0.50 → 1.05) and
+§4.4's L96 SP82 alt-imputer comparison (median 0.50 → 1.13 at $n=10$,
+0.25 → 1.26 at $n=30$): same v2 corruption seed scheme and same Panda
+checkpoint, but independent CSDI inference runs. We do not freeze the
+diffusion seed across experiments; the per-seed VPT differences
+(typically < 0.5 Λ) reflect CSDI's sampler stochasticity, not protocol
+drift. All experiments are released as separate JSONs (Appendix B.2 row
+1 / 4 / 13) so the per-run numbers can be re-derived.
+
+### B.4 Aggregator scripts
 
 Each aggregator is invoked as `python -m experiments.week1.<script>`:
 

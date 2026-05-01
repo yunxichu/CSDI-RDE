@@ -107,10 +107,12 @@ def main() -> None:
     ap.add_argument("--seed_offset", type=int, default=0)
     ap.add_argument("--n_ctx", type=int, default=512)
     ap.add_argument("--pred_len", type=int, default=64)
-    ap.add_argument("--saits_ckpt", required=True)
+    ap.add_argument("--saits_ckpt", default=None,
+                    help="Path to SAITS-Jena PyPOTS ckpt; required only for the saits_pretrained cell")
     ap.add_argument("--cells", nargs="+", default=["linear", "saits_pretrained"])
     ap.add_argument("--chronos_model", default="amazon/chronos-bolt-small")
     ap.add_argument("--device", default="cuda")
+    ap.add_argument("--forecaster", default="chronos", choices=["chronos", "panda"])
     ap.add_argument("--tag", default="jena_real_sensor_pilot_3seed")
     ap.add_argument("--threshold", type=float, default=1.0,
                     help="z-score RMSE threshold for valid-horizon")
@@ -134,7 +136,19 @@ def main() -> None:
     configs = load_named_configs(args.configs)
     print(f"[jena-pilot] cells: {args.cells}  configs: {[c['name'] for c in configs]}")
 
-    from baselines.chronos_adapter import chronos_forecast
+    if args.forecaster == "chronos":
+        from baselines.chronos_adapter import chronos_forecast as forecast_fn
+        def _do_forecast(filled):
+            return forecast_fn(filled, pred_len=args.pred_len,
+                                model_name=args.chronos_model, device=args.device)
+        print(f"[jena-pilot] forecaster: Chronos ({args.chronos_model})")
+    elif args.forecaster == "panda":
+        from baselines.panda_adapter import panda_forecast as forecast_fn
+        def _do_forecast(filled):
+            return forecast_fn(filled, pred_len=args.pred_len, device=args.device)
+        print(f"[jena-pilot] forecaster: Panda-72M (chaos-pretrained)")
+    else:
+        raise ValueError(args.forecaster)
     saits_cache: dict = {}
 
     records: list[dict[str, Any]] = []
@@ -169,7 +183,9 @@ def main() -> None:
             for cell in args.cells:
                 t0 = time.time()
                 try:
-                    if cell == "linear":
+                    if cell == "clean":
+                        filled = ctx_true.astype(np.float32)
+                    elif cell == "linear":
                         filled = cached_fills.get("linear")
                         if filled is None:
                             filled = impute(observed, kind="linear").astype(np.float32)
@@ -184,9 +200,10 @@ def main() -> None:
                             cached_fills["saits_pretrained"] = filled
                     else:
                         raise ValueError(cell)
-                    forecast = chronos_forecast(filled, pred_len=args.pred_len,
-                                                  model_name=args.chronos_model,
-                                                  device=args.device)
+                    forecast = _do_forecast(filled)
+                    # Some forecasters (Panda) pin output to their native
+                    # pred_len; trim to the eval horizon.
+                    forecast = np.asarray(forecast)[: args.pred_len]
                     err = None
                 except Exception as e:
                     forecast = None; err = str(e)[:200]
