@@ -340,9 +340,14 @@ claims do not rest on DeepEDM.
 
 ### 4.2 Regime-Aware Mechanism: OOD in the Entrance Band, Mixed at the Floor
 
-We compare clean, linear-fill, and CSDI-fill contexts under the same protocol
-as Figure 1. At L63 SP65, CSDI is closer to clean than linear interpolation in
-all three raw-patch v2 metrics:
+We compare clean, linear-fill, CSDI-fill, and SAITS-pretrained-fill contexts
+under the same protocol as Figure 1. The §4.4 alt-imputer comparison
+shows that both CSDI and corpus-pretrained SAITS rescue Panda; this
+section asks whether they share the same Panda-internal mechanism — i.e.
+whether **corpus-pretrained structured imputation in general** reduces
+token distance to clean, or whether the reduction is CSDI-specific.
+
+**Raw-patch (L63 SP65, 10 seeds, v2 protocol).**
 
 | Metric | Linear/CSDI W₁-to-clean ratio |
 |:--|--:|
@@ -350,19 +355,59 @@ all three raw-patch v2 metrics:
 | lag-1 autocorrelation | 15.02 |
 | mid-frequency power | 33.71 |
 
-The same pattern appears inside Panda. At SP65, the linear/CSDI paired-distance
-ratios to clean are 16.77 at the patch stage, 12.84 after the DynamicsEmbedder,
-14.02 after the encoder, and 21.85 in the pooled latent. This supports a
-straightforward entrance-band mechanism: corruption-aware imputation reduces
-raw / token OOD and restores forecastability.
+**Panda-internal token-space (L63, 5 seeds, v2 protocol, 4-cell paired
+distance to the matched clean context, mean L2 across tokens).**
 
-At L63 SP82, Panda-space distances still favor CSDI, but less dramatically
-(linear/CSDI ratios 1.63–2.43). Raw metrics are partly mixed: local stdev and
-mid-frequency power favor CSDI (3.54× and 5.19×), while lag-1 autocorrelation
-favors linear (0.62×). CSDI still improves survival, but the floor-band
-mechanism is no longer captured by a single scalar fidelity metric. This is
-the mechanism boundary we keep in the main text — and the reason the paper's
-mechanism claim is regime-aware rather than a single tokenizer-OOD line.
+| | SP65 linear / SAITS / CSDI | SP82 linear / SAITS / CSDI |
+|:--|:--:|:--:|
+| patch | 0.51 / 0.18 / 0.03 | 1.61 / 0.40 / 0.71 |
+| embedder | 103 / 52 / 8.6 | 216 / 88 / 94 |
+| encoder | 64 / 31 / 5.4 | 120 / 53 / 76 |
+| pooled | 9.2 / 3.3 / 0.51 | 14.3 / 5.5 / 6.8 |
+
+| Stage | SP65 linear/CSDI ratio | SP65 linear/SAITS | SP82 linear/CSDI | SP82 linear/SAITS | **SP82 SAITS/CSDI** |
+|:--|:-:|:-:|:-:|:-:|:-:|
+| patch | 14.9 | 2.8 | 2.3 | 4.0 | **0.57** |
+| embedder | 12.0 | 2.0 | 2.3 | 2.4 | **0.95** |
+| encoder | 11.8 | 2.1 | 1.6 | 2.3 | **0.70** |
+| pooled | 18.2 | 2.8 | 2.1 | 2.6 | **0.81** |
+
+Two regime-specific facts emerge.
+
+**Entrance band (SP65).** Both CSDI and SAITS-pretrained move tokens
+toward clean, by different magnitudes: CSDI achieves ~12× reduction
+relative to linear at every Panda stage, SAITS achieves ~2× reduction.
+The mechanism "**corpus-pretrained structured imputation reduces Panda-
+token distance to clean**" is confirmed for **both** imputers — not
+CSDI-specific. CSDI's larger reduction tracks its small paired VPT
+advantage at this cell (CSDI − SAITS = +0.41 Λ, §4.4): more reduction →
+more rescue.
+
+**Floor band (SP82).** Both imputers still reduce token distance vs
+linear, but the rank order between SAITS-pretrained and CSDI **flips**:
+SAITS produces a *smaller* token distance to clean than CSDI at every
+stage (SAITS/CSDI ratio 0.57–0.95). On §4.4 forecasting at this same
+cell, however, CSDI and SAITS-pretrained are statistically
+indistinguishable (paired CSDI − SAITS = +0.06 Λ, CI [−0.31, +0.59]).
+**Token distance is therefore informative — both corpus-pretrained
+imputers reduce it vs linear and both rescue Panda — but it does not
+order SAITS-vs-CSDI at the floor band**, where the smaller-token-distance
+imputer (SAITS) is not the better-VPT imputer. This is direct evidence
+that the residual SP82 forecastability difference between corpus-
+pretrained imputers is not captured by encoder-side distance, supporting
+the §6.4 hypothesis that decoder-side latent dynamics matter near the
+floor (which we leave instrumentation of to camera-ready).
+
+Raw metrics confirm the boundary: at SP82, local stdev and mid-frequency
+power favor CSDI (3.54× and 5.19×), while lag-1 autocorrelation favors
+linear (0.62×). The mechanism claim therefore reads:
+
+> **At the entrance band, corpus-pretrained structured imputation
+> reduces raw / Panda-token OOD distance to clean, and the magnitude
+> of reduction tracks rescue strength. At the floor band, both
+> corpus-pretrained imputers reduce token distance enough to rescue,
+> and the rescue saturates: which one wins on VPT is no longer
+> ordered by encoder-side token distance.**
 
 ### 4.3 Jitter and Shuffled-Residual Controls (Cell-Wise Observations)
 
@@ -900,7 +945,7 @@ repository root.
 | 5 | L96 N=20 jitter / residual | L96 N=20 | SP65, SP82 | same as #4 | 5 | `panda_jitter_control_l96N20_sp65_sp82_v2protocol_patched_5seed.json` | same-prefix `.md` |
 | 6 | Rössler jitter / residual | Rössler | SP65, SP82 | same as #4 | 5 | `panda_jitter_control_rossler_sp65_sp82_v2protocol_patched_5seed.json` | same-prefix `.md` |
 | 7 | Cross-system jitter milestone | L63+L96+Rössler | SP65, SP82 | from #4–#6 | 5–10 | merge of #4–#6 | `deliverable/figures_jitter/jitter_milestone_summary.md`, `jitter_milestone_SP{65,82}.png` |
-| 8 | Panda embedding OOD diagnostic | L63 | SP65, SP82 | clean / linear / CSDI; stages: patch / embed / encoder / pooled | 5 | `panda_embedding_ood_l63_sp65_sp82_dt025_v2protocol_patched_5seed.json` | `experiments/week1/figures/panda_embedding_ood_l63_sp65_sp82_dt025_v2protocol_patched_5seed.md` and `_bars.png` |
+| 8 | Panda embedding OOD diagnostic (with SAITS arm, P3.B1) | L63 | SP65, SP82 | clean / linear / **SAITS-pretrained** / CSDI; stages: patch / embed / encoder / pooled | 5 | `panda_embedding_ood_l63_sp65_sp82_dt025_v2protocol_patched_with_saits_5seed.json` (current §4.2 source); legacy 3-cell file `..._5seed.json` retained for the original Figure 2 PCA scatter | `..._with_saits_5seed.md` and `_bars.png`; PCA scatter figures use the legacy 3-cell file |
 | 9 | Raw-patch diagnostic v2 | L63 | SP65, SP82 | clean / linear / CSDI; metrics: local stdev, lag-1 ρ, mid-freq power | 10 | `l63_patch_ood_v2_v2protocol_sp65_sp82_10seed.json` | `experiments/week1/figures/l63_patch_ood_v2_v2protocol_metrics_SP{65,82}.png` |
 | 10 | Cross-system isolation matrix (legacy) | L63, L96 N=10/20, Rössler, Kuramoto | S0–S6 | linear/Kalman/CSDI × Panda/DeepEDM (6) | 5 | `pt_{l63,l96_iso_l96N{10,20},rossler_iso_rossler,kuramoto}_*_5seed.json` | `deliverable/figures_isolation/*_heatmap.png`, `*_bars.png`, `*.md` |
 | 11 | MG / Chua scope-boundary cases | Mackey-Glass, Chua | S0–S6 | same as #10 | 5 | `pt_{mg,chua}_*_5seed.json` | `deliverable/figures_isolation/` (boundary subset) |

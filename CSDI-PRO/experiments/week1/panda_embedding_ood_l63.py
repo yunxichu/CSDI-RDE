@@ -66,8 +66,30 @@ SCENARIOS = [
     {"name": "SP65", "sparsity": 0.65, "noise_std_frac": 0.0},
     {"name": "SP82", "sparsity": 0.82, "noise_std_frac": 0.0},
 ]
-CONTEXTS = ("clean", "linear", "csdi")
+CONTEXTS = ("clean", "linear", "csdi")  # extended to include "saits_pretrained" when --saits_ckpt is set
 STAGES = ("patch", "embed", "encoder", "pooled")
+_SAITS_CACHE: dict = {}
+
+
+def _saits_pretrained_impute(observed_2d: np.ndarray, n_features: int,
+                              n_steps: int, ckpt_path: str,
+                              train_n_steps: int = 128) -> np.ndarray:
+    """Chunked SAITS-pretrained inference matching alt-imputer P1.1 protocol."""
+    from pypots.imputation import SAITS
+    if n_steps % train_n_steps != 0:
+        raise ValueError(f"n_steps {n_steps} must be divisible by {train_n_steps}")
+    key = (train_n_steps, n_features, ckpt_path)
+    saits = _SAITS_CACHE.get(key)
+    if saits is None:
+        saits = SAITS(n_steps=train_n_steps, n_features=n_features,
+                       n_layers=2, d_model=64, n_heads=4, d_k=16, d_v=16, d_ffn=128,
+                       batch_size=64, epochs=0, verbose=False, device="cuda")
+        saits.load(ckpt_path)
+        _SAITS_CACHE[key] = saits
+    n_chunks = n_steps // train_n_steps
+    chunks = observed_2d.reshape(n_chunks, train_n_steps, n_features).astype(np.float32)
+    imp = saits.impute({"X": chunks})
+    return np.asarray(imp).reshape(n_chunks, train_n_steps, n_features).reshape(n_steps, n_features).astype(np.float32)
 
 
 def _as_jsonable(x: Any) -> Any:
@@ -172,7 +194,8 @@ def _nearest_clean_l2(clean: np.ndarray, test: np.ndarray, max_clean: int = 2048
 
 
 def _make_contexts(seed: int, sc: dict[str, Any], attr_std: float,
-                   n_ctx: int, dt: float) -> tuple[dict[str, np.ndarray], dict[str, Any]]:
+                   n_ctx: int, dt: float,
+                   saits_ckpt: str | None = None) -> tuple[dict[str, np.ndarray], dict[str, Any]]:
     # v2-protocol-aligned: same mask seed scheme as phase_transition_grid_l63_v2
     # so this diagnostic measures the same scenarios as Figure 1.
     GRID_INDEX = {"SP65": 4, "SP82": 6}
@@ -187,22 +210,30 @@ def _make_contexts(seed: int, sc: dict[str, Any], attr_std: float,
         patch_length=16,
     )
     observed = obs_res.observed
-    return {
+    contexts = {
         "clean": traj,
         "linear": impute(observed, kind="linear").astype(np.float32),
         "csdi": impute(
             observed, kind="csdi",
             sigma_override=float(sc["noise_std_frac"]) * attr_std,
         ).astype(np.float32),
-    }, obs_res.metadata
+    }
+    if saits_ckpt is not None:
+        contexts["saits_pretrained"] = _saits_pretrained_impute(
+            observed, n_features=traj.shape[1], n_steps=n_ctx,
+            ckpt_path=saits_ckpt,
+        )
+    return contexts, obs_res.metadata
 
 
 def _aggregate(records: list[dict[str, Any]]) -> dict[str, Any]:
     by_scenario: dict[str, Any] = {}
+    # Discover all imputation cells dynamically (linear, csdi, optionally saits_pretrained)
+    cells = sorted({c for r in records for c in r["distances"].keys()})
     for sc in sorted({r["scenario"] for r in records}):
         sub = [r for r in records if r["scenario"] == sc]
         out_sc: dict[str, Any] = {}
-        for ctx in ("linear", "csdi"):
+        for ctx in cells:
             out_ctx: dict[str, Any] = {}
             for stage in STAGES:
                 vals = np.concatenate([np.asarray(r["distances"][ctx][stage]["paired_l2"]) for r in sub])
@@ -223,10 +254,16 @@ def _aggregate(records: list[dict[str, Any]]) -> dict[str, Any]:
         for stage in STAGES:
             lin = out_sc["linear"][stage]["paired_l2_mean"]
             csdi = out_sc["csdi"][stage]["paired_l2_mean"]
-            ratios[stage] = {
+            stage_ratios = {
                 "paired_l2_linear_over_csdi": float(lin / (csdi + 1e-12)),
                 "mechanism_support": bool(lin > csdi),
             }
+            if "saits_pretrained" in out_sc:
+                saits = out_sc["saits_pretrained"][stage]["paired_l2_mean"]
+                stage_ratios["paired_l2_linear_over_saits"] = float(lin / (saits + 1e-12))
+                stage_ratios["paired_l2_saits_over_csdi"] = float(saits / (csdi + 1e-12))
+                stage_ratios["mechanism_support_saits"] = bool(lin > saits)
+            ratios[stage] = stage_ratios
         out_sc["ratios"] = ratios
         by_scenario[sc] = out_sc
     return by_scenario
@@ -328,7 +365,11 @@ def main() -> None:
     ap.add_argument("--dt", type=float, default=0.025)
     ap.add_argument("--device", default="cuda")
     ap.add_argument("--out_tag", default="l63_sp65_sp82_5seed")
+    ap.add_argument("--saits_ckpt", default=None,
+                    help="optional path to pretrained-SAITS-on-L63 PyPOTS .pypots ckpt; "
+                         "if set, adds a 4th cell 'saits_pretrained'")
     args = ap.parse_args()
+    cells = ("linear", "csdi") + (("saits_pretrained",) if args.saits_ckpt else ())
 
     device = torch.device(args.device if torch.cuda.is_available() and args.device.startswith("cuda") else "cpu")
 
@@ -354,10 +395,11 @@ def main() -> None:
     for sc in SCENARIOS:
         print(f"\n=== {sc['name']}  s={sc['sparsity']} sigma={sc['noise_std_frac']} ===")
         for seed in seeds:
-            contexts, meta = _make_contexts(seed, sc, attr_std, args.n_ctx, args.dt)
+            contexts, meta = _make_contexts(seed, sc, attr_std, args.n_ctx, args.dt,
+                                              saits_ckpt=args.saits_ckpt)
             reps = _panda_representations(model, contexts, device)
-            distances: dict[str, dict[str, Any]] = {"linear": {}, "csdi": {}}
-            for ctx in ("linear", "csdi"):
+            distances: dict[str, dict[str, Any]] = {c: {} for c in cells}
+            for ctx in cells:
                 for stage in STAGES:
                     distances[ctx][stage] = {
                         "paired_l2": _paired_l2(reps["clean"][stage], reps[ctx][stage]),
@@ -366,7 +408,8 @@ def main() -> None:
                     }
             for stage in ("embed", "encoder"):
                 for ctx in CONTEXTS:
-                    pca_reps[sc["name"]][stage][ctx].append(reps[ctx][stage])
+                    if ctx in reps:
+                        pca_reps[sc["name"]][stage][ctx].append(reps[ctx][stage])
 
             rec = {
                 "scenario": sc["name"],
@@ -379,10 +422,14 @@ def main() -> None:
             records.append(rec)
             lin_enc = np.mean(distances["linear"]["encoder"]["paired_l2"])
             csdi_enc = np.mean(distances["csdi"]["encoder"]["paired_l2"])
+            extra = ""
+            if "saits_pretrained" in distances:
+                saits_enc = np.mean(distances["saits_pretrained"]["encoder"]["paired_l2"])
+                extra = f" saits={saits_enc:.4f} (linear/saits={lin_enc/(saits_enc+1e-12):.3f})"
             print(
                 f"  seed={seed} keep={meta.get('keep_frac', meta.get('keep_fraction', np.nan)):.3f} "
                 f"encoder L2: linear={lin_enc:.4f} csdi={csdi_enc:.4f} "
-                f"ratio={lin_enc / (csdi_enc + 1e-12):.3f}"
+                f"ratio={lin_enc / (csdi_enc + 1e-12):.3f}{extra}"
             )
 
     summary = _aggregate(records)
