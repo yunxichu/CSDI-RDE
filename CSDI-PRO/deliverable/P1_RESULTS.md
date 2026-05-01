@@ -80,26 +80,61 @@ reproducible:
 (All paired CIs cross zero or are very tight near zero. Pr(VPT > 1.0 Λ)
 is 0–20 % across all cells × cells.)
 
+**Follow-up at Chronos's native horizon.** We repeated the same SP55–SP82
+mini-frontier at `pred_len = 64`, because the Chronos library warns that
+`prediction_length > 64` is out of distribution. The result is statistically
+the same as `pred_len = 128`: Chronos remains at mean VPT 0.34–0.50,
+Pr(VPT>1.0) ≤ 20 %, and CSDI − linear CIs stay at or near zero
+(SP55 +0.01, SP65 −0.00, SP75 −0.11, SP82 +0.05). Thus the negative result
+is not an artefact of using a longer-than-trained horizon.
+
 **Reading.** Two signals here:
 
-1. The frontier **shape** does not transfer cleanly to Chronos at our
-   `pred_len = 128` setting; Chronos itself is a weak forecaster on L63
-   at this horizon (the Chronos library itself warns
-   `prediction_length > 64` is out of its training range).
-2. The CSDI rescue is **Panda-specific** at our pred_len, since Chronos
+1. The frontier **shape** does not transfer cleanly to Chronos at either
+   `pred_len = 128` or `pred_len = 64`; Chronos itself is a weak forecaster
+   on L63 under this evaluation.
+2. The CSDI rescue is **Panda-specific** in the tested setup, since Chronos
    is already near a low-VPT plateau where the rescue lever can't move
    it further.
 
-We therefore **do not claim** "the frontier is foundation-model-general
-at our pred_len". The honest §3 / §6 framing is: the empirical frontier
-is established for Panda; cross-foundation-model evidence shows that
-Chronos behaves differently in absolute terms — both forecasters depend
-on the corrupted context, but only Panda has the dynamic range in which
-CSDI's rescue is observable. Chronos's robustness or fragility under
-sparse-observation context-filling at horizons matched to its training
-distribution (≤ 64) is left for future work.
+We therefore **do not claim** "the frontier is foundation-model-general".
+The honest §3 / §6 framing is: the empirical frontier is established for
+Panda; cross-foundation-model evidence shows that Chronos behaves differently
+in absolute terms — both forecasters depend on the corrupted context, but
+only Panda has the dynamic range in which CSDI's rescue is observable.
 
-**Files.** `experiments/week1/results/chronos_frontier_l63_chronos_l63_sp55_sp82_5seed.json`.
+**Files.**
+- `experiments/week1/results/chronos_frontier_l63_chronos_l63_sp55_sp82_5seed.json`
+- `experiments/week1/results/chronos_frontier_l63_chronos_l63_sp55_sp82_5seed_pl64.json`
+
+## P1.5 — pretrained SAITS on L96 N=20
+
+**Setup.** SAITS was pretrained on the matching L96 N=20 corpus
+`experiments/week2_modules/data/lorenz96_clean_512k_L128_N20.npz`
+(64K length-128 windows used for training, 20 channels, same v2-grid
+missingness). 30 epochs, batch 64, best epoch 27. Validation MAE on missing
+entries = 1.07 (= 0.294 × L96 attractor_std). Checkpoint:
+`experiments/week2_modules/ckpts/saits_l96_n20_pretrained/20260501_T210242/SAITS.pypots`.
+
+**Headline (L96 SP82, 10 seeds).**
+
+| Cell | mean | median | Pr>0.5 | Pr>1.0 |
+|:--|--:|--:|--:|--:|
+| `linear -> Panda` | 1.81 | 0.50 | 60 % | 30 % |
+| `SAITS-pretrained -> Panda` | 1.56 | 0.84 | 100 % | 40 % |
+| `CSDI -> Panda` | 1.77 | 1.13 | 100 % | 60 % |
+
+Paired mean contrasts cross zero because one rare long `linear -> Panda`
+seed dominates the mean (`seed=2`, VPT@1.0 = 10.75). Median and survival
+therefore carry the L96 reading: pretrained structured imputers remove
+zero-survival failures, and CSDI gives the largest median and Pr>1.0.
+This matches the L96 frontier-table policy: high-dimensional L96 is a
+survival/median replication, not a mean-VPT replication.
+
+**Files.**
+- `experiments/week1/results/panda_altimputer_l96_sp82_pretrained_10seed.json`
+- `experiments/week1/figures/panda_altimputer_l96_sp82_pretrained_10seed.md`
+- `experiments/week2_modules/ckpts/saits_l96_n20_pretrained_meta.json`
 
 ## P1.3 — EnKF known-dynamics upper bound on L63
 
@@ -149,7 +184,7 @@ data assimilation). Appendix B can now cite the concrete EnKF numbers.
   reduction is not unique to CSDI under the alt-imputer experiment.
 - Add explicit Chronos result statement: cross-foundation evidence is
   forecaster-dependent; the Panda frontier story does not extend to
-  Chronos at pred_len = 128.
+  Chronos at either pred_len = 128 or its native pred_len = 64.
 - Keep EnKF upper bound as model-aware reference in §6.5.
 
 ### §4.4 (alt-imputer)
@@ -162,16 +197,13 @@ is pending"; it is "we ran it, here is the answer, the story narrows".
 
 - "Foundation-model breadth" item now cites the Chronos result with the
   pred_len caveat.
-- Drop "Glocal-IB / pretrained alt-imputer is open" — it's run.
+- Drop "pretrained alt-imputer is open" — SAITS is run on L63 and L96.
   Glocal-IB specifically remains future work.
 
 ## Status
 
-P1 work complete. Story successfully narrowed without retraction of the
-sparse-observation forecastability frontier core finding. Next:
-
-1. Update `paper_draft_en.md` with the P1 numbers (§1 / §4.4 / §6.4 /
-   Appendix B / Appendix C / Appendix D).
-2. Mirror to `paper_draft_zh.md`.
-3. Commit + push. After that, the draft is at submission-ready state
-   modulo P3 polish (real-data, decoder-side mechanism, Glocal-IB).
+P1 work complete, including the Chronos pred_len=64 follow-up and L96
+SAITS-pretrained survival replication. Story successfully narrowed without
+retraction of the sparse-observation forecastability frontier core finding.
+Draft text is updated in both English and Chinese; remaining work is P3 polish
+(real-data, decoder-side mechanism, Glocal-IB) and final proofreading.
