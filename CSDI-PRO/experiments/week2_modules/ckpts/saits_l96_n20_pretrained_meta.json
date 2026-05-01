@@ -1,0 +1,27 @@
+{
+  "corpus": "experiments/week2_modules/data/lorenz96_clean_512k_L128_N20.npz",
+  "n_train": 64000,
+  "n_val": 2048,
+  "epochs": 30,
+  "batch": 64,
+  "n_layers": 2,
+  "d_model": 64,
+  "n_heads": 4,
+  "d_k": 16,
+  "d_v": 16,
+  "d_ffn": 128,
+  "sparsity_grid": [
+    0.0,
+    0.2,
+    0.4,
+    0.55,
+    0.65,
+    0.75,
+    0.82,
+    0.88,
+    0.93,
+    0.97
+  ],
+  "saving_path": "/home/rhl/Github/CSDI-PRO/experiments/week2_modules/ckpts/saits_l96_n20_pretrained",
+  "wall_seconds": 1147.3646430969238
+}

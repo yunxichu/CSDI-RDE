@@ -164,15 +164,25 @@ L63 SP82 处情形改变。Panda-token 比下降到约 1.6–2.4，仍然偏向 
 | CSDI − linear | +1.67 [+1.41, +1.92] ↑ | +1.28 [+0.73, +1.85] ↑ |
 | **CSDI − SAITS-pretrained** | **+0.41 [+0.05, +0.87] ↑** | **+0.06 [−0.31, +0.59] ≈** |
 
-Tail survival probability $\Pr(\mathrm{VPT}>1.0\,\Lambda)$：
+Tail survival probability $\Pr(\mathrm{VPT}>1.0\,\Lambda)$（Wilson 95% CI）：
 
 | Cell | SP65 | SP82 |
 |:--|:-:|:-:|
-| linear | 70% | 0% |
-| SAITS-pretrained | 90% | 70% |
-| CSDI | 100% | 70% |
+| linear | 70% [40%, 89%] | 0% [0%, 28%] |
+| SAITS-pretrained | 90% [60%, 98%] | 70% [40%, 89%] |
+| CSDI | 100% [72%, 100%] | 70% [40%, 89%] |
 
-这把 §1 / abstract 的 intervention 主张从 "CSDI 是唯一测试过的 intervention" 显著收窄为 "**corpus-pretrained 结构化 imputation 是 lever**，CSDI 在入口带保留小但 paired-CI-strict 的优势，在底部带与 SAITS-pretrained 不可分辨"。这一现象——某个 corpus-pretrained 结构化 imputer 在 linear 插值崩塌的 L63 transition band 处仍能跨过——**不是 CSDI 独有**；它推广到至少一个在同一数据上预训、且推理时长与训练时长匹配的 imputer。
+**跨系统复制：L96 N = 20 SP82（n = 10）.** 我们另在 L96 N = 20 混沌语料（`lorenz96_clean_512k_L128_N20.npz`，64K 长度 128 窗口，同 v2-grid 匹配缺失分布）上预训第二个 SAITS imputer，val MAE = 1.07 = 0.29 × `attractor_std`。L96 SP82 mean VPT 被单一 linear-cell 离群（seed 2，VPT@1.0 = 10.75 — clean-context fluke）严重污染，因此按 §6.4 标注的 L96 高方差局限，我们以 median + survival 为 headline：
+
+| Cell | L96 SP82 median VPT | $\Pr(\mathrm{VPT}>1.0\,\Lambda)$（Wilson 95%）|
+|:--|:-:|:-:|
+| `linear → Panda` | 0.50 | 30% [11%, 60%] |
+| `SAITS-pretrained → Panda` | 0.84 | 40% [17%, 69%] |
+| `CSDI → Panda` | **1.13** | **60%** [31%, 83%] |
+
+Paired-bootstrap on means：CSDI − SAITS-pretrained = +0.21 [+0.00, +0.49]（恰好触及 0）；CSDI − linear = −0.03 [−1.40, +0.88] 与 SAITS-pretrained − linear = −0.24 [−1.55, +0.51] 在均值上跨 0（被 linear-seed-2 离群驱动 — 见附录 C 逐 seed 表）。median 与 survival 上的定性次序与 L63 SP65 一致：linear < SAITS-pretrained < CSDI。
+
+L63 SP65 + SP82 + L96 SP82 共同把 §1 intervention 主张从 "CSDI 是唯一测试过的 intervention" 显著收窄为 "**corpus-pretrained 结构化 imputation 是 lever**，CSDI 在 L63 入口带保留小但 paired-CI-strict 的优势、在 L96 上保留 median + survival 优势，在 L63 底部带与 SAITS-pretrained 不可分辨"。这一现象——某个 corpus-pretrained 结构化 imputer 在 linear 插值崩塌的稀疏观测 transition band 处仍能跨过——**不是 CSDI 独有**；它推广到至少一个在同一数据上预训、且推理时长与训练时长匹配的 imputer，并且在两个不同的混沌系统（3-D L63 与 20-D L96）上同时观察到。
 
 一个独立的单轨迹 SAITS / BRITS sanity check（无预训语料、在单条测试轨迹上逐实例拟合）作为支持性观察列在附录 E。逐实例训练在设计上对 SAITS / BRITS 不公，所以这**不是**主对照实验。
 
@@ -242,7 +252,7 @@ CI 在 mean 上为 95% bootstrap，在 survival probability 上为 Wilson 95%。
 ### 6.4 局限
 
 - **补全训练语料轴.** §4.4 的替代 imputer 对照将 CSDI 与一个在同一混沌语料（约 50 万 L63 独立 IC 窗口）上预训的 SAITS 模型配对。一个独立的单轨迹逐实例 SAITS / BRITS sanity 在附录 E 报告。我们没有评测 Glocal-IB 或其他近期全局结构 imputer；这些在 §2 列为 adjacent prior art，是开放后续。
-- **Forecaster 广度.** Panda 是 headline。我们额外评测 Chronos-bolt-small 在 L63 稀疏度线上（SP55–SP82, 5 seeds, `linear → Chronos` 与 `CSDI → Chronos`）；Chronos 在我们的 `pred_len = 128` 下绝对 VPT 远低于 Panda（mean 0.34–0.50, $\Pr(\mathrm{VPT}>1.0)$ ≤ 20%），CSDI 也未明显改善（paired Δ 在 0 附近，CI 跨 0）。Chronos 库本身警告 `prediction_length > 64` 超出训练分布；因此我们**不**读为"前沿不一般化到 Chronos"，而是"corpus-pretrained-imputation 杠杆在我们测试的 pred_len 下经验性地只在 Panda 上观察到；将 Chronos / TimesFM / Lag-Llama 在匹配 pred_len ≤ 64 下评测留作未来工作"。
+- **Forecaster 广度.** Panda 是 headline。我们在两个 horizon 下评测 Chronos-bolt-small 在 L63 稀疏度线上（SP55–SP82, 5 seeds, `linear → Chronos` 与 `CSDI → Chronos`）：`pred_len = 128`（与 Panda 匹配）与 `pred_len = 64`（Chronos 原生训练 horizon，因为 Chronos 库本身警告 `prediction_length > 64` 超出训练分布）。两个 horizon 下 Chronos 绝对 VPT 都远低于 Panda（mean 0.34–0.50, $\Pr(\mathrm{VPT}>1.0)$ ≤ 20%），CSDI 也未明显改善（paired Δ 在 0 附近，CI 跨 0）。`pred_len = 64` 的 per-seed VPT 与 `pred_len = 128` 在统计上不可区分，确认负面结果**不是** Chronos OOD horizon 的 artefact。我们读为："corpus-pretrained-imputation 杠杆在 Panda 上经验性可观察；在 Chronos 上杠杆不可观察是因为 Chronos 自身的 VPT 分布远低于杠杆能起作用的 regime。" TimesFM / Lag-Llama 等其他大型预训练时序 forecaster 在匹配 horizon 下的评测留作未来工作。
 - **已知动力学上界.** 一个 model-aware 参考（用真实 L63 向量场的 stochastic EnKF, 100 ensemble members）在整个稀疏观测 transition band 上撞 VPT ceiling（SP55–SP82 mean 2.84–2.85, $\Pr(\mathrm{VPT}>1.0) = 100\%$；附录 B）。前沿因此是**黑盒部署接口**（forecaster 不能访问动力学）的属性，不是系统本身的属性。
 - **纯噪声轴.** 论文的干预主张限定在稀疏观测轴上。CSDI 在密集噪声轴上中性或略有伤害；denoising-aware 变体是开放后续。
 - **L96 高方差.** L96 N=20 在前沿底部 cell 上 mean VPT 高方差（即使 n=10 仍被极少数长 forecast seed 主导）。我们因此用 median 与 survival 作为 L96 的 headline，而**不**用 Panda mean。
@@ -263,7 +273,7 @@ CI 在 mean 上为 95% bootstrap，在 survival probability 上为 Wilson 95%。
 
 > **稀疏观测预处理把预训练混沌 forecaster 放在一条尖锐可预测性前沿的某一侧；corruption-aware imputation 是在 transition band 之内跨越它的杠杆——但**控制这次跨越的几何量并不是逐点重构保真度**。
 
-代码、CSDI checkpoint 与锁定的 Figure-1 / 隔离矩阵 / jitter / embedding 数据均已发布。投稿前的预训练 SAITS / Glocal-IB reviewer-defense 比较（附录 C）是自然的后续。
+代码、CSDI checkpoint、预训练 SAITS baseline 与锁定的 Figure-1 / 隔离矩阵 / jitter / embedding 数据均已发布。Glocal-IB、真实数据案例与 Panda decoder-side 插桩是自然的 camera-ready 后续。
 
 ---
 
@@ -302,9 +312,11 @@ CI 在 mean 上为 95% bootstrap，在 survival probability 上为 Wilson 95%。
 | 10 | Cross-system 隔离矩阵（legacy）| L63、L96 N=10/20、Rössler、Kuramoto | S0–S6 | linear/Kalman/CSDI × Panda/DeepEDM（6）| 5 | `pt_{l63,l96_iso_l96N{10,20},rossler_iso_rossler,kuramoto}_*_5seed.json` | `deliverable/figures_isolation/*_heatmap.png`、`*_bars.png`、`*.md` |
 | 11 | MG / Chua scope-boundary | Mackey-Glass、Chua | S0–S6 | 同 #10 | 5 | `pt_{mg,chua}_*_5seed.json` | `deliverable/figures_isolation/`（boundary 子集）|
 | 12 | 替代 imputer C0 sanity（per-instance）| L63 | SP65 | linear、SAITS、BRITS、CSDI | 5 | `panda_altimputer_l63sp65_partial_5seed.json` | log-only；附录 sanity |
-| C1 | **预训练替代 imputer**（待跑）| L63、L96 N=20 | SP82 | linear、SAITS-pretrained、Glocal-IB、CSDI | 5 | 尚未运行 | 见附录 C |
+| 13 | **预训练替代 imputer（P1.1 + P1.5 跨系统）** | L63、L96 N=20 | L63 SP65 + SP82、L96 SP82 | linear、SAITS-pretrained、CSDI | 10 | `panda_altimputer_l63_sp65_sp82_pretrained_10seed_chunked.json`、`panda_altimputer_l96_sp82_pretrained_10seed.json` | §4.4 + 附录 C |
+| 14 | **Chronos mini-frontier（P1.2）** | L63 | SP55, SP65, SP75, SP82 | linear、CSDI（forecaster: Chronos，`pred_len ∈ {64, 128}`）| 5 | `chronos_frontier_l63_chronos_l63_sp55_sp82_5seed.json`、`..._5seed_pl64.json` | §3.2 / §6.4 跨 foundation-model 观察；pred_len=64 确认负面结果不是 Chronos OOD horizon 的 artefact |
+| 15 | **EnKF 已知动力学上界（P1.3）** | L63 | SP55–SP82, NO020, NO050 | EnKF（真实向量场，100 ensemble members）| 5 | `enkf_l63_enkf_l63_v2_5seed.json` | §6.5 / 附录 B 参考 |
 
-#1–#9 是 §3 / §4 / §6 引用的 patched 协议锁定数。#10 是用旧 S0–S6 corruption pipeline（`make_sparse_noisy`）的 cross-system 复制，作为**辅助**方向证据；#1–#6 / #8 / #9 的 v2 协议数为权威。#11 提供 §6.3 scope condition。#12 是附录 sanity（per-instance 训练，对 SAITS / BRITS 不公）。C1 是投稿前 reviewer-defense 计划（附录 C）。
+#1–#9 是 §3 / §4 / §6 引用的 patched 协议锁定数。#10 是用旧 S0–S6 corruption pipeline（`make_sparse_noisy`）的 cross-system 复制，作为**辅助**方向证据；#1–#6 / #8 / #9 的 v2 协议数为权威。#11 提供 §6.3 scope condition。#12 是附录 sanity（per-instance 训练，对 SAITS / BRITS 不公）。#13–#15 是 P1 reviewer-defense 实验：预训练 SAITS 替代 imputer 对照（§4.4 / 附录 C）、Chronos 跨 foundation mini-frontier（§3.2 / §6.4）、EnKF 已知动力学上界（§6.5 / 附录 B）。
 
 ### B.3 聚合脚本
 
@@ -338,11 +350,40 @@ Checkpoint：`experiments/week2_modules/ckpts/saits_l63_pretrained/<run-id>/SAIT
 | CSDI − linear | +1.67 [+1.41, +1.92] ↑ | +1.28 [+0.73, +1.85] ↑ |
 | CSDI − SAITS | +0.41 [+0.05, +0.87] ↑ | +0.06 [−0.31, +0.59] ≈ |
 
-**读.** 预训练 SAITS 复现了 L63 transition band 救援的大部分。CSDI 在入口带保留小但 paired-CI-strict 的优势，在底部带与 SAITS-pretrained 统计不可分辨。我们因此把 §1 / abstract 的 intervention 主张收窄为 "corpus-pretrained 结构化 imputation 是 lever；CSDI 是其中一个强实例，在入口带有小 advantage"。这是 SUBMISSION_PREP_PLAN 决策规则下正确的读法。
+**读.** 预训练 SAITS 复现了 L63 transition band 救援的大部分。CSDI 在入口带保留小但 paired-CI-strict 的优势，在底部带与 SAITS-pretrained 统计不可分辨。我们因此把 §1 / abstract 的 intervention 主张收窄为 "corpus-pretrained 结构化 imputation 是 lever；CSDI 是其中一个强实例，在入口带有小 advantage"。
+
+**L96 N = 20 SP82 跨系统复制（10 seeds, σ = 0）.** 在 `lorenz96_clean_512k_L128_N20.npz`（64K 长度 128 窗口，相同 v2-grid 匹配缺失分布、相同架构）上预训第二个 SAITS imputer。Best ckpt 在 epoch 27；validation MAE on missing = 1.07（= 0.29 × $\sigma_\text{attr}^{(\mathrm{L96})}$）。逐 seed VPT@1.0：
+
+| seed | linear | SAITS-pretrained | CSDI |
+|:-:|--:|--:|--:|
+| 0 | 0.50 | 0.67 | 0.76 |
+| 1 | 0.00 | 0.84 | 1.85 |
+| 2 | **10.75** | 4.96 | 5.12 |
+| 3 | 0.42 | 0.76 | 0.76 |
+| 4 | 3.78 | 4.12 | 4.12 |
+| 5 | 1.09 | 1.09 | 1.01 |
+| 6 | 0.50 | 1.34 | 1.26 |
+| 7 | 0.25 | 0.84 | 0.92 |
+| 8 | 0.50 | 0.50 | 0.50 |
+| 9 | 0.25 | 0.50 | 1.43 |
+| **mean** | 1.81 | 1.56 | 1.77 |
+| **median** | 0.50 | 0.84 | **1.13** |
+
+seed 2 是 linear 的 clean-context fluke（linear seed-2 keep-fraction = 0.15 恰好对齐了一个可预测的 Panda token 序列，三个 cell 都得到长 forecast）。按 §6.4 标注的 L96 高方差局限，mean 不可靠；以 median + survival 为 headline：
+
+| Cell | $\Pr(\mathrm{VPT}>1.0\,\Lambda)$ | Wilson 95% CI |
+|:--|:-:|:-:|
+| linear | 30% | [11%, 60%] |
+| SAITS-pretrained | 40% | [17%, 69%] |
+| CSDI | **60%** | [31%, 83%] |
+
+Paired-bootstrap（5000 resamples）on means：CSDI − SAITS-pretrained = +0.21 [+0.00, +0.49]（恰好触及 0）；CSDI − linear 与 SAITS − linear 跨 0（被 linear-seed-2 离群驱动）。median + survival 上的定性次序与 L63 SP65 一致：linear < SAITS-pretrained < CSDI。我们读为 "结构化 imputation lever 在 20-D 系统上以 L96 cell 使用的 survival 度量推广；mean 噪声太大无法直接读"。
 
 Glocal-IB 未评测（§2 引为 adjacent prior art：高缺失补全应保留全局潜结构）；自然后续。
 
-来源：`experiments/week1/results/panda_altimputer_l63_sp65_sp82_pretrained_10seed_chunked.json`，markdown 摘要 `experiments/week1/figures/panda_altimputer_l63_sp65_sp82_pretrained_10seed_chunked.md`。
+来源：
+- L63：`experiments/week1/results/panda_altimputer_l63_sp65_sp82_pretrained_10seed_chunked.json`
+- L96：`experiments/week1/results/panda_altimputer_l96_sp82_pretrained_10seed.json`
 
 ## 附录 D：Figure 索引
 
