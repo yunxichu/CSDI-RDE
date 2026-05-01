@@ -603,58 +603,91 @@ data are released. A pretrained SAITS / Glocal-IB reviewer-defense comparison
 
 ---
 
-> **Appendix material below is inherited from the previous draft and has not yet
-> been re-aligned to the locked story.** Specifically: Appendix A's theorem
-> proofs reference the older "tokenizer-OOD as universal mechanism" framing and
-> need to be either narrowed to the entrance-band claim or moved to a separate
-> theory note. Appendix D's figure index needs to be re-keyed against
-> `deliverable/figures_main/` and `deliverable/figures_jitter/`. Appendices E–G
-> describe the older 4-module pipeline at a level of detail no longer matched
-> by §5 of the main text.
->
-> Appendices retained verbatim from the archive for now; review pass is the
-> next pre-submission task.
+> Appendices below are aligned to the locked story (2026-05-01). Pre-pivot
+> material describing the original four-module pipeline (M1–M4) and the
+> universal tokenizer-OOD theorem family is preserved verbatim in
+> `deliverable/paper/paper_draft_en_archive_2026-04-30.md` and is referenced
+> here only by pointer.
 
-## Appendix A: Proof sketches
+## Appendix A: Theory pointer (inherited, narrowed)
 
-*(See `paper_draft_en_archive_2026-04-30.md` §"Appendix A: Proof sketches" for
-the inherited proof material. Theorem 2's "tokenizer-OOD" bound is now a
-mechanism only inside the entrance band, per §4.2; the main-text claim does
-not depend on the proof.)*
+The current main text relies on **empirical** entrance-band OOD reduction
+(§4.2) and floor-band residual survival (§4.3) rather than on a closed-form
+theorem of "ambient-predictor tokenizer-OOD failure". An earlier draft proved
+a Theorem 2 with that universal phrasing; under the v2 protocol this theorem
+holds only as an entrance-band statement. We retain the proof material in
+`paper_draft_en_archive_2026-04-30.md` §"Appendix A: Proof sketches" for
+readers interested in the formal bound, and treat it here as a *narrowed*
+theoretical companion: the same patch-distribution-OOD argument applies at
+L63 SP65 (where 6–22× distance-to-clean reductions in Panda token space are
+measured), but not as a universal claim across the whole frontier. The
+main-text intervention and frontier claims do not depend on the proof.
 
-## Appendix B: Reproducibility
+## Appendix B: Reproducibility and Experiment Table
 
-Locked v2 protocol:
-- L63: `LORENZ63_ATTRACTOR_STD = 8.51`, `dt = 0.025`, `n_ctx = 512`,
-  corruption seed `1000 * seed + 5000 + grid_index` from
-  `experiments/week1/configs/corruption_grid_v2.json`.
-- L96 N=20: `lorenz96_attractor_std(N=20, F=8) = 3.6387`, `dt = 0.05`,
+### B.1 Locked v2 protocol
+
+- **L63**: `LORENZ63_ATTRACTOR_STD = 8.51`, `dt = 0.025`, `n_ctx = 512`,
+  corruption seed `1000 × seed + 5000 + grid_index` where `grid_index` is
+  the cell position in `experiments/week1/configs/corruption_grid_v2.json`.
+- **L96 N=20**: `lorenz96_attractor_std(N=20, F=8) = 3.6387`, `dt = 0.05`,
   `n_ctx = 512`, same seed scheme.
-- CSDI inference: `set_csdi_attractor_std()` matches the system, and
-  `sigma_override = sigma * attractor_std` is passed to `impute(..., kind="csdi")`
-  (`sigma_override = 0` for pure-sparsity SP cells).
+- **Rössler**: `ROSSLER_ATTRACTOR_STD = 4.45`, `dt = 0.1`,
+  `lyap = 0.071`, same seed scheme.
+- **CSDI inference**: `set_csdi_attractor_std()` matches the system, and
+  `sigma_override = noise_std_frac × attractor_std` is passed to
+  `impute(observed, kind="csdi", sigma_override=...)`. For pure-sparsity
+  cells (σ=0), `sigma_override = 0` exactly, which leaves observed
+  timestamps anchored to ~10⁻⁶ (verified in
+  `deliverable/CSDI_SANITY_FINDINGS.md`).
+- **VPT**: Lyapunov-time normalized; threshold-crossing definition with
+  per-axis attractor standard deviation as scale.
+- **CIs**: 95 % bootstrap on means (5000 resamples), Wilson 95 % on
+  binomial survival probabilities at the listed seed count.
 
-Result JSONs:
-- Figure 1 (L63 v2 fine_s_line + fine_sigma_line, 10 seeds, 4 cells):
-  `experiments/week1/results/pt_l63_grid_v2_l63_fine_{s,sigma}_v2_10seed_{h0,h5}.json`
-  — aggregated by `experiments/week1/aggregate_figure1_v2.py` to
-  `deliverable/figures_main/figure1_l63_v2_10seed.{png,md}`.
-- Cross-system isolation (5 seeds, 6 cells, S0–S6):
-  `experiments/week1/results/pt_{l63,l96_iso_l96N{10,20},rossler_iso_rossler}_5seed.json`
-  — aggregated to `deliverable/figures_isolation/`.
-- L96 N=20 v2 cross-system (10 seeds, 4 cells, SP55–SP82 + NO010–NO050):
-  `experiments/week1/results/pt_l96_smoke_l96N20_v2_B_patched_5seed.json`
-  and `experiments/week1/results/pt_l96_smoke_l96N20_v2_B_patched_seed5_9.json`
-  — see `deliverable/L96_V2_B_PATCHED_N10.md`.
-- Jitter controls (v2 protocol, 5 / 10 seeds):
-  `experiments/week1/results/panda_jitter_control_l{63,96N20,rossler}_*5seed*.json`
-  — aggregated to `deliverable/figures_jitter/jitter_milestone_summary.md`.
-- Panda embedding diagnostic (v2 protocol):
-  `experiments/week1/results/panda_embedding_ood_l63_sp65_sp82_dt025_v2protocol_5seed.json`.
-- Raw-patch diagnostic (v2 protocol):
-  `experiments/week1/results/l63_patch_ood_v2_v2protocol_sp65_sp82_10seed.json`.
-- Alt-imputer C0 sanity:
-  `experiments/week1/results/panda_altimputer_l63sp65_partial_5seed.json`.
+### B.2 Experiment table
+
+All results below use the v2 protocol. JSON paths are relative to the
+repository root.
+
+| # | Experiment | System | Scenarios | Cells | Seeds | Result JSON | Aggregated to |
+|---|---|---|---|---|---:|---|---|
+| 1 | Figure 1 v2 grid (sparsity line) | L63 | SP00–SP97 (10) | linear/CSDI × Panda/DeepEDM (4) | 10 | `experiments/week1/results/pt_l63_grid_v2_l63_fine_s_v2_10seed_patched_{h0,h5}.json` | `deliverable/figures_main/figure1_l63_v2_10seed_patched.{png,md}` |
+| 2 | Figure 1 v2 grid (noise line) | L63 | NO00–NO120 (8) | same as #1 | 10 | `experiments/week1/results/pt_l63_grid_v2_l63_fine_sigma_v2_10seed_patched_{h0,h5}.json` | same as #1 |
+| 3 | L96 N=20 v2 cross-system | L96 N=20 | SP55/SP65/SP75/SP82 + NO010/NO020/NO050 | linear/CSDI × Panda/DeepEDM (4) | 10 (5 + 5 extension) | `pt_l96_smoke_l96N20_v2_B_patched_5seed.json`, `pt_l96_smoke_l96N20_v2_B_patched_seed5_9.json` | `deliverable/L96_V2_B_PATCHED_N10.md` |
+| 4 | L63 jitter / residual control | L63 | SP65, SP82 | linear, +iid jitter, +shuffled residual, CSDI | 10 | `panda_jitter_control_l63_sp65_sp82_v2protocol_patched_10seed.json` | `experiments/week1/figures/panda_jitter_control_l63_sp65_sp82_v2protocol_patched_10seed.md` |
+| 5 | L96 N=20 jitter / residual | L96 N=20 | SP65, SP82 | same as #4 | 5 | `panda_jitter_control_l96N20_sp65_sp82_v2protocol_patched_5seed.json` | same-prefix `.md` |
+| 6 | Rössler jitter / residual | Rössler | SP65, SP82 | same as #4 | 5 | `panda_jitter_control_rossler_sp65_sp82_v2protocol_patched_5seed.json` | same-prefix `.md` |
+| 7 | Cross-system jitter milestone | L63+L96+Rössler | SP65, SP82 | from #4–#6 | 5–10 | merge of #4–#6 | `deliverable/figures_jitter/jitter_milestone_summary.md`, `jitter_milestone_SP{65,82}.png` |
+| 8 | Panda embedding OOD diagnostic | L63 | SP65, SP82 | clean / linear / CSDI; stages: patch / embed / encoder / pooled | 5 | `panda_embedding_ood_l63_sp65_sp82_dt025_v2protocol_patched_5seed.json` | `experiments/week1/figures/panda_embedding_ood_l63_sp65_sp82_dt025_v2protocol_patched_5seed.md` and `_bars.png` |
+| 9 | Raw-patch diagnostic v2 | L63 | SP65, SP82 | clean / linear / CSDI; metrics: local stdev, lag-1 ρ, mid-freq power | 10 | `l63_patch_ood_v2_v2protocol_sp65_sp82_10seed.json` | `experiments/week1/figures/l63_patch_ood_v2_v2protocol_metrics_SP{65,82}.png` |
+| 10 | Cross-system isolation matrix (legacy) | L63, L96 N=10/20, Rössler, Kuramoto | S0–S6 | linear/Kalman/CSDI × Panda/DeepEDM (6) | 5 | `pt_{l63,l96_iso_l96N{10,20},rossler_iso_rossler,kuramoto}_*_5seed.json` | `deliverable/figures_isolation/*_heatmap.png`, `*_bars.png`, `*.md` |
+| 11 | MG / Chua scope-boundary cases | Mackey-Glass, Chua | S0–S6 | same as #10 | 5 | `pt_{mg,chua}_*_5seed.json` | `deliverable/figures_isolation/` (boundary subset) |
+| 12 | Alt-imputer C0 sanity (per-instance) | L63 | SP65 | linear, SAITS, BRITS, CSDI | 5 | `panda_altimputer_l63sp65_partial_5seed.json` | log-only; appendix sanity |
+| C1 | **Pretrained alt-imputer** (deferred) | L63, L96 N=20 | SP82 | linear, SAITS-pretrained, Glocal-IB, CSDI | 5 | not yet run | see Appendix C |
+
+Items 1–9 are the patched-protocol locked numbers cited in §3 / §4 / §6.
+Item 10 is the cross-system replication that uses the older S0–S6
+corruption pipeline (`make_sparse_noisy`) and is cited as **secondary**
+direction-of-effect evidence — the v2 protocol numbers in items 1–6 / 8 / 9
+are authoritative. Item 11 supplies §6.3 scope conditions. Item 12 is
+appendix-only sanity (per-instance training, biased against SAITS / BRITS).
+Item C1 is the pre-submission reviewer-defense plan (Appendix C).
+
+### B.3 Aggregator scripts
+
+Each aggregator is invoked as `python -m experiments.week1.<script>`:
+
+- `aggregate_figure1_v2.py --halves --s_tag ... --n_tag ... --out_prefix ...` →
+  six-panel Figure 1 with bootstrap CI on mean and Wilson CI on Pr(VPT > θ).
+- `aggregate_isolation.py --json <iso JSON> --out_prefix ...` → 2×3 heatmap
+  + bar chart with paired bootstrap CI for #10 / #11.
+- `aggregate_jitter_cross_system.py` → six-panel Figure 3 (mean vs Pr>1.0
+  across L63 / L96 / Rössler at SP65 and SP82).
+- `aggregate_corruption_grid.py` → metadata table for any v2 grid run
+  (keep fraction, obs/patch, max gap in Lyapunov units).
+- `aggregate_survival_summary.py` → cross-system survival probabilities at
+  Pr>0.5 and Pr>1.0.
 
 ## Appendix C: Pretrained Alt-Imputer Plan (deferred)
 
@@ -671,32 +704,59 @@ Both outcomes preserve the §3 frontier and §6 scope conditions.
 
 ## Appendix D: Figure Index
 
-*(To be re-keyed against the new figure layout; see archive for the
-inherited index.)*
+All figures referenced in the main text use the patched v2 protocol unless
+explicitly marked. Main-text labels Figure 1 / 2 / 3 correspond to the three
+headline panels.
 
-Main figures:
-- **Figure 1** — L63 v2 10-seed fine grid:
-  `deliverable/figures_main/figure1_l63_v2_10seed.png`.
-- **Figure 2** — Cross-system isolation (4-system 5-seed heatmaps):
-  `deliverable/figures_isolation/*_heatmap.png`.
-- **Figure 3** — Jitter milestone (3-system tail vs mean):
-  `deliverable/figures_jitter/jitter_milestone_SP82.png`.
+### Main figures
 
-Mechanism panels (§4.2):
-- L63 raw-patch diagnostics (curvature, lag-1, mid-freq):
-  `experiments/week1/figures/l63_patch_ood_v2_v2protocol_metrics_SP{65,82}.png`.
-- Panda representation distance bars:
-  `experiments/week1/figures/panda_embedding_ood_l63_sp65_sp82_dt025_v2protocol_5seed_bars.png`.
+| Label | Caption purpose | Path |
+|---|---|---|
+| **Figure 1** | Sparsity and noise frontier on L63 (mean / Pr>0.5 / Pr>1.0, decoupled axes, 10 seeds, 95 % bootstrap CI on mean and Wilson CI on survival) | `deliverable/figures_main/figure1_l63_v2_10seed_patched.png` (and `.md` companion table) |
+| **Figure 2** | Cross-system isolation matrix (linear/Kalman/CSDI × Panda/DeepEDM heatmaps and paired-CI bars; legacy S0–S6 protocol) | `deliverable/figures_isolation/{l63,l96_iso_l96N{10,20},rossler_iso_rossler}_5seed_heatmap.png` and `_bars.png` |
+| **Figure 3** | Jitter / residual controls across L63, L96 N=20, Rössler at SP65 and SP82, comparing mean vs `Pr(VPT > 1.0 Λ)` | `deliverable/figures_jitter/jitter_milestone_SP{65,82}.png` |
 
-## Appendix E: τ-search detailed evidence
+### §4.2 mechanism panels
 
-*(Inherited from archive; supports DeepEDM lag selection in §5.2.)*
+| Element | Path |
+|---|---|
+| L63 raw-patch v2 metric histograms (local stdev / lag-1 ρ / mid-freq power, SP65 + SP82) | `experiments/week1/figures/l63_patch_ood_v2_v2protocol_metrics_SP{65,82}.png` |
+| L63 raw-patch trajectory overlays (clean vs linear vs CSDI) | `experiments/week1/figures/l63_patch_ood_v2_v2protocol_traj_overlay_SP{65,82}.png` |
+| Panda token-space distance bars (patch / embed / encoder / pooled, SP65 + SP82) | `experiments/week1/figures/panda_embedding_ood_l63_sp65_sp82_dt025_v2protocol_patched_5seed_bars.png` |
+| Panda token-space PCA scatter (per stage and scenario) | `experiments/week1/figures/panda_embedding_ood_l63_sp65_sp82_5seed_SP{65,82}_{embed,encoder}_pca.png` |
 
-## Appendix F: τ-coupling complete empirical analysis
+### §6.3 scope-boundary panels (appendix only)
 
-*(Inherited from archive; not load-bearing for the locked-story main claim.)*
+| Element | Path |
+|---|---|
+| Mackey-Glass S0–S6 phase-transition + trajectory | `experiments/week1/figures/iso_mackey_glass_5seed_*.png` (and trajectory plots in the same directory) |
+| Chua S0–S6 phase-transition + trajectory | `experiments/week1/figures/iso_chua_5seed_*.png` |
 
-## Appendix G: Delay Manifold Perspective
+### Pre-pivot figures (no longer cited in main text)
 
-*(Inherited from archive; provides the geometric framing that motivated the
-delay-manifold companion in §5.2.)*
+The previous draft cited a number of figures specific to the four-module
+pipeline (M1 imputation traces, M2 τ-search Bayesian-optimisation curves,
+M3 backbone comparison, M4 conformal coverage). These remain in
+`deliverable/figures_extra/` and `experiments/week2_modules/figures/` but
+are not part of the locked story; the archive at
+`paper_draft_en_archive_2026-04-30.md` keeps their original captions.
+
+## Appendix E: Inherited supplementary material (archived)
+
+Three appendix sections from the pre-pivot draft are no longer load-bearing
+for the locked story but remain available for readers interested in the
+underlying engineering:
+
+- **Original Appendix E — τ-search detailed evidence.** Mutual-information /
+  Lyapunov objective, Bayesian-optimisation traces, ablation against random
+  τ. Used to motivate the lag schedule of DeepEDM in §5.2.
+- **Original Appendix F — τ-coupling complete empirical analysis.** Per-system
+  sensitivity of forecastability to the lag schedule. Confirms that DeepEDM
+  lag choice is not a knife-edge tuning artefact.
+- **Original Appendix G — Delay-manifold perspective.** Geometric framing
+  (Takens embedding, attractor reconstruction, smoothness assumptions) that
+  motivates the §5.2 companion forecaster and the §6.3 scope conditions.
+
+Source: `paper_draft_en_archive_2026-04-30.md`, sections of the same names.
+None of these are required to verify the §1 / §3 / §4 / §6 claims; they
+strengthen the §5 method exposition and the §6.3 scope explanation.
