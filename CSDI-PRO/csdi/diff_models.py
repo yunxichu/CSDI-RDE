@@ -1,3 +1,8 @@
+"""v1 legacy — CSDI score network（来自 ../csdi/diff_models.py）。
+
+包含 diff_CSDI：Transformer 架构的 diffusion score network，供 CSDI_base 调用。
+v2 版本见 methods/dynamics_csdi.py，在此基础上增加了噪声条件化和延迟 attention mask。
+"""
 import torch
 import torch.nn as nn
 import torch.nn.functional as F

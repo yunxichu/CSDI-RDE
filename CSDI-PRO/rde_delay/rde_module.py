@@ -1,3 +1,10 @@
+"""v1 legacy — 随机延迟嵌入（来自 ../lorenz_rde_delay/models/rde_module.py）。
+
+从所有维度 × 所有合法延迟里随机采样 (dim, τ) 对，集成 M 个 GPR 预测再 KDE 融合。
+τ 的选取是随机的，没有基于互信息或 Lyapunov 指数的优化。
+v2 流水线中 Module 2 (M2) 使用 methods/mi_lyap.py 替代此文件，
+引入 KSG 互信息估计 + BayesOpt/CMA-ES τ 搜索使嵌入更系统化。
+"""
 # rde_module.py - Randomly Delay Embedding (RDE) 改进版
 #
 # 相比原版的核心改动：

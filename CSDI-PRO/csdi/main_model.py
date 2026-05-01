@@ -1,3 +1,13 @@
+"""v1 legacy — CSDI diffusion 模型主体（来自 ../csdi/main_model.py）。
+
+此文件是从原始 CSDI 仓库复制过来的 v1 历史代码，用于参考和对比。
+在 v2 流水线中，Module 1 (M1) 使用以下替代：
+  - 生产用：methods/dynamics_impute.py（AR-Kalman smoother，无需训练）
+  - 完整版：methods/dynamics_csdi.py（在此基础上加了噪声条件化 + 延迟 attention mask，Week-7 WIP）
+
+此文件中的 CSDI_base / CSDI_Forecasting 包含原始的 dataset-specific 数据处理逻辑
+（PM25、EEG、PhysioNet），不在 v2 实验中使用。
+"""
 import numpy as np
 import torch
 import torch.nn as nn

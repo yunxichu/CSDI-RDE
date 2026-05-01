@@ -1,4 +1,12 @@
-"""Metrics specific to chaotic-system forecasting."""
+"""混沌系统专用评估指标。
+
+  vpt()   Valid Prediction Time（有效预测时间）：预测误差超过阈值的时刻，
+          以 Lyapunov 时间为单位。论文主指标，threshold=0.3 为 main figure。
+  nrmse() 吸引子归一化 RMSE：用 attractor_std 归一化，跨系统可比。
+
+与 experiments/week1/lorenz63_utils.py 中的 valid_prediction_time() 一致，
+此处独立实现供 metrics/ 模块统一调用（lorenz96、KS 等也用此版本）。
+"""
 from __future__ import annotations
 
 import numpy as np

@@ -554,26 +554,37 @@ class DynamicsCSDI:
         # Legacy ckpts without cfg.attractor_std fall back to 8.51 for backward compat.
         if attractor_std is None:
             attractor_std = float(getattr(self.cfg, "attractor_std", 8.51))
-        obs = np.asarray(observed, dtype=np.float32).copy()
+        obs_raw = np.asarray(observed, dtype=np.float32).copy()
         if mask is None:
-            mask_arr = np.isfinite(obs).astype(np.float32)
+            mask_arr = np.isfinite(obs_raw).astype(np.float32)
         else:
             mask_arr = np.asarray(mask, dtype=np.float32)
             if mask_arr.ndim == 1:
-                mask_arr = np.repeat(mask_arr[:, None], obs.shape[1], axis=1)
-        obs = np.nan_to_num(obs, nan=0.0)
+                mask_arr = np.repeat(mask_arr[:, None], obs_raw.shape[1], axis=1)
+        obs_raw = np.nan_to_num(obs_raw, nan=0.0)
+
+        T, D = obs_raw.shape
+        L = self.cfg.seq_len
+        if T < L:
+            pad = L - T
+            pad_obs = np.concatenate([obs_raw, np.zeros((pad, D), dtype=np.float32)], axis=0)
+            pad_mask = np.concatenate([mask_arr, np.zeros((pad, D), dtype=np.float32)], axis=0)
+            samples = self.impute(
+                pad_obs, pad_mask, tau=tau, sigma=sigma,
+                n_samples=n_samples, attractor_std=attractor_std,
+            )
+            return samples[:, :T]
+        if T > L:
+            # Keep chunking in raw coordinates. A previous version normalized before
+            # entering this branch and then normalized each chunk again in the
+            # recursive call below, which broke observed-point anchoring.
+            return self._impute_chunked(obs_raw, mask_arr, tau, sigma, n_samples, attractor_std)
 
         # Normalise to match training: per-dim centering then global scale.
         # data_center is stored in cfg so checkpoint round-trips preserve it.
         scale = attractor_std
         center = np.asarray(self.cfg.data_center, dtype=np.float32)
-        obs = (obs - center) / scale
-
-        T, D = obs.shape
-        L = self.cfg.seq_len
-        if T != L:
-            # simple strategy: if T < L, pad-and-unpad; if T > L, chunk
-            return self._impute_chunked(obs, mask_arr, tau, sigma, n_samples, attractor_std)
+        obs = (obs_raw - center) / scale
 
         if tau is not None and self.cfg.use_delay_mask:
             self.net.set_tau(tau)
@@ -631,27 +642,29 @@ class DynamicsCSDI:
         return samples_np
 
     def _impute_chunked(self, obs, mask_arr, tau, sigma, n_samples, attractor_std):
+        # ``obs`` is intentionally in raw coordinates; each recursive
+        # ``self.impute`` call will normalize exactly once.
         T, D = obs.shape
         L = self.cfg.seq_len
         out = np.zeros((n_samples, T, D), dtype=np.float32)
         # simple overlap-add with 50% overlap
         stride = L // 2
         weight = np.zeros(T, dtype=np.float32)
-        for start in range(0, max(T - L, 0) + 1, stride):
+        starts = list(range(0, T - L + 1, stride))
+        if not starts or starts[-1] != T - L:
+            starts.append(T - L)
+        for start in starts:
             end = start + L
-            if end > T:
-                start = T - L
-                end = T
             sub = self.impute(
                 obs[start:end], mask_arr[start:end],
                 tau=tau, sigma=sigma, n_samples=n_samples, attractor_std=attractor_std,
             )
-            # Hann window for smooth stitching
-            w = np.hanning(L).astype(np.float32)
+            # Uniform overlap averaging preserves exact observed-point anchoring
+            # when sigma=0. A Hann window has zero endpoint weights and can corrupt
+            # the first/last observed values of each chunk.
+            w = np.ones(L, dtype=np.float32)
             out[:, start:end] += sub * w[None, :, None]
             weight[start:end] += w
-            if end == T:
-                break
         weight = np.maximum(weight, 1e-6)
         return out / weight[None, :, None]
 

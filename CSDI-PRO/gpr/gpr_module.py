@@ -1,3 +1,10 @@
+"""v1 legacy — 自实现精确高斯过程回归（来自 ../csdi/gpr_module.py）。
+
+sklearn 风格 API，使用 RBF 核 + Cholesky 分解 + L-BFGS-B 超参优化。
+复杂度 O(n³)，在 n > 2000 时显著慢于 v2 的 SVGP（见 models/svgp.py）。
+v2 流水线中 Module 3 (M3) 使用 models/svgp.py 替代此文件。
+rde_spatial/rde_spatial.py 仍然依赖此文件（v1 spatial RDE 代码）。
+"""
 # 高斯过程
 import numpy as np
 from scipy.linalg import cholesky, solve_triangular

@@ -1,3 +1,10 @@
+"""v1 legacy — 随机空间维度嵌入（提取自 ../rde_gpr/pm25_test_comb.py:71-147）。
+
+从 D 维特征随机采样 L 维子集组合，每个组合独立 GPR 预测，再 KDE 融合。
+不含时间延迟（延迟版见 rde_delay/rde_module.py）。
+v2 流水线中 M2 (mi_lyap) + M3 (svgp) 的组合取代了此模块的功能：
+延迟坐标由 MI-Lyap 优化选取，回归由 SVGP 完成，不再依赖随机子集采样。
+"""
 # rde_spatial.py - Random Dimension Embedding (RDE, 空间版)
 #
 # 从 D 维特征中随机采样 L 维子集组合 → 每组合独立 GPR 预测 → KDE 融合。

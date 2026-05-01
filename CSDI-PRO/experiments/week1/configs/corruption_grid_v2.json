@@ -1,0 +1,67 @@
+{
+  "resource_limits": {
+    "max_gpus": 4,
+    "cpu_thread_fraction": 0.2,
+    "default_threads_per_process": 4,
+    "recommended_cuda_visible_devices": "0,1,2,3"
+  },
+  "defaults": {
+    "mask_regime": "iid_time",
+    "per_dim_noise": true,
+    "patch_length": 16
+  },
+  "legacy_diagonal": [
+    {"name": "S0", "sparsity": 0.0, "noise_std_frac": 0.0},
+    {"name": "S1", "sparsity": 0.2, "noise_std_frac": 0.1},
+    {"name": "S2", "sparsity": 0.4, "noise_std_frac": 0.3},
+    {"name": "S3", "sparsity": 0.6, "noise_std_frac": 0.5},
+    {"name": "S4", "sparsity": 0.75, "noise_std_frac": 0.8},
+    {"name": "S5", "sparsity": 0.9, "noise_std_frac": 1.2},
+    {"name": "S6", "sparsity": 0.95, "noise_std_frac": 1.5}
+  ],
+  "fine_s_line": [
+    {"name": "SP00", "sparsity": 0.0, "noise_std_frac": 0.0},
+    {"name": "SP20", "sparsity": 0.2, "noise_std_frac": 0.0},
+    {"name": "SP40", "sparsity": 0.4, "noise_std_frac": 0.0},
+    {"name": "SP55", "sparsity": 0.55, "noise_std_frac": 0.0},
+    {"name": "SP65", "sparsity": 0.65, "noise_std_frac": 0.0},
+    {"name": "SP75", "sparsity": 0.75, "noise_std_frac": 0.0},
+    {"name": "SP82", "sparsity": 0.82, "noise_std_frac": 0.0},
+    {"name": "SP88", "sparsity": 0.88, "noise_std_frac": 0.0},
+    {"name": "SP93", "sparsity": 0.93, "noise_std_frac": 0.0},
+    {"name": "SP97", "sparsity": 0.97, "noise_std_frac": 0.0}
+  ],
+  "fine_sigma_line": [
+    {"name": "NO00", "sparsity": 0.0, "noise_std_frac": 0.0},
+    {"name": "NO005", "sparsity": 0.0, "noise_std_frac": 0.05},
+    {"name": "NO010", "sparsity": 0.0, "noise_std_frac": 0.1},
+    {"name": "NO020", "sparsity": 0.0, "noise_std_frac": 0.2},
+    {"name": "NO035", "sparsity": 0.0, "noise_std_frac": 0.35},
+    {"name": "NO050", "sparsity": 0.0, "noise_std_frac": 0.5},
+    {"name": "NO080", "sparsity": 0.0, "noise_std_frac": 0.8},
+    {"name": "NO120", "sparsity": 0.0, "noise_std_frac": 1.2}
+  ],
+  "transition_rectangle": {
+    "s_values": [0.55, 0.65, 0.75, 0.82, 0.88],
+    "noise_values": [0.0, 0.1, 0.2, 0.35, 0.5]
+  },
+  "summary_path_candidate": [
+    {"name": "H0", "purpose": "clean", "sparsity": 0.0, "noise_std_frac": 0.0},
+    {"name": "H1", "purpose": "mild_in_distribution", "sparsity": 0.2, "noise_std_frac": 0.05},
+    {"name": "H2", "purpose": "moderate_sparse_low_noise", "sparsity": 0.4, "noise_std_frac": 0.1},
+    {"name": "H3", "purpose": "pre_threshold", "sparsity": 0.65, "noise_std_frac": 0.2},
+    {"name": "H4", "purpose": "patch_threshold", "sparsity": 0.82, "noise_std_frac": 0.35},
+    {"name": "H5", "purpose": "harsh_not_noise_floor", "sparsity": 0.9, "noise_std_frac": 0.6},
+    {"name": "H6", "purpose": "no_info_floor_stress", "sparsity": 0.95, "noise_std_frac": 1.0}
+  ],
+  "pattern_grid": [
+    {"name": "iid_t_s60", "mask_regime": "iid_time", "sparsity": 0.6, "noise_std_frac": 0.2},
+    {"name": "iid_c_s60", "mask_regime": "iid_channel", "sparsity": 0.6, "noise_std_frac": 0.2},
+    {"name": "blk08_s60", "mask_regime": "block_time", "sparsity": 0.6, "noise_std_frac": 0.2, "block_len": 8},
+    {"name": "blk16_s60", "mask_regime": "block_time", "sparsity": 0.6, "noise_std_frac": 0.2, "block_len": 16},
+    {"name": "blk32_s60", "mask_regime": "block_time", "sparsity": 0.6, "noise_std_frac": 0.2, "block_len": 32},
+    {"name": "per_s80", "mask_regime": "periodic_subsample", "sparsity": 0.8, "noise_std_frac": 0.2, "period": 5, "jitter": 0},
+    {"name": "jit_s80", "mask_regime": "periodic_subsample", "sparsity": 0.8, "noise_std_frac": 0.2, "period": 5, "jitter": 1},
+    {"name": "mnar_s60", "mask_regime": "mnar_curvature", "sparsity": 0.6, "noise_std_frac": 0.2, "mnar_strength": 1.0}
+  ]
+}

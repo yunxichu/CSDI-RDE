@@ -1,3 +1,8 @@
+"""v1 legacy — CSDI 训练和评估工具（来自 ../csdi/utils.py）。
+
+包含原始 CSDI 的 train/eval 循环，以及 PM25/EEG/PhysioNet 数据集加载器。
+v2 流水线不使用此文件；训练逻辑已整合进 methods/dynamics_csdi.py 的 DynamicsCSDI.fit()。
+"""
 import os
 import numpy as np
 import torch

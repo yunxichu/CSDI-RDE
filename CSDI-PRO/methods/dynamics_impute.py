@@ -159,7 +159,7 @@ def set_tau_override(tau):
     _TAU_OVERRIDE = tau
 
 
-def impute(observed: np.ndarray, kind: str = "dynamics") -> np.ndarray:
+def impute(observed: np.ndarray, kind: str = "dynamics", **kwargs) -> np.ndarray:
     """Impute a (T, D) array with NaNs.
 
     kind in {"linear", "cubic", "dynamics", "ar_kalman", "csdi"}.
@@ -167,7 +167,9 @@ def impute(observed: np.ndarray, kind: str = "dynamics") -> np.ndarray:
     observed = np.asarray(observed, dtype=np.float64)
     if kind == "csdi":
         from methods.csdi_impute_adapter import csdi_impute
-        return csdi_impute(observed, tau_override=_TAU_OVERRIDE)
+        return csdi_impute(observed, tau_override=_TAU_OVERRIDE, **kwargs)
+    if kwargs:
+        raise TypeError(f"impute(kind={kind!r}) got CSDI-only kwargs: {sorted(kwargs)}")
     if observed.ndim == 1:
         return _impute_column(observed, kind=kind)
     out = np.empty_like(observed)

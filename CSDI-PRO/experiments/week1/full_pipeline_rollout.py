@@ -36,6 +36,9 @@ _DEFAULTS = dict(
     dm_d_model=128, dm_n_heads=4, dm_n_layers=3, dm_n_epochs=400,
     dm_batch=256, dm_lr=1e-3, dm_patience=50,
     fno_width=64, fno_modes=3, fno_layers=3, fno_n_epochs=400,
+    # Optional resource override.  None preserves the historical auto device
+    # behavior; runners can pass "cpu" or "cuda" to enforce a resource budget.
+    m3_device=None,
 )
 
 
@@ -48,18 +51,21 @@ def _build_m3(cfg: dict, X_shape: tuple[int, int]):
         auto_m = min(n_train - 1, max(cfg["m_inducing"], 5 * feat_dim))
         return MultiOutputSVGP(SVGPConfig(
             m_inducing=auto_m, n_epochs=cfg["n_epochs"], lr=cfg["lr"], verbose=False,
+            device=cfg.get("m3_device"),
         ))
     if bk == "deepedm":
         return DeepEDMPredictor(DeepEDMConfig(
             d_model=cfg["dm_d_model"], n_heads=cfg["dm_n_heads"], n_layers=cfg["dm_n_layers"],
             n_epochs=cfg["dm_n_epochs"], batch_size=cfg["dm_batch"],
             lr=cfg["dm_lr"], patience=cfg["dm_patience"], verbose=False,
+            device=cfg.get("m3_device"),
         ))
     if bk == "fno":
         return FNOPredictor(FNOConfig(
             width=cfg["fno_width"], modes=cfg["fno_modes"], n_layers=cfg["fno_layers"],
             n_epochs=cfg["fno_n_epochs"], batch_size=cfg["dm_batch"],
             lr=cfg["dm_lr"], patience=cfg["dm_patience"], verbose=False,
+            device=cfg.get("m3_device"),
         ))
     raise ValueError(f"unknown backbone {bk!r}; choose from svgp|deepedm|fno")
 
@@ -113,7 +119,7 @@ def full_pipeline_forecast(
     cfg = {**_DEFAULTS, **kwargs}
 
     # --- Module 1: imputation ---------------------------------------------------
-    filled = impute(observed, kind=imp_kind)
+    filled = impute(observed, kind=imp_kind, **(cfg.get("impute_kwargs") or {}))
 
     # --- Module 2: τ selection on channel 0 -----------------------------------
     if cfg["fast_tau"]:
@@ -184,7 +190,7 @@ def full_pipeline_ensemble_forecast(
     cfg = {**_DEFAULTS, **kwargs}
     rng = np.random.default_rng(seed)
 
-    filled = impute(observed, kind=imp_kind)
+    filled = impute(observed, kind=imp_kind, **(cfg.get("impute_kwargs") or {}))
 
     if cfg["fast_tau"]:
         spec = random_tau(L=cfg["L_embed"], tau_max=cfg["tau_max"], seed=seed)

@@ -1,4 +1,19 @@
-"""Canonical Lorenz63 utilities (not using dysts-normalised time so VPT is in standard Lyapunov units)."""
+"""Lorenz63 数据生成与评估工具（所有实验的数据基础）。
+
+提供三类功能：
+  1. 轨迹生成：integrate_lorenz63() 用 scipy odeint 积分标准 Lorenz63
+     (σ=10, ρ=28, β=8/3)，丢弃 spin-up 后从吸引子上取点。
+  2. 稀疏化 / 加噪：make_sparse_noisy() 按给定稀疏率随机丢弃时间步，
+     并叠加 Gaussian 噪声（噪声 σ 用吸引子 std 归一化）。
+  3. 评估：valid_prediction_time() 计算 VPT（Valid Prediction Time），
+     单位为 Lyapunov 时间（用 LORENZ63_LYAP=0.906 换算），是论文主指标。
+
+PILOT_SCENARIOS 定义 7 个 harshness 场景 S0–S6（稀疏率 0%→95%，噪声 0→1.5×std），
+phase_transition_pilot_v2.py 在这 7 个场景上逐一比较各方法。
+
+注意：VPT 使用吸引子 std 归一化误差而非 dysts 的归一化方式，
+保证全零预测给出 VPT=0 而不是无穷大。
+"""
 from __future__ import annotations
 
 from dataclasses import dataclass
