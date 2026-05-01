@@ -98,7 +98,8 @@ def _integrate(system: str, n_ctx: int, pred_len: int, dt: float, seed: int) -> 
 
 
 def _saits_impute(observed_2d: np.ndarray, n_features: int, n_steps: int) -> np.ndarray:
-    """Per-instance SAITS fit + impute on a single (n_steps, n_features) trajectory."""
+    """Per-instance SAITS fit + impute on a single (n_steps, n_features) trajectory.
+    Used as the standalone Appendix-E sanity. Not the primary alt-imputer cell."""
     from pypots.imputation import SAITS
     X = observed_2d[None, :, :].astype(np.float32)  # (1, T, D)
     saits = SAITS(n_steps=n_steps, n_features=n_features,
@@ -107,6 +108,49 @@ def _saits_impute(observed_2d: np.ndarray, n_features: int, n_steps: int) -> np.
     saits.fit({"X": X})
     imp = saits.impute({"X": X})
     return np.asarray(imp).reshape(n_steps, n_features).astype(np.float32)
+
+
+# Cache: pretrained-SAITS model is loaded once per process and reused.
+_PRETRAINED_SAITS_CACHE: dict[tuple[int, int, str], "object"] = {}
+
+
+def _saits_pretrained_impute(
+    observed_2d: np.ndarray,
+    n_features: int,
+    n_steps: int,
+    ckpt_path: str,
+    train_n_steps: int = 128,
+) -> np.ndarray:
+    """Use a SAITS model pretrained on the chaos corpus (PyPOTS .pypots
+    checkpoint). The model was trained on windows of length ``train_n_steps``
+    (default 128, matching the L63 corpus); at inference we split the
+    ``n_steps``-long context into non-overlapping chunks of that length and
+    impute each chunk independently, then concatenate. This is the natural
+    deployment of a fixed-window-length attention imputer; it is fair to
+    SAITS because the test context-length matches its training distribution.
+    Loaded once per (train_n_steps, n_features, ckpt) and cached.
+    """
+    from pypots.imputation import SAITS
+    if n_steps % train_n_steps != 0:
+        raise ValueError(f"SAITS-pretrained inference requires n_steps "
+                         f"({n_steps}) divisible by train_n_steps "
+                         f"({train_n_steps}); got remainder "
+                         f"{n_steps % train_n_steps}.")
+
+    key = (train_n_steps, n_features, ckpt_path)
+    saits = _PRETRAINED_SAITS_CACHE.get(key)
+    if saits is None:
+        saits = SAITS(n_steps=train_n_steps, n_features=n_features,
+                       n_layers=2, d_model=64, n_heads=4, d_k=16, d_v=16, d_ffn=128,
+                       batch_size=64, epochs=0, verbose=False, device="cuda")
+        saits.load(ckpt_path)
+        _PRETRAINED_SAITS_CACHE[key] = saits
+
+    n_chunks = n_steps // train_n_steps
+    chunks = observed_2d.reshape(n_chunks, train_n_steps, n_features).astype(np.float32)
+    imp = saits.impute({"X": chunks})
+    imp = np.asarray(imp).reshape(n_chunks, train_n_steps, n_features)
+    return imp.reshape(n_steps, n_features).astype(np.float32)
 
 
 def _brits_impute(observed_2d: np.ndarray, n_features: int, n_steps: int) -> np.ndarray:
@@ -126,6 +170,7 @@ def _make_filled(
     n_features: int,
     n_steps: int,
     sigma_override: float,
+    saits_pretrained_ckpt: str | None = None,
 ) -> np.ndarray:
     if cell == "linear":
         return impute(observed, kind="linear").astype(np.float32)
@@ -133,6 +178,13 @@ def _make_filled(
         return impute(observed, kind="csdi", sigma_override=sigma_override).astype(np.float32)
     if cell == "saits":
         return _saits_impute(observed, n_features=n_features, n_steps=n_steps)
+    if cell == "saits_pretrained":
+        if saits_pretrained_ckpt is None:
+            raise ValueError("saits_pretrained cell requires --saits_ckpt")
+        return _saits_pretrained_impute(
+            observed, n_features=n_features, n_steps=n_steps,
+            ckpt_path=saits_pretrained_ckpt,
+        )
     if cell == "brits":
         return _brits_impute(observed, n_features=n_features, n_steps=n_steps)
     raise ValueError(cell)
@@ -156,9 +208,12 @@ def main() -> None:
     ap.add_argument("--n_ctx", type=int, default=512)
     ap.add_argument("--pred_len", type=int, default=128)
     ap.add_argument("--device", default="cuda")
-    ap.add_argument("--cells", nargs="+", default=list(CELLS))
+    ap.add_argument("--cells", nargs="+", default=list(CELLS),
+                    help="Cells from {linear, saits, saits_pretrained, brits, csdi}")
     ap.add_argument("--settings", nargs="+", default=None,
                     help="Subset of setting names like 'L63_SP65 L63_SP82 L96_SP82'")
+    ap.add_argument("--saits_ckpt", default=None,
+                    help="Path to a PyPOTS SAITS .pypots file for the saits_pretrained cell")
     ap.add_argument("--tag", default="altimputer_5seed")
     args = ap.parse_args()
 
@@ -209,6 +264,7 @@ def main() -> None:
                     filled = _make_filled(
                         observed, cell, n_features, args.n_ctx,
                         sigma_override=float(setting["noise_std_frac"]) * attr_std,
+                        saits_pretrained_ckpt=args.saits_ckpt,
                     )
                     mean = panda_forecast(filled, pred_len=args.pred_len, device=args.device)
                     mean = mean[: args.pred_len]

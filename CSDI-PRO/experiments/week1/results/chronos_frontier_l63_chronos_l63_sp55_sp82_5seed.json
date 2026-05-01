@@ -1,0 +1,660 @@
+{
+  "config": {
+    "configs": [
+      "SP55",
+      "SP65",
+      "SP75",
+      "SP82"
+    ],
+    "n_seeds": 5,
+    "seed_offset": 0,
+    "n_ctx": 512,
+    "pred_len": 128,
+    "dt": 0.025,
+    "cells": [
+      "linear",
+      "csdi"
+    ],
+    "chronos_model": "amazon/chronos-bolt-small",
+    "device": "cuda",
+    "tag": "chronos_l63_sp55_sp82_5seed"
+  },
+  "records": [
+    {
+      "seed": 0,
+      "scenario": "SP55",
+      "cell": "linear",
+      "sparsity": 0.55,
+      "noise_std_frac": 0.0,
+      "keep_frac": 0.462890625,
+      "vpt03": 0.11325,
+      "vpt05": 0.18120000000000003,
+      "vpt10": 0.27180000000000004,
+      "infer_time_s": 4.807473659515381,
+      "error": null
+    },
+    {
+      "seed": 0,
+      "scenario": "SP55",
+      "cell": "csdi",
+      "sparsity": 0.55,
+      "noise_std_frac": 0.0,
+      "keep_frac": 0.462890625,
+      "vpt03": 0.11325,
+      "vpt05": 0.18120000000000003,
+      "vpt10": 0.27180000000000004,
+      "infer_time_s": 5.48175573348999,
+      "error": null
+    },
+    {
+      "seed": 1,
+      "scenario": "SP55",
+      "cell": "linear",
+      "sparsity": 0.55,
+      "noise_std_frac": 0.0,
+      "keep_frac": 0.466796875,
+      "vpt03": 0.20385,
+      "vpt05": 0.24915000000000004,
+      "vpt10": 0.31710000000000005,
+      "infer_time_s": 0.03621363639831543,
+      "error": null
+    },
+    {
+      "seed": 1,
+      "scenario": "SP55",
+      "cell": "csdi",
+      "sparsity": 0.55,
+      "noise_std_frac": 0.0,
+      "keep_frac": 0.466796875,
+      "vpt03": 0.15855000000000002,
+      "vpt05": 0.24915000000000004,
+      "vpt10": 0.31710000000000005,
+      "infer_time_s": 5.353136301040649,
+      "error": null
+    },
+    {
+      "seed": 2,
+      "scenario": "SP55",
+      "cell": "linear",
+      "sparsity": 0.55,
+      "noise_std_frac": 0.0,
+      "keep_frac": 0.435546875,
+      "vpt03": 0.022650000000000003,
+      "vpt05": 0.04530000000000001,
+      "vpt10": 0.06795000000000001,
+      "infer_time_s": 0.03630971908569336,
+      "error": null
+    },
+    {
+      "seed": 2,
+      "scenario": "SP55",
+      "cell": "csdi",
+      "sparsity": 0.55,
+      "noise_std_frac": 0.0,
+      "keep_frac": 0.435546875,
+      "vpt03": 0.022650000000000003,
+      "vpt05": 0.04530000000000001,
+      "vpt10": 0.06795000000000001,
+      "infer_time_s": 5.455752611160278,
+      "error": null
+    },
+    {
+      "seed": 3,
+      "scenario": "SP55",
+      "cell": "linear",
+      "sparsity": 0.55,
+      "noise_std_frac": 0.0,
+      "keep_frac": 0.4375,
+      "vpt03": 0.022650000000000003,
+      "vpt05": 0.06795000000000001,
+      "vpt10": 0.7248000000000001,
+      "infer_time_s": 0.033536672592163086,
+      "error": null
+    },
+    {
+      "seed": 3,
+      "scenario": "SP55",
+      "cell": "csdi",
+      "sparsity": 0.55,
+      "noise_std_frac": 0.0,
+      "keep_frac": 0.4375,
+      "vpt03": 0.06795000000000001,
+      "vpt05": 0.29445000000000005,
+      "vpt10": 0.7474500000000001,
+      "infer_time_s": 5.551796913146973,
+      "error": null
+    },
+    {
+      "seed": 4,
+      "scenario": "SP55",
+      "cell": "linear",
+      "sparsity": 0.55,
+      "noise_std_frac": 0.0,
+      "keep_frac": 0.423828125,
+      "vpt03": 0.0,
+      "vpt05": 0.04530000000000001,
+      "vpt10": 0.453,
+      "infer_time_s": 0.03393864631652832,
+      "error": null
+    },
+    {
+      "seed": 4,
+      "scenario": "SP55",
+      "cell": "csdi",
+      "sparsity": 0.55,
+      "noise_std_frac": 0.0,
+      "keep_frac": 0.423828125,
+      "vpt03": 0.09060000000000001,
+      "vpt05": 0.31710000000000005,
+      "vpt10": 0.4983000000000001,
+      "infer_time_s": 5.43799614906311,
+      "error": null
+    },
+    {
+      "seed": 0,
+      "scenario": "SP65",
+      "cell": "linear",
+      "sparsity": 0.65,
+      "noise_std_frac": 0.0,
+      "keep_frac": 0.359375,
+      "vpt03": 0.13590000000000002,
+      "vpt05": 0.20385,
+      "vpt10": 0.27180000000000004,
+      "infer_time_s": 0.033002376556396484,
+      "error": null
+    },
+    {
+      "seed": 0,
+      "scenario": "SP65",
+      "cell": "csdi",
+      "sparsity": 0.65,
+      "noise_std_frac": 0.0,
+      "keep_frac": 0.359375,
+      "vpt03": 0.11325,
+      "vpt05": 0.18120000000000003,
+      "vpt10": 0.27180000000000004,
+      "infer_time_s": 5.463907957077026,
+      "error": null
+    },
+    {
+      "seed": 1,
+      "scenario": "SP65",
+      "cell": "linear",
+      "sparsity": 0.65,
+      "noise_std_frac": 0.0,
+      "keep_frac": 0.35546875,
+      "vpt03": 0.0,
+      "vpt05": 0.2265,
+      "vpt10": 0.33975,
+      "infer_time_s": 0.03301739692687988,
+      "error": null
+    },
+    {
+      "seed": 1,
+      "scenario": "SP65",
+      "cell": "csdi",
+      "sparsity": 0.65,
+      "noise_std_frac": 0.0,
+      "keep_frac": 0.35546875,
+      "vpt03": 0.15855000000000002,
+      "vpt05": 0.24915000000000004,
+      "vpt10": 0.31710000000000005,
+      "infer_time_s": 5.455358505249023,
+      "error": null
+    },
+    {
+      "seed": 2,
+      "scenario": "SP65",
+      "cell": "linear",
+      "sparsity": 0.65,
+      "noise_std_frac": 0.0,
+      "keep_frac": 0.361328125,
+      "vpt03": 0.022650000000000003,
+      "vpt05": 0.04530000000000001,
+      "vpt10": 0.06795000000000001,
+      "infer_time_s": 0.03303384780883789,
+      "error": null
+    },
+    {
+      "seed": 2,
+      "scenario": "SP65",
+      "cell": "csdi",
+      "sparsity": 0.65,
+      "noise_std_frac": 0.0,
+      "keep_frac": 0.361328125,
+      "vpt03": 0.022650000000000003,
+      "vpt05": 0.04530000000000001,
+      "vpt10": 0.06795000000000001,
+      "infer_time_s": 5.469736099243164,
+      "error": null
+    },
+    {
+      "seed": 3,
+      "scenario": "SP65",
+      "cell": "linear",
+      "sparsity": 0.65,
+      "noise_std_frac": 0.0,
+      "keep_frac": 0.388671875,
+      "vpt03": 0.022650000000000003,
+      "vpt05": 0.06795000000000001,
+      "vpt10": 0.7248000000000001,
+      "infer_time_s": 0.03303718566894531,
+      "error": null
+    },
+    {
+      "seed": 3,
+      "scenario": "SP65",
+      "cell": "csdi",
+      "sparsity": 0.65,
+      "noise_std_frac": 0.0,
+      "keep_frac": 0.388671875,
+      "vpt03": 0.06795000000000001,
+      "vpt05": 0.29445000000000005,
+      "vpt10": 0.7474500000000001,
+      "infer_time_s": 5.423800945281982,
+      "error": null
+    },
+    {
+      "seed": 4,
+      "scenario": "SP65",
+      "cell": "linear",
+      "sparsity": 0.65,
+      "noise_std_frac": 0.0,
+      "keep_frac": 0.349609375,
+      "vpt03": 0.06795000000000001,
+      "vpt05": 0.36240000000000006,
+      "vpt10": 0.52095,
+      "infer_time_s": 0.033057212829589844,
+      "error": null
+    },
+    {
+      "seed": 4,
+      "scenario": "SP65",
+      "cell": "csdi",
+      "sparsity": 0.65,
+      "noise_std_frac": 0.0,
+      "keep_frac": 0.349609375,
+      "vpt03": 0.06795000000000001,
+      "vpt05": 0.31710000000000005,
+      "vpt10": 0.4983000000000001,
+      "infer_time_s": 5.448197603225708,
+      "error": null
+    },
+    {
+      "seed": 0,
+      "scenario": "SP75",
+      "cell": "linear",
+      "sparsity": 0.75,
+      "noise_std_frac": 0.0,
+      "keep_frac": 0.2578125,
+      "vpt03": 0.11325,
+      "vpt05": 0.18120000000000003,
+      "vpt10": 0.24915000000000004,
+      "infer_time_s": 0.03304553031921387,
+      "error": null
+    },
+    {
+      "seed": 0,
+      "scenario": "SP75",
+      "cell": "csdi",
+      "sparsity": 0.75,
+      "noise_std_frac": 0.0,
+      "keep_frac": 0.2578125,
+      "vpt03": 0.11325,
+      "vpt05": 0.18120000000000003,
+      "vpt10": 0.27180000000000004,
+      "infer_time_s": 5.468603134155273,
+      "error": null
+    },
+    {
+      "seed": 1,
+      "scenario": "SP75",
+      "cell": "linear",
+      "sparsity": 0.75,
+      "noise_std_frac": 0.0,
+      "keep_frac": 0.24609375,
+      "vpt03": 0.0,
+      "vpt05": 0.0,
+      "vpt10": 0.29445000000000005,
+      "infer_time_s": 0.03615999221801758,
+      "error": null
+    },
+    {
+      "seed": 1,
+      "scenario": "SP75",
+      "cell": "csdi",
+      "sparsity": 0.75,
+      "noise_std_frac": 0.0,
+      "keep_frac": 0.24609375,
+      "vpt03": 0.15855000000000002,
+      "vpt05": 0.24915000000000004,
+      "vpt10": 0.31710000000000005,
+      "infer_time_s": 5.434312343597412,
+      "error": null
+    },
+    {
+      "seed": 2,
+      "scenario": "SP75",
+      "cell": "linear",
+      "sparsity": 0.75,
+      "noise_std_frac": 0.0,
+      "keep_frac": 0.236328125,
+      "vpt03": 0.022650000000000003,
+      "vpt05": 0.022650000000000003,
+      "vpt10": 0.06795000000000001,
+      "infer_time_s": 0.03301048278808594,
+      "error": null
+    },
+    {
+      "seed": 2,
+      "scenario": "SP75",
+      "cell": "csdi",
+      "sparsity": 0.75,
+      "noise_std_frac": 0.0,
+      "keep_frac": 0.236328125,
+      "vpt03": 0.022650000000000003,
+      "vpt05": 0.04530000000000001,
+      "vpt10": 0.06795000000000001,
+      "infer_time_s": 5.438889741897583,
+      "error": null
+    },
+    {
+      "seed": 3,
+      "scenario": "SP75",
+      "cell": "linear",
+      "sparsity": 0.75,
+      "noise_std_frac": 0.0,
+      "keep_frac": 0.259765625,
+      "vpt03": 0.06795000000000001,
+      "vpt05": 0.13590000000000002,
+      "vpt10": 1.359,
+      "infer_time_s": 0.03292512893676758,
+      "error": null
+    },
+    {
+      "seed": 3,
+      "scenario": "SP75",
+      "cell": "csdi",
+      "sparsity": 0.75,
+      "noise_std_frac": 0.0,
+      "keep_frac": 0.259765625,
+      "vpt03": 0.09060000000000001,
+      "vpt05": 0.27180000000000004,
+      "vpt10": 0.7474500000000001,
+      "infer_time_s": 5.46170449256897,
+      "error": null
+    },
+    {
+      "seed": 4,
+      "scenario": "SP75",
+      "cell": "linear",
+      "sparsity": 0.75,
+      "noise_std_frac": 0.0,
+      "keep_frac": 0.251953125,
+      "vpt03": 0.022650000000000003,
+      "vpt05": 0.04530000000000001,
+      "vpt10": 0.52095,
+      "infer_time_s": 0.03340768814086914,
+      "error": null
+    },
+    {
+      "seed": 4,
+      "scenario": "SP75",
+      "cell": "csdi",
+      "sparsity": 0.75,
+      "noise_std_frac": 0.0,
+      "keep_frac": 0.251953125,
+      "vpt03": 0.24915000000000004,
+      "vpt05": 0.33975,
+      "vpt10": 0.52095,
+      "infer_time_s": 5.4538514614105225,
+      "error": null
+    },
+    {
+      "seed": 0,
+      "scenario": "SP82",
+      "cell": "linear",
+      "sparsity": 0.82,
+      "noise_std_frac": 0.0,
+      "keep_frac": 0.181640625,
+      "vpt03": 0.13590000000000002,
+      "vpt05": 0.20385,
+      "vpt10": 0.27180000000000004,
+      "infer_time_s": 0.03304696083068848,
+      "error": null
+    },
+    {
+      "seed": 0,
+      "scenario": "SP82",
+      "cell": "csdi",
+      "sparsity": 0.82,
+      "noise_std_frac": 0.0,
+      "keep_frac": 0.181640625,
+      "vpt03": 0.06795000000000001,
+      "vpt05": 0.11325,
+      "vpt10": 0.2265,
+      "infer_time_s": 5.3352696895599365,
+      "error": null
+    },
+    {
+      "seed": 1,
+      "scenario": "SP82",
+      "cell": "linear",
+      "sparsity": 0.82,
+      "noise_std_frac": 0.0,
+      "keep_frac": 0.126953125,
+      "vpt03": 0.0,
+      "vpt05": 0.0,
+      "vpt10": 0.0,
+      "infer_time_s": 0.03293418884277344,
+      "error": null
+    },
+    {
+      "seed": 1,
+      "scenario": "SP82",
+      "cell": "csdi",
+      "sparsity": 0.82,
+      "noise_std_frac": 0.0,
+      "keep_frac": 0.126953125,
+      "vpt03": 0.2265,
+      "vpt05": 0.27180000000000004,
+      "vpt10": 0.31710000000000005,
+      "infer_time_s": 5.280489206314087,
+      "error": null
+    },
+    {
+      "seed": 2,
+      "scenario": "SP82",
+      "cell": "linear",
+      "sparsity": 0.82,
+      "noise_std_frac": 0.0,
+      "keep_frac": 0.15234375,
+      "vpt03": 0.022650000000000003,
+      "vpt05": 0.04530000000000001,
+      "vpt10": 0.09060000000000001,
+      "infer_time_s": 0.03298640251159668,
+      "error": null
+    },
+    {
+      "seed": 2,
+      "scenario": "SP82",
+      "cell": "csdi",
+      "sparsity": 0.82,
+      "noise_std_frac": 0.0,
+      "keep_frac": 0.15234375,
+      "vpt03": 0.022650000000000003,
+      "vpt05": 0.04530000000000001,
+      "vpt10": 0.06795000000000001,
+      "infer_time_s": 5.286096811294556,
+      "error": null
+    },
+    {
+      "seed": 3,
+      "scenario": "SP82",
+      "cell": "linear",
+      "sparsity": 0.82,
+      "noise_std_frac": 0.0,
+      "keep_frac": 0.181640625,
+      "vpt03": 0.0,
+      "vpt05": 0.04530000000000001,
+      "vpt10": 0.7474500000000001,
+      "infer_time_s": 0.03291726112365723,
+      "error": null
+    },
+    {
+      "seed": 3,
+      "scenario": "SP82",
+      "cell": "csdi",
+      "sparsity": 0.82,
+      "noise_std_frac": 0.0,
+      "keep_frac": 0.181640625,
+      "vpt03": 0.06795000000000001,
+      "vpt05": 0.27180000000000004,
+      "vpt10": 0.7474500000000001,
+      "infer_time_s": 5.286823272705078,
+      "error": null
+    },
+    {
+      "seed": 4,
+      "scenario": "SP82",
+      "cell": "linear",
+      "sparsity": 0.82,
+      "noise_std_frac": 0.0,
+      "keep_frac": 0.169921875,
+      "vpt03": 0.022650000000000003,
+      "vpt05": 0.06795000000000001,
+      "vpt10": 0.5889000000000001,
+      "infer_time_s": 0.032952308654785156,
+      "error": null
+    },
+    {
+      "seed": 4,
+      "scenario": "SP82",
+      "cell": "csdi",
+      "sparsity": 0.82,
+      "noise_std_frac": 0.0,
+      "keep_frac": 0.169921875,
+      "vpt03": 0.31710000000000005,
+      "vpt05": 0.38505000000000006,
+      "vpt10": 0.5889000000000001,
+      "infer_time_s": 5.286498546600342,
+      "error": null
+    }
+  ],
+  "summary": {
+    "SP55": {
+      "linear": {
+        "mean": 0.3669300000000001,
+        "std": 0.24310531051377718,
+        "median": 0.31710000000000005,
+        "pr_gt_0p5": 0.2,
+        "pr_gt_1p0": 0.0,
+        "n": 5
+      },
+      "csdi": {
+        "mean": 0.38052,
+        "std": 0.25595502192768166,
+        "median": 0.31710000000000005,
+        "pr_gt_0p5": 0.2,
+        "pr_gt_1p0": 0.0,
+        "n": 5
+      }
+    },
+    "SP65": {
+      "linear": {
+        "mean": 0.38505,
+        "std": 0.24966424203317544,
+        "median": 0.33975,
+        "pr_gt_0p5": 0.4,
+        "pr_gt_1p0": 0.0,
+        "n": 5
+      },
+      "csdi": {
+        "mean": 0.38052,
+        "std": 0.25595502192768166,
+        "median": 0.31710000000000005,
+        "pr_gt_0p5": 0.2,
+        "pr_gt_1p0": 0.0,
+        "n": 5
+      }
+    },
+    "SP75": {
+      "linear": {
+        "mean": 0.4983000000000001,
+        "std": 0.507481324779543,
+        "median": 0.29445000000000005,
+        "pr_gt_0p5": 0.4,
+        "pr_gt_1p0": 0.2,
+        "n": 5
+      },
+      "csdi": {
+        "mean": 0.38505,
+        "std": 0.2587458912717263,
+        "median": 0.31710000000000005,
+        "pr_gt_0p5": 0.4,
+        "pr_gt_1p0": 0.0,
+        "n": 5
+      }
+    },
+    "SP82": {
+      "linear": {
+        "mean": 0.3397500000000001,
+        "std": 0.3203193718775061,
+        "median": 0.27180000000000004,
+        "pr_gt_0p5": 0.4,
+        "pr_gt_1p0": 0.0,
+        "n": 5
+      },
+      "csdi": {
+        "mean": 0.38958000000000004,
+        "std": 0.2752697281758385,
+        "median": 0.31710000000000005,
+        "pr_gt_0p5": 0.4,
+        "pr_gt_1p0": 0.0,
+        "n": 5
+      }
+    }
+  },
+  "contrasts": {
+    "SP55": {
+      "csdi_minus_linear": {
+        "mean": 0.013590000000000001,
+        "ci95": [
+          0.0,
+          0.03171000000000003
+        ]
+      }
+    },
+    "SP65": {
+      "csdi_minus_linear": {
+        "mean": -0.00452999999999999,
+        "ci95": [
+          -0.01811999999999996,
+          0.00905999999999998
+        ]
+      }
+    },
+    "SP75": {
+      "csdi_minus_linear": {
+        "mean": -0.11324999999999999,
+        "ci95": [
+          -0.36239999999999994,
+          0.018120000000000004
+        ]
+      }
+    },
+    "SP82": {
+      "csdi_minus_linear": {
+        "mean": 0.049830000000000006,
+        "ci95": [
+          -0.02718000000000002,
+          0.18573
+        ]
+      }
+    }
+  },
+  "meta": {
+    "attractor_std": 8.51,
+    "lyap": 0.906
+  }
+}

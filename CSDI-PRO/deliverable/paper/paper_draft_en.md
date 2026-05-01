@@ -7,22 +7,26 @@
 ## Abstract
 
 Pretrained chaotic forecasters fail across sharp sparse-observation forecastability
-frontiers. Inside the sparsity transition band, corruption-aware imputation is the
-only tested intervention that reliably moves Panda back across the frontier. The
+frontiers. Inside the sparsity transition band, **corpus-pretrained structured
+imputation** is the lever that reliably moves Panda back across the frontier:
+both CSDI (a corruption-aware diffusion imputer) and a SAITS imputer pretrained
+on the same chaos corpus rescue Panda strongly, with CSDI retaining a
+small but paired-CI-strict advantage at the entrance band (L63 SP65: CSDI − SAITS
+= +0.41 Λ, 95 % CI [+0.05, +0.87]) and the two becoming statistically
+indistinguishable at the floor band (SP82: +0.06 Λ, [−0.31, +0.59]). The
 mechanism is strongest in the entrance band: CSDI produces large reductions in
 both raw-patch and Panda-token distance to the clean context (linear/CSDI
 distance ratios of roughly 12 to 34 across local stdev, lag-1 autocorrelation,
 mid-frequency power, and Panda's patch / embedder / encoder / pooled stages on
 L63 SP65). Near the floor, Panda-token distances still favor CSDI but one raw
 temporal metric becomes mixed, so distance-to-clean is informative but not a
-complete account of tail survival. CSDI is
-therefore a sparse-gap imputation lever, not a generic dense-noise denoiser, and
-structured CSDI residuals are not fully interchangeable with iid noise of matched
-magnitude, especially in tail survival probability rather than mean VPT.
-Delay-manifold forecasting (DeepEDM in Takens coordinates) supplies a
-complementary dynamics-aware route through the same frontier, with explicit scope
-boundaries on non-smooth systems such as Chua and scalar delay-differential
-systems such as Mackey-Glass.
+complete account of tail survival. CSDI is therefore a sparse-gap imputation
+lever, not a generic dense-noise denoiser, and structured imputation residuals
+are not fully interchangeable with iid noise of matched magnitude, especially in
+tail survival probability rather than mean VPT. Delay-manifold forecasting
+(DeepEDM in Takens coordinates) supplies a complementary dynamics-aware route
+through the same frontier, with explicit scope boundaries on non-smooth systems
+such as Chua and scalar delay-differential systems such as Mackey-Glass.
 
 Headline numbers. On **L63 SP65** ($s = 0.65$, $\sigma = 0$), CSDI-filled Panda
 reaches mean VPT 2.86 Lyapunov times versus 1.22 for linear-filled Panda
@@ -393,21 +397,50 @@ fraction of seeds that survive past one Lyapunov decorrelation time.
 
 We ask whether structured imputation in general is the lever, or whether
 CSDI's specific dynamics-aware diffusion prior is required, by adding a
-pretrained SAITS imputer trained on the same chaos corpus that CSDI was
-trained on. At L63 SP65 and SP82 with cells `linear → Panda`,
-`SAITS-pretrained → Panda`, and `CSDI → Panda`, the paired CSDI−SAITS
-contrast quantifies the marginal value of dynamics-aware diffusion above
-corpus-pretrained structured attention; the paired SAITS−linear contrast
-asks whether any corpus-pretrained structured imputer matches the rescue.
-Numerical results are in §[Pretrained-SAITS results] and Appendix C; we
-preserve the entrance / floor split of §4.3 when reporting paired
-contrasts.
+pretrained SAITS imputer trained on the same chaos corpus that CSDI is
+trained on (~64K independent-IC L63 windows of length 128, with v2-grid-
+matched missingness). At inference SAITS imputes the test context in
+non-overlapping length-128 chunks — its pretrained context length —
+which is the natural deployment for a fixed-window-attention imputer.
+
+| Cell | L63 SP65 (n=10) | L63 SP82 (n=10) |
+|:--|:--:|:--:|
+| `linear → Panda` mean VPT | 1.22 | 0.29 |
+| `SAITS-pretrained → Panda` | **2.49** | **1.51** |
+| `CSDI → Panda` | **2.89** | **1.57** |
+
+| Paired contrast | SP65 Δ (95 % CI) | SP82 Δ (95 % CI) |
+|:--|:-:|:-:|
+| SAITS-pretrained − linear | +1.26 [+0.83, +1.64] ↑ | +1.23 [+0.86, +1.62] ↑ |
+| CSDI − linear | +1.67 [+1.41, +1.92] ↑ | +1.28 [+0.73, +1.85] ↑ |
+| **CSDI − SAITS-pretrained** | **+0.41 [+0.05, +0.87] ↑** | **+0.06 [−0.31, +0.59] ≈** |
+
+Tail survival probability $\Pr(\mathrm{VPT}>1.0\,\Lambda)$:
+
+| Cell | SP65 | SP82 |
+|:--|:-:|:-:|
+| linear | 70 % | 0 % |
+| SAITS-pretrained | 90 % | 70 % |
+| CSDI | 100 % | 70 % |
+
+This is a substantial narrowing of the §1 intervention claim from "CSDI
+is the only tested intervention" to "**corpus-pretrained structured
+imputation is the lever**, with CSDI retaining a small but paired-CI-strict
+advantage in the entrance band and being indistinguishable from
+SAITS-pretrained in the floor band". The phenomenon — that a
+corpus-pretrained structured imputer crosses the L63 transition band
+where linear interpolation collapses — is therefore not unique to CSDI;
+it generalises to at least one other corpus-pretrained imputer trained on
+the same data and inference-matched to its training context length.
 
 A standalone single-trajectory SAITS / BRITS sanity check (no pretraining
-corpus, per-instance fit on the single test trajectory) is reported as a
-supporting observation in Appendix E and is **not** a primary reviewer
-defense, because per-instance training is biased against SAITS / BRITS by
-design.
+corpus, per-instance fit on the test trajectory) is reported in Appendix E
+as supporting observation. Per-instance training is biased against
+SAITS / BRITS by design and is not the primary alt-imputer comparison.
+
+Glocal-IB and other recent global-structure imputers are not evaluated;
+they are listed in §2 as adjacent prior art on high-missingness
+imputation and remain a natural follow-up.
 
 ### 4.5 Interpretation
 
@@ -551,13 +584,26 @@ are honest boundaries, not hidden failures.
   per-instance SAITS / BRITS sanity check is reported in Appendix E. We
   have not evaluated Glocal-IB or other recent global-structure imputers;
   these are listed as adjacent prior art in §2 and are an open follow-up.
-- **Forecaster breadth.** Panda is the headline; Chronos is evaluated on
-  the L63 sparsity line (§3.2). TimesFM / Lag-Llama are not evaluated;
-  extending to them would strengthen the cross-foundation claim.
-- **Known-dynamics upper bound.** A model-aware reference (EnKF / LETKF
-  with the true vector field) is reported on L63 in Appendix B as an
-  upper bound; our setting is the model-agnostic preprocessing interface,
-  where that information is unavailable.
+- **Forecaster breadth.** Panda is the headline. We additionally evaluate
+  Chronos-bolt-small on the L63 sparsity line (SP55–SP82, 5 seeds,
+  `linear → Chronos` and `CSDI → Chronos`); Chronos at our `pred_len = 128`
+  has substantially lower absolute VPT than Panda across the entire SP
+  line (mean 0.34–0.50, $\Pr(\mathrm{VPT}>1.0)$ ≤ 20 %), and CSDI does
+  not visibly improve it (paired Δ all near zero with CIs straddling
+  zero). The Chronos library itself warns that
+  `prediction_length > 64` is outside its training distribution; we
+  therefore do **not** read this as "the frontier does not generalise to
+  Chronos in general", only as "the corpus-pretrained-imputation lever
+  is empirically observed for Panda at the pred_len we tested; matched
+  pred_len ≤ 64 evaluations of Chronos / TimesFM / Lag-Llama remain
+  future work".
+- **Known-dynamics upper bound.** A model-aware reference (stochastic
+  EnKF with the true L63 vector field, 100 ensemble members) saturates
+  at the VPT ceiling across the entire sparse-observation transition
+  band (SP55–SP82 mean 2.84–2.85, $\Pr(\mathrm{VPT}>1.0) = 100 \%$ at all
+  cells; Appendix B). The frontier is therefore a property of the
+  **black-box deployment interface** (no access to dynamics for
+  forecasting), not of the system itself.
 - **Pure-noise axis.** The paper's intervention claim is restricted to the
   sparse-observation axis. CSDI is neutral or slightly hurtful on the
   dense-noise axis; a denoising-aware variant is an open follow-up.
@@ -671,16 +717,21 @@ repository root.
 | 9 | Raw-patch diagnostic v2 | L63 | SP65, SP82 | clean / linear / CSDI; metrics: local stdev, lag-1 ρ, mid-freq power | 10 | `l63_patch_ood_v2_v2protocol_sp65_sp82_10seed.json` | `experiments/week1/figures/l63_patch_ood_v2_v2protocol_metrics_SP{65,82}.png` |
 | 10 | Cross-system isolation matrix (legacy) | L63, L96 N=10/20, Rössler, Kuramoto | S0–S6 | linear/Kalman/CSDI × Panda/DeepEDM (6) | 5 | `pt_{l63,l96_iso_l96N{10,20},rossler_iso_rossler,kuramoto}_*_5seed.json` | `deliverable/figures_isolation/*_heatmap.png`, `*_bars.png`, `*.md` |
 | 11 | MG / Chua scope-boundary cases | Mackey-Glass, Chua | S0–S6 | same as #10 | 5 | `pt_{mg,chua}_*_5seed.json` | `deliverable/figures_isolation/` (boundary subset) |
-| 12 | Alt-imputer C0 sanity (per-instance) | L63 | SP65 | linear, SAITS, BRITS, CSDI | 5 | `panda_altimputer_l63sp65_partial_5seed.json` | log-only; appendix sanity |
-| C1 | **Pretrained alt-imputer** (deferred) | L63, L96 N=20 | SP82 | linear, SAITS-pretrained, Glocal-IB, CSDI | 5 | not yet run | see Appendix C |
+| 12 | Alt-imputer per-instance sanity | L63 | SP65 | linear, SAITS, BRITS, CSDI | 5 | `panda_altimputer_l63sp65_partial_5seed.json` | log-only; Appendix E sanity |
+| 13 | **Pretrained alt-imputer (P1.1)** | L63 | SP65, SP82 | linear, SAITS-pretrained, CSDI | 10 | `panda_altimputer_l63_sp65_sp82_pretrained_10seed_chunked.json` | §4.4 + Appendix C |
+| 14 | **Chronos mini-frontier (P1.2)** | L63 | SP55, SP65, SP75, SP82 | linear, CSDI (forecaster: Chronos) | 5 | `chronos_frontier_l63_chronos_l63_sp55_sp82_5seed.json` | §3.2 / §6.4 cross-foundation observation |
+| 15 | **EnKF known-dynamics upper bound (P1.3)** | L63 | SP55–SP82, NO020, NO050 | EnKF (true vector field, 100 members) | 5 | `enkf_l63_enkf_l63_v2_5seed.json` | §6.5 / Appendix B reference |
 
 Items 1–9 are the patched-protocol locked numbers cited in §3 / §4 / §6.
 Item 10 is the cross-system replication that uses the older S0–S6
 corruption pipeline (`make_sparse_noisy`) and is cited as **secondary**
 direction-of-effect evidence — the v2 protocol numbers in items 1–6 / 8 / 9
 are authoritative. Item 11 supplies §6.3 scope conditions. Item 12 is
-appendix-only sanity (per-instance training, biased against SAITS / BRITS).
-Item C1 is the pre-submission reviewer-defense plan (Appendix C).
+Appendix E sanity (per-instance training, biased against SAITS / BRITS by
+design). Items 13–15 are the P1 reviewer-defense experiments: pretrained
+SAITS alt-imputer comparison (§4.4 / Appendix C), Chronos cross-foundation
+mini-frontier (§3.2 / §6.4), and EnKF known-dynamics upper bound
+(§6.5 / Appendix B).
 
 ### B.3 Aggregator scripts
 
@@ -699,39 +750,55 @@ Each aggregator is invoked as `python -m experiments.week1.<script>`:
 
 ## Appendix C: Pretrained alt-imputer details
 
-We pretrain a SAITS [Du22] imputer on the same L63 chaos corpus that CSDI
-is trained on (~500K independent-IC windows, matched missingness
-distribution drawn from the v2 corruption grid). At inference time SAITS
-sees the same observed mask as CSDI on every (seed, scenario) cell, so
-the comparison is fair on (i) training data, (ii) corruption distribution,
-and (iii) test mask.
+**Training.** We pretrain a SAITS [Du22] imputer on
+`experiments/week2_modules/data/lorenz63_clean_64k_L128.npz` (≈ 64 K
+independent-IC L63 windows, length 128). For each training window we
+sample a sparsity uniformly from the v2 `fine_s_line` grid
+(`{0, 0.20, 0.40, 0.55, 0.65, 0.75, 0.82, 0.88, 0.93, 0.97}`) and apply
+an iid_time mask, so the SAITS training corruption distribution matches
+the v2 evaluation distribution. Architecture: 2 SAITS layers, $d_{model}
+= 64$, 4 heads, $d_k = d_v = 16$, $d_{ffn} = 128$. 30 epochs,
+batch 64, ≈ 18 min on 1 GPU. Best checkpoint at epoch 30; final
+training MAE = 0.47, validation MSE = 8.28, validation MAE on missing
+entries = 1.26 (= 0.149 × $\sigma_\text{attr}$).
 
-Cells reported in §4.4: `linear → Panda`, `SAITS-pretrained → Panda`,
-`CSDI → Panda` at L63 SP65 and SP82, 10 seeds each. Paired-bootstrap
-contrasts:
+Checkpoint:
+`experiments/week2_modules/ckpts/saits_l63_pretrained/<run-id>/SAITS.pypots`.
 
-| Cell | SAITS − linear | CSDI − linear | CSDI − SAITS |
-|:--|:-:|:-:|:-:|
-| L63 SP65 | _[from `panda_altimputer_l63_sp65_sp82_pretrained_10seed.json`]_ | _[from same]_ | _[from same]_ |
-| L63 SP82 | _[from same]_ | _[from same]_ | _[from same]_ |
+**Inference.** SAITS expects a fixed input length matching its
+positional encoding. The test context (length 512) is split into 4
+non-overlapping length-128 chunks, each is imputed independently, and
+the chunks are concatenated. CSDI's natural variable-length inference
+is unchanged.
 
-Reading rule:
+**Results (10 seeds at L63 SP65 + SP82, σ = 0).**
 
-- if SAITS − linear is strict-positive and CSDI − SAITS is not, the main
-  claim is **"corpus-pretrained structured imputation is the lever"**;
-  CSDI is reported as one strong instance.
-- if CSDI − SAITS is strict-positive, dynamics-aware diffusion residuals
-  carry measurable value above generic structured attention.
-- if SAITS − linear is not strict-positive, the dynamics-aware residual
-  is the working ingredient.
+| Cell | SP65 mean | SP82 mean | SP65 Pr>1.0 | SP82 Pr>1.0 |
+|:--|--:|--:|--:|--:|
+| linear | 1.22 | 0.29 | 70 % | 0 % |
+| SAITS-pretrained | 2.49 | 1.51 | 90 % | 70 % |
+| CSDI | 2.89 | 1.57 | 100 % | 70 % |
 
-A standalone single-trajectory per-instance SAITS / BRITS sanity check
-(no pretraining corpus) is reported in Appendix E; it is supporting
-evidence, not the primary alt-imputer comparison.
+| Paired contrast | SP65 Δ (95 % CI) | SP82 Δ (95 % CI) |
+|:--|:-:|:-:|
+| SAITS − linear | +1.26 [+0.83, +1.64] ↑ | +1.23 [+0.86, +1.62] ↑ |
+| CSDI − linear | +1.67 [+1.41, +1.92] ↑ | +1.28 [+0.73, +1.85] ↑ |
+| CSDI − SAITS | +0.41 [+0.05, +0.87] ↑ | +0.06 [−0.31, +0.59] ≈ |
+
+**Reading.** The pretrained SAITS reproduces most of the L63 transition-band
+rescue. CSDI retains a small but paired-CI-strict advantage at the entrance
+band and is statistically indistinguishable from SAITS-pretrained at the
+floor band. We therefore narrow the §1 / abstract intervention claim to
+"corpus-pretrained structured imputation is the lever; CSDI is one strong
+instance with a small entrance-band advantage". This is the correct read
+under the SUBMISSION_PREP_PLAN decision rule.
 
 Glocal-IB is not evaluated (cited in §2 as adjacent prior art on
 high-missingness imputation that emphasises preserving global latent
 structure); it remains a natural follow-up.
+
+Source: `experiments/week1/results/panda_altimputer_l63_sp65_sp82_pretrained_10seed_chunked.json`,
+markdown summary `experiments/week1/figures/panda_altimputer_l63_sp65_sp82_pretrained_10seed_chunked.md`.
 
 ## Appendix D: Figure Index
 

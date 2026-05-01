@@ -6,7 +6,7 @@
 
 ## 摘要
 
-预训练混沌时间序列 forecaster 在稀疏观测下不会平滑变差，而是在稀疏度轴上沿一条**清晰的可预测性前沿**崩塌。在稀疏度的 transition band 之内，corruption-aware imputation 是我们测试过的**唯一**能稳定地把 Panda 拉回前沿之内的 intervention。在 transition band 入口（L63 SP65），救援与 raw-patch 和 Panda token 空间到 clean 距离的大幅下降同步出现：linear/CSDI 距离比在 local stdev、lag-1 自相关、mid-frequency power 三个 raw 度量以及 patch / embedder / encoder / pooled 四层 Panda 表征上都达到 6 至 22 倍。在前沿底部，这些距离变得混合或接近相等，但 CSDI 仍保留较小的 survival 优势——**距离-到-clean 已不足以单独解释剩余的可预测性增益**。CSDI 因此是**稀疏间隙补全杠杆**，不是通用密集噪声 denoiser；**结构化 CSDI 残差与同等量级 iid 噪声并不完全可互换**，尤其在 tail survival probability 上而非 mean VPT 上。延迟流形 forecasting（DeepEDM 在 Takens 坐标下）提供一条互补的、动力学结构化的路线，并在非光滑系统（Chua）和标量延迟微分系统（Mackey-Glass）上有显式 scope boundary。
+预训练混沌时间序列 forecaster 在稀疏观测下不会平滑变差，而是在稀疏度轴上沿一条**清晰的可预测性前沿**崩塌。在稀疏度的 transition band 之内，**corpus-pretrained 结构化 imputation** 是把 Panda 推回前沿之内的杠杆：CSDI（corruption-aware 扩散 imputer）和在同一混沌语料上预训的 SAITS 都能强烈救援 Panda；CSDI 在入口带保留一个小但 paired-CI-strict 的优势（L63 SP65：CSDI − SAITS = +0.41 Λ，95% CI [+0.05, +0.87]），在底部带两者统计上不可分辨（SP82：+0.06 Λ，[−0.31, +0.59]）。机制在入口带最强：CSDI 在 raw-patch 和 Panda-token 距离-到-clean 上产生大幅减少（linear/CSDI 距离比在 local stdev、lag-1 自相关、mid-frequency power 三个 raw 度量以及 patch / embedder / encoder / pooled 四层 Panda 表征上达到 6 至 22 倍）。在前沿底部，Panda-token 距离仍偏 CSDI 但一个 raw 时间度量变得 mixed，因此距离-到-clean 是 informative 但不足以完全解释 tail survival。CSDI 因此是**稀疏间隙补全杠杆**，不是通用密集噪声 denoiser；**结构化 imputation 残差与同等量级 iid 噪声并不完全可互换**，尤其在 tail survival probability 上而非 mean VPT 上。延迟流形 forecasting（DeepEDM 在 Takens 坐标下）提供一条互补的、动力学结构化的路线，并在非光滑系统（Chua）和标量延迟微分系统（Mackey-Glass）上有显式 scope boundary。
 
 **主要数字.** 在 **L63 SP65**（$s = 0.65$, $\sigma = 0$, $n = 10$ seeds），CSDI 喂入 Panda 把 mean VPT 从 1.22 提升到 2.86 Lyapunov 时间（paired-bootstrap CI [+1.40, +1.87]）；$\Pr(\mathrm{VPT} > 1.0\,\Lambda)$ 从 70%（Wilson 95% [40%, 89%]）升到 100%（[72%, 100%]）。在 **L63 SP82**，paired Δ = +1.00 Λ（CI [+0.54, +1.51]），$\Pr(\mathrm{VPT}>1.0\,\Lambda)$ 从 0% 升到 60%。**L96 N=20 SP82**（n=10 patched 协议）的 Panda mean 被极少数长 forecast linear seed 主导，因此不是 headline；patched 协议的 headline 是 Panda median 0.50 → 1.05、$\Pr(\mathrm{VPT}>0.5\,\Lambda)$ 60%（[31%, 83%]）→ 100%（[72%, 100%]），以及 DeepEDM paired CSDI − linear 增益 +0.43 Λ（CI [+0.29, +0.57]）。在纯噪声轴每一档 $\sigma > 0$（$s = 0$）上，CSDI 都对 Panda 中性或略有伤害——直接验证"间隙补全杠杆，不是 denoiser"。
 
@@ -150,9 +150,33 @@ L63 SP82 处情形改变。Panda-token 比下降到约 1.6–2.4，仍然偏向 
 
 ### 4.4 替代 imputer 比较
 
-为回答 "结构化 imputation 本身是不是 lever，还是 CSDI 特定的动力学感知扩散先验是必要的"，我们加入一个**预训练**的 SAITS imputer——训练语料与 CSDI 使用的同一 L63 混沌语料（约 50 万独立 IC 窗口，缺失分布与 v2 corruption grid 匹配）。在 L63 SP65 与 SP82 上以 cells `linear → Panda`、`SAITS-pretrained → Panda`、`CSDI → Panda`，paired CSDI − SAITS 对比量化 dynamics-aware 扩散在 corpus-pretrained 结构化注意力之上的边际价值；paired SAITS − linear 对比则回答任何 corpus-pretrained 结构化 imputer 是否都能复制此救援。具体数值见 §[Pretrained-SAITS results] 与附录 C；汇报 paired 对比时保持 §4.3 入口 / 底部分割。
+为回答 "结构化 imputation 本身是不是 lever，还是 CSDI 特定的动力学感知扩散先验是必要的"，我们加入一个**预训练**的 SAITS imputer——在 CSDI 使用的同一 L63 混沌语料（约 64K 独立 IC、长度 128 窗口，缺失分布与 v2 corruption grid 匹配）上预训。推理时以 SAITS 预训上下文长度（128）切非重叠 chunk，每个 chunk 独立补全。
 
-一个独立的单轨迹 SAITS / BRITS sanity check（无预训语料、在单条测试轨迹上逐实例拟合）作为支持性观察列在附录 E，**不是**主 reviewer-defense；逐实例训练在设计上对 SAITS / BRITS 不公。
+| Cell | L63 SP65（n=10）| L63 SP82（n=10）|
+|:--|:--:|:--:|
+| `linear → Panda` mean VPT | 1.22 | 0.29 |
+| `SAITS-pretrained → Panda` | **2.49** | **1.51** |
+| `CSDI → Panda` | **2.89** | **1.57** |
+
+| Paired 对比 | SP65 Δ（95% CI）| SP82 Δ（95% CI）|
+|:--|:-:|:-:|
+| SAITS-pretrained − linear | +1.26 [+0.83, +1.64] ↑ | +1.23 [+0.86, +1.62] ↑ |
+| CSDI − linear | +1.67 [+1.41, +1.92] ↑ | +1.28 [+0.73, +1.85] ↑ |
+| **CSDI − SAITS-pretrained** | **+0.41 [+0.05, +0.87] ↑** | **+0.06 [−0.31, +0.59] ≈** |
+
+Tail survival probability $\Pr(\mathrm{VPT}>1.0\,\Lambda)$：
+
+| Cell | SP65 | SP82 |
+|:--|:-:|:-:|
+| linear | 70% | 0% |
+| SAITS-pretrained | 90% | 70% |
+| CSDI | 100% | 70% |
+
+这把 §1 / abstract 的 intervention 主张从 "CSDI 是唯一测试过的 intervention" 显著收窄为 "**corpus-pretrained 结构化 imputation 是 lever**，CSDI 在入口带保留小但 paired-CI-strict 的优势，在底部带与 SAITS-pretrained 不可分辨"。这一现象——某个 corpus-pretrained 结构化 imputer 在 linear 插值崩塌的 L63 transition band 处仍能跨过——**不是 CSDI 独有**；它推广到至少一个在同一数据上预训、且推理时长与训练时长匹配的 imputer。
+
+一个独立的单轨迹 SAITS / BRITS sanity check（无预训语料、在单条测试轨迹上逐实例拟合）作为支持性观察列在附录 E。逐实例训练在设计上对 SAITS / BRITS 不公，所以这**不是**主对照实验。
+
+Glocal-IB 与其他近期全局结构 imputer 未评测；它们在 §2 列为 adjacent prior art，是自然后续。
 
 ### 4.5 解读
 
@@ -218,8 +242,8 @@ CI 在 mean 上为 95% bootstrap，在 survival probability 上为 Wilson 95%。
 ### 6.4 局限
 
 - **补全训练语料轴.** §4.4 的替代 imputer 对照将 CSDI 与一个在同一混沌语料（约 50 万 L63 独立 IC 窗口）上预训的 SAITS 模型配对。一个独立的单轨迹逐实例 SAITS / BRITS sanity 在附录 E 报告。我们没有评测 Glocal-IB 或其他近期全局结构 imputer；这些在 §2 列为 adjacent prior art，是开放后续。
-- **Forecaster 广度.** Panda 是 headline；Chronos 在 L63 稀疏度线上被评测（§3.2）。TimesFM / Lag-Llama 未评测，扩到它们将加强跨 foundation-model 论断。
-- **已知动力学上界.** 一个 model-aware 参考（用真实 vector field 的 EnKF / LETKF）在 L63 上作为附录 B 中的上界报告；我们的 setting 是 model-agnostic 预处理接口，那里此信息不可用。
+- **Forecaster 广度.** Panda 是 headline。我们额外评测 Chronos-bolt-small 在 L63 稀疏度线上（SP55–SP82, 5 seeds, `linear → Chronos` 与 `CSDI → Chronos`）；Chronos 在我们的 `pred_len = 128` 下绝对 VPT 远低于 Panda（mean 0.34–0.50, $\Pr(\mathrm{VPT}>1.0)$ ≤ 20%），CSDI 也未明显改善（paired Δ 在 0 附近，CI 跨 0）。Chronos 库本身警告 `prediction_length > 64` 超出训练分布；因此我们**不**读为"前沿不一般化到 Chronos"，而是"corpus-pretrained-imputation 杠杆在我们测试的 pred_len 下经验性地只在 Panda 上观察到；将 Chronos / TimesFM / Lag-Llama 在匹配 pred_len ≤ 64 下评测留作未来工作"。
+- **已知动力学上界.** 一个 model-aware 参考（用真实 L63 向量场的 stochastic EnKF, 100 ensemble members）在整个稀疏观测 transition band 上撞 VPT ceiling（SP55–SP82 mean 2.84–2.85, $\Pr(\mathrm{VPT}>1.0) = 100\%$；附录 B）。前沿因此是**黑盒部署接口**（forecaster 不能访问动力学）的属性，不是系统本身的属性。
 - **纯噪声轴.** 论文的干预主张限定在稀疏观测轴上。CSDI 在密集噪声轴上中性或略有伤害；denoising-aware 变体是开放后续。
 - **L96 高方差.** L96 N=20 在前沿底部 cell 上 mean VPT 高方差（即使 n=10 仍被极少数长 forecast seed 主导）。我们因此用 median 与 survival 作为 L96 的 headline，而**不**用 Panda mean。
 - **系统广度.** L63、L96 N=10 / 20、Rössler、Kuramoto 覆盖正向复制；Mackey-Glass 与 Chua 是 scope boundary。KSE / dysts 广度与真实数据 case study（EEG、气候 reanalysis）保留为后续。
@@ -294,24 +318,31 @@ CI 在 mean 上为 95% bootstrap，在 survival probability 上为 Wilson 95%。
 
 ## 附录 C：预训练替代 imputer 细节
 
-我们在 CSDI 训练用过的同一 L63 混沌语料（约 50 万独立 IC 窗口，缺失分布从 v2 corruption grid 中抽取，与之匹配）上预训一个 SAITS [Du22] imputer。推理时 SAITS 在每个 (seed, scenario) cell 上看到与 CSDI 相同的观测 mask，因此对比在 (i) 训练数据、(ii) corruption 分布、(iii) 测试 mask 三个轴上都公平。
+**训练.** 我们在 `experiments/week2_modules/data/lorenz63_clean_64k_L128.npz`（约 64K 独立 IC L63 长度 128 窗口）上预训一个 SAITS [Du22] imputer。每个训练窗口的稀疏度从 v2 `fine_s_line` 网格（`{0, 0.20, 0.40, 0.55, 0.65, 0.75, 0.82, 0.88, 0.93, 0.97}`）均匀抽取，应用 iid_time mask，使 SAITS 训练 corruption 分布与 v2 评测分布一致。架构：2 SAITS 层、$d_{model} = 64$、4 heads、$d_k = d_v = 16$、$d_{ffn} = 128$。30 epochs，batch 64，~18 min on 1 GPU。最佳 ckpt 在 epoch 30；最终训练 MAE = 0.47，验证 MSE = 8.28，验证 missing entries MAE = 1.26（= 0.149 × $\sigma_\text{attr}$）。
 
-§4.4 报告的 cells：在 L63 SP65 与 SP82 上 `linear → Panda`、`SAITS-pretrained → Panda`、`CSDI → Panda`，每个 cell 10 seeds。Paired-bootstrap 对比：
+Checkpoint：`experiments/week2_modules/ckpts/saits_l63_pretrained/<run-id>/SAITS.pypots`。
 
-| Cell | SAITS − linear | CSDI − linear | CSDI − SAITS |
-|:--|:-:|:-:|:-:|
-| L63 SP65 | _[来自 `panda_altimputer_l63_sp65_sp82_pretrained_10seed.json`]_ | _[同上]_ | _[同上]_ |
-| L63 SP82 | _[同上]_ | _[同上]_ | _[同上]_ |
+**推理.** SAITS 需要固定输入长度匹配位置编码。测试 context（长度 512）切成 4 个非重叠 length-128 chunk，每个独立补全后拼接。CSDI 的变长推理不变。
 
-读法规则：
+**结果（10 seeds，L63 SP65 + SP82, σ = 0）.**
 
-- 若 SAITS − linear 严格为正且 CSDI − SAITS 不是 → 主张为 **"corpus-pretrained 结构化 imputation 是 lever"**，CSDI 是其中一个强实例。
-- 若 CSDI − SAITS 严格为正 → 动力学感知扩散残差在 corpus-pretrained 结构化注意力之上有可测量的价值。
-- 若 SAITS − linear 不为正 → dynamics-aware 残差是有效成分。
+| Cell | SP65 mean | SP82 mean | SP65 Pr>1.0 | SP82 Pr>1.0 |
+|:--|--:|--:|--:|--:|
+| linear | 1.22 | 0.29 | 70% | 0% |
+| SAITS-pretrained | 2.49 | 1.51 | 90% | 70% |
+| CSDI | 2.89 | 1.57 | 100% | 70% |
 
-附录 E 中报告一个独立的单轨迹逐实例 SAITS / BRITS sanity（无预训语料）；它是支持性证据，不是主对照。
+| Paired 对比 | SP65 Δ（95% CI）| SP82 Δ（95% CI）|
+|:--|:-:|:-:|
+| SAITS − linear | +1.26 [+0.83, +1.64] ↑ | +1.23 [+0.86, +1.62] ↑ |
+| CSDI − linear | +1.67 [+1.41, +1.92] ↑ | +1.28 [+0.73, +1.85] ↑ |
+| CSDI − SAITS | +0.41 [+0.05, +0.87] ↑ | +0.06 [−0.31, +0.59] ≈ |
+
+**读.** 预训练 SAITS 复现了 L63 transition band 救援的大部分。CSDI 在入口带保留小但 paired-CI-strict 的优势，在底部带与 SAITS-pretrained 统计不可分辨。我们因此把 §1 / abstract 的 intervention 主张收窄为 "corpus-pretrained 结构化 imputation 是 lever；CSDI 是其中一个强实例，在入口带有小 advantage"。这是 SUBMISSION_PREP_PLAN 决策规则下正确的读法。
 
 Glocal-IB 未评测（§2 引为 adjacent prior art：高缺失补全应保留全局潜结构）；自然后续。
+
+来源：`experiments/week1/results/panda_altimputer_l63_sp65_sp82_pretrained_10seed_chunked.json`，markdown 摘要 `experiments/week1/figures/panda_altimputer_l63_sp65_sp82_pretrained_10seed_chunked.md`。
 
 ## 附录 D：Figure 索引
 
