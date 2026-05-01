@@ -1,319 +1,191 @@
-# Paper Status — 2026-05-01
+# Paper Status — 2026-05-01 (post-P1 freeze)
 
-This is the working map for the current paper. It answers four questions:
+**State.** P0 (cleanup) + P1 (reviewer-defense experiments) **completed**.
+The draft is at submission-ready state modulo P3 optional polish (real-data
+case study, Panda decoder-side mechanism, Glocal-IB). No new experiments
+are scheduled before submission unless reviewer simulation flags a hard
+blocker.
 
-1. What story are we writing?
-2. Which experiments are already usable?
-3. Where are the numbers, figures, and draft text?
-4. What is still missing before submission?
+**Authoritative commits.**
 
-## 1. Current Paper Story
+| Commit | Date | Scope |
+|:--|:--|:--|
+| `75a7bf4` | 2026-05-01 | P0 cleanup — internal notes stripped, Wilson CI added, §3 retitled, three-regime taxonomy demoted |
+| `695dbad` | 2026-05-01 | P1.1 / P1.2 / P1.3 — pretrained SAITS L63 + Chronos mini-frontier + EnKF upper bound |
+| `c3f1256` | 2026-05-01 | P1.4 / P1.5 — Chronos pred_len=64 native horizon + SAITS-pretrained L96 N=20 cross-system |
+| `bd2ccc6` | 2026-05-01 | docs(P1) — record Chronos native horizon and L96 SAITS follow-up in `P1_RESULTS.md` |
 
-Do **not** write this as a new `delaymask` / new embedding trick paper.
+Authoritative drafts:
 
-Write it as an empirical + mechanistic forecastability paper:
+- `deliverable/paper/paper_draft_en.md` — English (current target)
+- `deliverable/paper/paper_draft_zh.md` — Chinese mirror, synced with English
+
+Authoritative milestone narratives:
+
+- `deliverable/SUBMISSION_PREP_PLAN.md` — reviewer-perspective P0/P1/P2/P3 plan
+- `deliverable/P1_RESULTS.md` — per-experiment P1 results (P1.1/P1.2/P1.3 +
+  P1.4/P1.5 follow-ups recorded by `bd2ccc6`)
+
+---
+
+## 1. Locked story
 
 > Pretrained chaotic forecasters fail across sharp sparse-observation
 > forecastability frontiers. Inside the sparsity transition band,
-> corruption-aware imputation moves Panda back across the frontier by restoring
-> raw-patch and Panda-token geometry toward clean contexts. This effect is a
-> sparse-gap imputation effect, not a generic dense-noise denoising effect.
-> DeepEDM in delay coordinates is a complementary dynamics-aware route, not the
-> only survivor.
+> **corpus-pretrained structured imputation** is the lever that reliably
+> moves Panda back across the frontier. CSDI is one strong instance of
+> the lever, with a small but paired-CI-strict advantage at the L63
+> entrance band (SP65) and on L96 SP82 median + survival; at the L63
+> floor band (SP82) CSDI and a corpus-pretrained SAITS are statistically
+> indistinguishable. The lever is sparse-gap-imputation specific, not
+> dense-noise denoising. DeepEDM in delay coordinates is a complementary
+> dynamics-aware route, not the headline.
 
-The three qualifiers that must stay in the abstract and §1:
+The three reviewer-defeating qualifiers that **must remain** in the
+abstract and §1 (mark them when editing):
 
-- **Sparse-observation frontier**, not all corruption.
-- **Inside the transition band**, not universal improvement everywhere.
-- **Structured residuals are not interchangeable with iid noise**, especially
-  in survival/tail metrics.
+1. **Sparse-observation frontier**, not all corruption.
+2. **Inside the transition band**, not universal improvement everywhere.
+3. **Structured residuals are not interchangeable with iid noise**,
+   especially in survival / tail metrics.
 
-## 2. Where The Paper Is Written
+---
 
-Main English draft:
+## 2. Completed P0 cleanup (commit `75a7bf4`)
 
-- `deliverable/paper/paper_draft_en.md`
+- Internal-facing notes removed from both drafts (no "must be refreshed",
+  "deferred", "reviewer-defeating" wording in the body).
+- Wilson 95 % CI added to all headline survival numbers.
+- §3 retitled "Empirical Forecastability Frontiers".
+- Three-regime taxonomy demoted from contributions to a per-cell empirical
+  bullet list in §1.
+- DeepEDM softened to "complementary dynamics-aware companion".
+- Per-instance SAITS / BRITS demoted to Appendix E sanity.
 
-Old English draft archive:
+---
 
-- `deliverable/paper/paper_draft_en_archive_2026-04-30.md`
+## 3. Completed P1 experiments
 
-Chinese draft:
+### P1.1 — Pretrained SAITS on L63 SP65 + SP82 (commit `695dbad`)
 
-- `deliverable/paper/paper_draft_zh.md`
-- Status: still old narrative; not updated yet.
+`experiments/week1/results/panda_altimputer_l63_sp65_sp82_pretrained_10seed_chunked.json`
 
-Story lock and patched-number notes:
+| Cell | SP65 mean | SP82 mean | SP65 Pr>1.0 | SP82 Pr>1.0 |
+|:--|--:|--:|--:|--:|
+| `linear → Panda` | 1.22 | 0.29 | 70 % | 0 % |
+| `SAITS-pretrained → Panda` | 2.49 | 1.51 | 90 % | 70 % |
+| `CSDI → Panda` | 2.89 | 1.57 | 100 % | 70 % |
 
-- `deliverable/STORY_LOCK_2026-04-28.md`
-- `deliverable/HEADLINE_REFRESH_RESULTS.md`
-- `deliverable/FIGURE1_PATCHED_REFRESH.md`
-- `deliverable/CSDI_SANITY_FINDINGS.md`
+Paired CSDI − SAITS = +0.41 [+0.05, +0.87] at SP65 (strict-positive),
++0.06 [−0.31, +0.59] at SP82 (≈ tie).
 
-Important: `paper_draft_en.md` is the authoritative current text. The
-`story_locked_sections_*.md` files are older drop-in skeletons and now carry
-warnings that the main draft supersedes them for patched numbers.
+**Effect on the paper.** §1 / abstract intervention claim narrowed from
+"CSDI is the only tested intervention" to "**corpus-pretrained structured
+imputation is the lever**, with CSDI a small entrance-band advantage".
 
-## 3. Current English Draft Structure
+### P1.2 — Chronos mini-frontier on L63 (commit `695dbad`)
 
-`deliverable/paper/paper_draft_en.md` currently has:
+`experiments/week1/results/chronos_frontier_l63_chronos_l63_sp55_sp82_5seed.json`
 
-- Abstract
-- §1 Introduction
-- §2 Related Work
-- §3 Sharp Forecastability Frontiers
-- §4 Mechanism and Intervention Isolation
-- §5 Method
-- §6 Discussion and Limitations
-- §7 Conclusion
-- Appendix A-G
+Mean VPT@1.0 across SP55 / SP65 / SP75 / SP82: 0.34–0.50; Pr>1.0 ≤ 20 %;
+paired CSDI − linear all CIs straddle zero.
 
-Status:
+**Effect on the paper.** §6.4 reframed: cross-foundation evidence is
+forecaster-dependent; the frontier shape is empirically established for
+Panda but does not transfer cleanly to Chronos at the horizons we test.
 
-- Main text §1-§7 is written in the new story.
-- Appendices A/D/E/F/G are inherited from the old pipeline draft and still need
-  cleanup/re-keying.
-- Chinese mirror is not updated.
+### P1.3 — EnKF known-dynamics upper bound on L63 (commit `695dbad`)
 
-## 4. Completed Experiments We Can Use
+`experiments/week1/results/enkf_l63_enkf_l63_v2_5seed.json`
 
-### A. Main Figure 1: L63 v2 10-seed sparse/noise grid
+Stochastic EnKF (n_members=100, true L63 vector field, RK4 forward)
+saturates the VPT ceiling (≈ 2.84–2.90) across the entire SP55–SP82
+band; Pr>1.0 = 100 % at all cells. Degrades only on the dense-noise axis.
 
-Purpose:
+**Effect on the paper.** §1 / §6.5 argue the frontier is a property of the
+**black-box deployment interface** (forecaster has no access to dynamics),
+not of L63 itself.
 
-- Establish the main sparse-observation forecastability frontier.
-- Decouple sparsity `s` from dense observation noise `sigma`.
+### P1.4 — Chronos at native horizon pred_len=64 (commit `c3f1256`)
 
-Patched outputs:
+`experiments/week1/results/chronos_frontier_l63_chronos_l63_sp55_sp82_5seed_pl64.json`
 
-- `deliverable/figures_main/figure1_l63_v2_10seed_patched.png`
-- `deliverable/figures_main/figure1_l63_v2_10seed_patched.md`
-- `experiments/week1/results/pt_l63_grid_v2_l63_fine_s_v2_10seed_patched_h0.json`
-- `experiments/week1/results/pt_l63_grid_v2_l63_fine_s_v2_10seed_patched_h5.json`
-- `experiments/week1/results/pt_l63_grid_v2_l63_fine_sigma_v2_10seed_patched_h0.json`
-- `experiments/week1/results/pt_l63_grid_v2_l63_fine_sigma_v2_10seed_patched_h5.json`
+Same SP55–SP82 cells, 5 seeds, at Chronos's native trained horizon
+(Chronos library warns `prediction_length > 64` is OOD). Per-seed VPTs
+are statistically indistinguishable from `pred_len=128` (mean 0.34–0.50,
+paired CIs all straddle zero).
 
-Headline patched numbers:
+**Effect on the paper.** §6.4 caveat "matched pred_len ≤ 64 is future
+work" fully resolved — the negative is not an artefact of the Chronos
+OOD horizon.
 
-| Scenario | Linear -> Panda | CSDI -> Panda | Paired CSDI-linear |
-|---|---:|---:|---:|
-| SP65 | 1.22 / 70% | 2.86 / 100% | +1.64 [+1.40,+1.87] |
-| SP75 | 0.52 / 20% | 2.29 / 100% | +1.77 [+1.39,+2.17] |
-| SP82 | 0.34 / 0% | 1.34 / 60% | +1.00 [+0.54,+1.51] |
+### P1.5 — Pretrained SAITS L96 N=20 cross-system (commit `c3f1256`)
 
-Format: mean VPT@1.0 / `Pr(VPT>1.0)`.
+`experiments/week1/results/panda_altimputer_l96_sp82_pretrained_10seed.json`
 
-Pure-noise result:
+L96 SP82, 10 seeds. Mean is dominated by linear seed-2 fluke
+(VPT@1.0 = 10.75); per existing L96 high-variance limitation we lead
+with median + survival:
 
-- Panda CSDI is tied with linear at low dense noise and slightly worse at
-  higher dense noise.
-- This supports the claim that CSDI is a sparse-gap imputer, not a generic
-  denoiser.
+| Cell | median VPT@1.0 | Pr(VPT>1.0) (Wilson 95 %) |
+|:--|:-:|:-:|
+| `linear → Panda` | 0.50 | 30 % [11 %, 60 %] |
+| `SAITS-pretrained → Panda` | 0.84 | 40 % [17 %, 69 %] |
+| `CSDI → Panda` | **1.13** | **60 %** [31 %, 83 %] |
 
-### B. L63 Jitter / Residual Controls
+Paired CSDI − SAITS = +0.21 [+0.00, +0.49] on means.
 
-Purpose:
+**Effect on the paper.** Cross-system replication of the structured-
+imputation lever from 3-D L63 to 20-D L96 on median + survival.
 
-- Test whether CSDI is merely stochastic regularization.
+---
 
-Patched outputs:
+## 4. Where headline numbers come from
 
-- `experiments/week1/results/panda_jitter_control_l63_sp65_sp82_v2protocol_patched_10seed.json`
-- `experiments/week1/figures/panda_jitter_control_l63_sp65_sp82_v2protocol_patched_10seed.md`
+See section 6 (Number-source traceability) below for the full table.
 
-Headline:
+---
 
-| Scenario | linear | iid jitter | shuffled residual | CSDI |
-|---|---:|---:|---:|---:|
-| SP65 | 1.22 | 1.39 | 1.06 | 2.87 |
-| SP82 | 0.33 | 0.54 | 0.67 | 1.42 |
+## 5. Optional P3 (deferred)
 
-CSDI paired gains:
+- **Real-data case study** (ECG, EEG, climate reanalysis). Highest value
+  P3 if pursued; flagged in §6.4 as future work.
+- **Panda decoder-side mechanism** instrumentation for the floor-band
+  question (why CSDI floor-band rescue exceeds what raw-patch / Panda-
+  token distances predict).
+- **Glocal-IB pretrained as third alt-imputer**. Listed as adjacent prior
+  art in §2; would extend the §4.4 lever claim to a 3rd imputer.
+- **KSE / dysts breadth on §3.**
 
-- SP65: +1.65 `[+1.41,+1.87]`
-- SP82: +1.09 `[+0.65,+1.61]`
+Decision: **default skip P3** for this submission; revisit only if
+reviewer simulation (step 8 of QA plan) flags a hard reject hook
+addressable only by one of these.
 
-Interpretation:
+---
 
-- Iid jitter does not reproduce CSDI.
-- Shuffled CSDI residual helps at SP82 but remains much weaker than CSDI.
-- Structured imputation path matters.
+## 6. Number-source traceability table
 
-### C. L63 Raw-Patch and Panda-Embedding Diagnostics
+(Filled in by step 3 of the submission QA pass — see
+`PAPER_NUMBER_TRACEABILITY.md`.)
 
-Purpose:
+---
 
-- Mechanism evidence: does CSDI move contexts closer to clean in raw and token
-  geometry?
+## 7. Submission QA checklist (in progress 2026-05-01)
 
-Patched outputs:
+1. ✅ P0 + P1 completed and pushed
+2. 🟡 Consistency grep en + zh — no stale "deferred" / "C1 待跑" / "future
+   work pred_len ≤ 64" / "must be refreshed" / "CSDI is the only
+   intervention" wording
+3. 🟡 Number-source traceability table
+4. 🟡 Appendix D figure-index audit (every path exists; captions specify
+   seeds / metric / Wilson or bootstrap CI / patched v2 protocol)
+5. 🟡 DeepEDM positioning final check (companion, not main)
+6. 🟡 Chronos negative-result wording check (plateau framing, not "frontier
+   generalises")
+7. 🟡 SAITS conclusion wording check (lever framing, CSDI strong instance,
+   not universal mean dominator)
+8. 🟡 Reviewer simulation (Claude / GPT fresh-context read) — reject hooks?
+   over-claim? weakest experiment? abstract honest?
+9. 🟡 P3 decision (default skip; revisit only if step 8 hard-flags it)
 
-- `experiments/week1/results/l63_patch_ood_v2_v2protocol_sp65_sp82_10seed.json`
-- `experiments/week1/results/panda_embedding_ood_l63_sp65_sp82_dt025_v2protocol_patched_5seed.json`
-- `experiments/week1/figures/panda_embedding_ood_l63_sp65_sp82_dt025_v2protocol_patched_5seed.md`
-
-Headline:
-
-SP65 raw-patch linear/CSDI W1-to-clean ratios:
-
-- local stdev: 21.02x
-- lag-1 autocorrelation: 15.02x
-- mid-frequency power: 33.71x
-
-SP65 Panda-space linear/CSDI distance ratios:
-
-- patch: 16.77x
-- embedder: 12.84x
-- encoder: 14.02x
-- pooled: 21.85x
-
-SP82:
-
-- Panda-space ratios still favor CSDI: 1.63-2.43x.
-- Raw metrics are partly mixed: local stdev and mid-frequency favor CSDI, but
-  lag-1 autocorrelation favors linear.
-
-Interpretation:
-
-- Entrance-band mechanism is strong OOD reduction.
-- Floor-band mechanism is still favorable to CSDI, but not fully explained by
-  one scalar raw statistic.
-
-### D. L96 N=20 v2 Cross-System Replication
-
-Purpose:
-
-- Check whether L63 sparse-observation story transfers to high-dimensional
-  chaos.
-
-Patched output:
-
-- `experiments/week1/results/pt_l96_smoke_l96N20_v2_B_patched_5seed.json`
-- `experiments/week1/results/pt_l96_smoke_l96N20_v2_B_patched_seed5_9.json`
-- `deliverable/L96_V2_B_PATCHED_N10.md`
-
-Current interpretation:
-
-- L96 Panda mean is high-variance because rare lucky linear seeds dominate.
-- Use median and survival for Panda.
-- Use DeepEDM paired gain as cleaner high-dimensional companion evidence.
-
-Headline:
-
-| Scenario | Panda median linear->CSDI | Panda Pr>0.5 linear->CSDI | DeepEDM paired CSDI-linear |
-|---|---:|---:|---:|
-| SP65 | 0.71 -> 1.26 | 70% -> 100% | +0.46 [+0.25,+0.67] |
-| SP82 | 0.50 -> 1.05 | 60% -> 100% | +0.43 [+0.29,+0.57] |
-
-Do not use the old L96 mean headline `0.91 -> 3.31`; it was pre-patch and
-mean-sensitive.
-
-Decision after patched n=10 readout:
-
-- Paper writing uses L96 as a median/survival and DeepEDM companion
-  replication, not as a Panda-mean headline.
-- Seeds 5-9 confirmed the writing choice: L96 supports survival/median and
-  DeepEDM companion claims, but Panda mean remains high-variance and should not
-  be used as the headline.
-
-### E. L96 and Rössler Jitter Controls
-
-Purpose:
-
-- Check cross-system tail/regularization behavior.
-
-Outputs:
-
-- `experiments/week1/results/panda_jitter_control_l96N20_sp65_sp82_v2protocol_patched_5seed.json`
-- `experiments/week1/results/panda_jitter_control_rossler_sp65_sp82_v2protocol_patched_5seed.json`
-
-Interpretation:
-
-- L96: high-variance caveat. CSDI improves median/survival, not stable mean.
-- Rössler: CSDI direction positive, especially SP82; VPT>1.0 is too strict due
-  to small Lyapunov exponent / finite horizon, so use with caution.
-
-### F. Alt-Imputer C0 Sanity
-
-Purpose:
-
-- Sanity check generic per-instance SAITS/BRITS.
-
-Output:
-
-- `experiments/week1/results/panda_altimputer_l63sp65_partial_5seed.json`
-- `deliverable/EXPERIMENT_C_PLAN.md`
-
-Status:
-
-- Appendix-only sanity.
-- Do not use as main reviewer-defense because per-instance SAITS/BRITS is
-  unfairly weak compared to pretrained CSDI.
-
-## 5. Experiments Not Yet Finished / Not Submission-Ready
-
-### C1 pretrained alt-imputer comparison
-
-Needed for stronger reviewer defense:
-
-- Pretrain SAITS / Glocal-IB on the same chaos corpus used by CSDI.
-- Evaluate at L63 SP82 and L96 SP82.
-
-Status:
-
-- Designed in `deliverable/EXPERIMENT_C_PLAN.md`.
-- Not run.
-- This is pre-submission defense, not needed to keep current main story alive.
-
-### Appendices cleanup
-
-Status:
-
-- Appendix A/D/E/F/G still carry old 4-module / τ-search / theory-pipeline
-  material.
-- Need cleanup before sharing as a polished paper.
-
-### Chinese mirror
-
-Status:
-
-- `deliverable/paper/paper_draft_zh.md` still old.
-- Update after English draft stabilizes.
-
-## 6. How To Write The Paper Now
-
-Write it as:
-
-1. **Abstract / §1:** sparse-observation forecastability frontier, not a new
-   module trick.
-2. **§3:** Figure 1 L63 patched grid is the central evidence.
-3. **§4:** isolation and mechanism:
-   - CSDI rescues in transition band.
-   - Jitter/residual controls do not match it.
-   - Raw/token diagnostics show OOD reduction in entrance band.
-   - L96 confirms direction but has high mean variance.
-4. **§5:** methods kept short: corruption model, CSDI, DeepEDM, metrics.
-5. **§6:** limitations:
-   - pure-noise non-rescue,
-   - L96 high variance,
-   - MG/Chua scope boundaries,
-   - C1 alt-imputer still pending.
-
-Do **not** write:
-
-- "delaymask is the main contribution";
-- "CSDI is a universal denoiser";
-- "DeepEDM is the only survivor";
-- "L96 Panda mean proves rescue";
-- "we fully explain Panda's internal failure channel."
-
-## 7. Immediate Next Step
-
-The next useful action is not more prose in the abstract. It is:
-
-1. Re-key Appendix D figure index to the new patched figures.
-2. Compress or quarantine old Appendix E/F/G τ-search material.
-3. Add a small "Experiment table" in §3 or Appendix B listing every dataset,
-   seeds, cells, and output JSON path.
-
-After that, the English draft will be readable by an external collaborator.
+Items 2–8 are the active QA pass; item 9 is the final go/no-go.

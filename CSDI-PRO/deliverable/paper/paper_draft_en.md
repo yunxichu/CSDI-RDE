@@ -6,9 +6,13 @@
 
 ## Abstract
 
-Pretrained chaotic forecasters fail across sharp sparse-observation forecastability
-frontiers. Inside the sparsity transition band, **corpus-pretrained structured
-imputation** is the lever that reliably moves Panda back across the frontier:
+A pretrained chaos foundation forecaster (Panda-72M) fails across sharp
+sparse-observation forecastability frontiers; a second pretrained
+forecaster (Chronos) instead sits at a low-VPT plateau across the same
+sparsity line, so the transition shape is forecaster-dependent rather
+than universal (§6.4). Inside the sparsity transition band of Panda's
+frontier, **corpus-pretrained structured imputation** is the lever that
+reliably moves Panda back across the frontier:
 both CSDI (a corruption-aware diffusion imputer) and a SAITS imputer pretrained
 on the same chaos corpus rescue Panda strongly, with CSDI retaining a
 small but paired-CI-strict advantage at the entrance band (L63 SP65: CSDI − SAITS
@@ -31,7 +35,7 @@ such as Chua and scalar delay-differential systems such as Mackey-Glass.
 Headline numbers. On **L63 SP65** ($s = 0.65$, $\sigma = 0$), CSDI-filled Panda
 reaches mean VPT 2.86 Lyapunov times versus 1.22 for linear-filled Panda
 (paired-bootstrap CI [+1.40, +1.87]); $\Pr(\mathrm{VPT}>1.0\,\Lambda)$ rises
-from 70 % (Wilson 95 % [39 %, 90 %]) to 100 % ([72 %, 100 %]) at $n=10$. On
+from 70 % (Wilson 95 % [40 %, 89 %]) to 100 % ([72 %, 100 %]) at $n=10$. On
 **L63 SP82**, the gain is +1.00 Lyapunov times (CI [+0.54, +1.51]) and
 $\Pr(\mathrm{VPT}>1.0\,\Lambda)$ moves from 0 % to 60 %. On **L96 N=20 SP82**
 ($n = 10$ seeds, patched protocol), Panda's mean is dominated by rare
@@ -57,10 +61,15 @@ realistic sparse-observation interface, with dense noise mapped as a separate
 stress axis rather than folded into the headline claim.
 
 Our main empirical finding is that sparse observations create **sharp
-forecastability frontiers**. As sparsity increases, models such as Panda-72M,
-Chronos, and context-parroting baselines do not simply lose valid prediction
-time smoothly. Instead, their survival probability
-$\Pr(\mathrm{VPT} > \theta)$ drops abruptly in a transition band. This matters
+forecastability frontiers** for Panda-72M, the foundation forecaster
+specifically pretrained on chaotic dynamics. As sparsity increases,
+Panda's survival probability $\Pr(\mathrm{VPT} > \theta)$ drops
+abruptly in a narrow transition band rather than degrading smoothly.
+Chronos at our setting does *not* show this transition shape — it sits
+at a low-VPT plateau across the same sparsity line (mean 0.34–0.50;
+§6.4) — so the empirical frontier is established for Panda; cross-
+foundation generalisation is reported as a forecaster-dependent
+observation, not a universal claim. This matters
 because mean VPT is highly seed-sensitive near the frontier: one long forecast
 can hide four failed ones. We therefore use survival probabilities, paired
 bootstrap contrasts, and Lyapunov-normalized VPT as the primary lens.
@@ -137,8 +146,9 @@ band.
 
 **Mechanism in the entrance band.** We show that the L63 SP65 rescue coincides
 with large reductions in raw-patch and Panda-token distance to clean
-(linear/CSDI distance ratios of 6–22× across four representation stages and
-three temporal statistics). At SP82 those distances still favor CSDI but one
+(linear/CSDI distance ratios of roughly 12–34× across four Panda
+representation stages and three temporal statistics; see §4.2 for the
+per-stage breakdown). At SP82 those distances still favor CSDI but one
 raw temporal metric becomes mixed; mechanism is therefore strong but not
 fully reducible to a single fidelity scalar.
 
@@ -276,13 +286,20 @@ lever, not as a generic dense-noise denoiser.
 The frontier is also not a claim that CSDI is the only way to improve mean VPT.
 L96 N=20 SP65 shows a generic-regularization regime where iid jitter and
 shuffled residuals recover much of the mean gain. The important distinction is
-tail survival: CSDI is still strongest on median VPT and $\Pr(\mathrm{VPT}>1.0)$.
+tail survival: CSDI's $\Pr(\mathrm{VPT}>1.0\,\Lambda) = 80\%$ vs 40 % for
+linear / iid / shuffled at $n=10$, with overlapping Wilson 95 % CIs that
+nonetheless preserve the rank order on every seed; the median VPT also
+favours CSDI. The paired-CI strict claim at L96 SP65 is therefore on the
+direction-and-rank rather than on the mean.
 
 Thus the intervention claim is deliberately conditional:
 
-> Inside the transition band, corruption-aware reconstruction is the only
-> tested intervention that reliably moves models back across the
-> forecastability frontier; structured CSDI residuals are not fully
+> Inside the transition band, **corpus-pretrained structured imputation**
+> is the lever that reliably moves models back across the forecastability
+> frontier: both CSDI and a corpus-pretrained SAITS imputer cross the
+> frontier where iid jitter and magnitude-matched shuffled residuals do
+> not, with CSDI retaining a small paired-CI-strict advantage at the
+> entrance band; structured imputation residuals are not fully
 > interchangeable with iid noise of matched magnitude, especially in tail
 > survival probability rather than mean VPT.
 
@@ -384,14 +401,18 @@ is the more appropriate tail metric there.
 
 These controls are the reason our abstract must say "inside the transition
 band". CSDI is not universally better than linear, and generic jitter explains
-part of one L96 frontier cell. But across the deeper transition band, CSDI is
-the only tested intervention that reliably moves models back across the
-forecastability frontier; **structured CSDI residuals are not fully
-interchangeable with iid noise of matched magnitude, especially in tail
-survival probability rather than mean VPT**. The mean / tail asymmetry is
-itself a finding: in the generic-regularization regime any plausible variability
-recovers most of the mean gain, but only the structured residual recovers the
-fraction of seeds that survive past one Lyapunov decorrelation time.
+part of one L96 frontier cell. But across the deeper transition band, neither
+iid jitter nor a magnitude-matched shuffled residual reproduces what
+**corpus-pretrained structured imputation** does — the §4.4 alt-imputer
+comparison shows CSDI and a corpus-pretrained SAITS both cross the frontier
+where these magnitude-matched controls do not, while CSDI retains a small
+paired-CI-strict advantage at the entrance band. **Structured residuals from
+a corpus-pretrained imputer are therefore not interchangeable with iid noise
+of matched magnitude, especially in tail survival probability rather than
+mean VPT**. The mean / tail asymmetry is itself a finding: in the
+generic-regularization regime any plausible variability recovers most of the
+mean gain, but only the structured residual recovers the fraction of seeds
+that survive past one Lyapunov decorrelation time.
 
 ### 4.4 Alt-imputer comparison
 
@@ -447,14 +468,32 @@ L63 SP65: linear < SAITS-pretrained < CSDI.
 Together, L63 SP65 + SP82 + L96 SP82 establish that the §1 intervention
 claim narrows from "CSDI is the only tested intervention" to
 "**corpus-pretrained structured imputation is the lever**, with CSDI
-retaining a small but paired-CI-strict advantage in the entrance band
-on L63 and on median + survival on L96, and being indistinguishable
-from SAITS-pretrained in the L63 floor band". The phenomenon — that a
-corpus-pretrained structured imputer crosses the sparse-observation
-transition band where linear interpolation collapses — is therefore
-not unique to CSDI; it generalises to at least one other corpus-pretrained
-imputer trained on the same data and inference-matched to its training
-context length, on two distinct chaotic systems (3-D L63 and 20-D L96).
+retaining a small but paired-CI-strict advantage in the L63 entrance
+band, an on-the-edge advantage on L96 SP82 means (CI just touching zero)
+and a clear advantage on L96 SP82 median + survival, and being
+indistinguishable from SAITS-pretrained in the L63 floor band". The
+phenomenon — that a corpus-pretrained structured imputer crosses the
+sparse-observation transition band where linear interpolation collapses
+— is therefore not unique to CSDI; the median + survival hierarchy
+linear < SAITS-pretrained < CSDI is reproduced on a second
+corpus-pretrained imputer trained on the same data and inference-matched
+to its training context length, on two distinct chaotic systems
+(3-D L63 and 20-D L96). We do *not* claim broader generalisation
+(e.g. to other systems, sparsity cells, or imputer families) from a
+single L96 cell.
+
+> **Note on numerical drift between the alt-imputer cell and §3.2.**
+> §3.2's L96 SP82 headline (Panda median 0.50 → 1.05, $\Pr(\mathrm{VPT}>0.5)$
+> 60 % → 100 %, from `pt_l96_smoke_l96N20_v2_B_patched_*`) and §4.4's
+> alt-imputer L96 SP82 (median 0.50 → 1.13, $\Pr(\mathrm{VPT}>1.0)$
+> 30 % → 60 %, from `panda_altimputer_l96_sp82_pretrained_10seed`) use
+> the same v2 corruption seed scheme and the same Panda checkpoint, but
+> are independent CSDI inference runs; the per-seed VPT differences
+> (typically < 0.5 Λ) reflect CSDI's diffusion-sampler stochasticity,
+> not protocol drift. The same caveat applies to the small spread in
+> the L63 SP65 paired Δ between Figure 1 (+1.64), the jitter control
+> (+1.65), and the alt-imputer cell (+1.67) — all three are from
+> independent CSDI runs on the same corruption draws, and CIs overlap.
 
 A standalone single-trajectory SAITS / BRITS sanity check (no pretraining
 corpus, per-instance fit on the test trajectory) is reported in Appendix E
@@ -539,8 +578,13 @@ The forecaster under test in the main figures is Panda-72M [Wang25]. The
 isolation matrix in §4 spans $\{$linear, AR-Kalman, CSDI$\}$ imputers times
 $\{$Panda, DeepEDM$\}$ forecasters. To remove a Panda-tokenizer-specific
 attack surface we additionally evaluate Chronos [Ansari24] on the L63
-sparsity transition band (SP55–SP82) with `linear → Chronos` and
-`CSDI → Chronos`; cross-foundation-model evidence is reported in §3.2.
+sparsity transition band (SP55–SP82) at two horizons (`pred_len = 128`
+matched to Panda, and `pred_len = 64` matched to Chronos's native
+trained horizon) with `linear → Chronos` and `CSDI → Chronos`; the
+cross-foundation observation is reported in §6.4 (Chronos sits at a
+low-VPT plateau and does not exhibit the Panda frontier shape; the CSDI
+rescue is not visible because Chronos's own VPT distribution is below
+the regime where the lever can move it).
 The alt-imputer comparison in §4.4 uses a SAITS imputer pretrained on the
 same chaos corpus that CSDI is trained on, so the comparison is fair on the
 training-data axis.
@@ -603,7 +647,8 @@ are honest boundaries, not hidden failures.
 
 - **Imputation training-corpus axis.** The alt-imputer comparison in §4.4
   pairs CSDI against a SAITS model pretrained on the same chaos corpus
-  (~500K independent-IC L63 windows). A standalone single-trajectory
+  (~64K independent-IC L63 windows of length 128, with v2-grid-matched
+  missingness; see Appendix C). A standalone single-trajectory
   per-instance SAITS / BRITS sanity check is reported in Appendix E. We
   have not evaluated Glocal-IB or other recent global-structure imputers;
   these are listed as adjacent prior art in §2 and are an open follow-up.
@@ -660,8 +705,11 @@ competitor.
 
 ## 7 Conclusion
 
-Pretrained chaotic forecasters fail across sharp sparse-observation
-forecastability frontiers. Inside the transition band, the rescue is regime-aware,
+A pretrained chaos foundation forecaster (Panda-72M) fails across sharp
+sparse-observation forecastability frontiers; a second pretrained
+forecaster (Chronos) shows a different failure mode (low-VPT plateau),
+so the transition shape is forecaster-dependent. Inside Panda's
+transition band, the rescue is regime-aware,
 not universal: in the entrance band, corruption-aware imputation moves Panda
 contexts toward clean raw patches and tokens and forecastability returns; near
 the frontier floor, the same distances are still useful but no single raw
@@ -701,8 +749,9 @@ holds only as an entrance-band statement. We retain the proof material in
 `paper_draft_en_archive_2026-04-30.md` §"Appendix A: Proof sketches" for
 readers interested in the formal bound, and treat it here as a *narrowed*
 theoretical companion: the same patch-distribution-OOD argument applies at
-L63 SP65 (where 6–22× distance-to-clean reductions in Panda token space are
-measured), but not as a universal claim across the whole frontier. The
+L63 SP65 (where 12–22× distance-to-clean reductions in Panda token space
+are measured across the four representation stages), but not as a
+universal claim across the whole frontier. The
 main-text intervention and frontier claims do not depend on the proof.
 
 ## Appendix B: Reproducibility and Experiment Table
@@ -881,25 +930,34 @@ headline panels.
 
 | Label | Caption purpose | Path |
 |---|---|---|
-| **Figure 1** | Sparsity and noise frontier on L63 (mean / Pr>0.5 / Pr>1.0, decoupled axes, 10 seeds, 95 % bootstrap CI on mean and Wilson CI on survival) | `deliverable/figures_main/figure1_l63_v2_10seed_patched.png` (and `.md` companion table) |
-| **Figure 2** | Cross-system isolation matrix (linear/Kalman/CSDI × Panda/DeepEDM heatmaps and paired-CI bars; legacy S0–S6 protocol) | `deliverable/figures_isolation/{l63,l96_iso_l96N{10,20},rossler_iso_rossler}_5seed_heatmap.png` and `_bars.png` |
-| **Figure 3** | Jitter / residual controls across L63, L96 N=20, Rössler at SP65 and SP82, comparing mean vs `Pr(VPT > 1.0 Λ)` | `deliverable/figures_jitter/jitter_milestone_SP{65,82}.png` |
+| **Figure 1** | Sparsity and noise frontier on L63 (Panda mean VPT, $\Pr(\mathrm{VPT}>0.5\,\Lambda)$, $\Pr(\mathrm{VPT}>1.0\,\Lambda)$ on decoupled $s$ and $\sigma$ axes; 10 seeds; **patched v2 protocol**; 95 % bootstrap CI on mean and Wilson 95 % CI on survival) | `deliverable/figures_main/figure1_l63_v2_10seed_patched.png` (and `.md` companion table) |
+| **Figure 2** | Cross-system isolation matrix on linear / Kalman / CSDI × Panda / DeepEDM (heatmaps and paired-bootstrap CI bars; **5 seeds**; **legacy S0–S6 protocol** — secondary direction-of-effect evidence; v2 protocol numbers in §3.2 are authoritative) | `deliverable/figures_isolation/l63_iso_l63_5seed_heatmap.png`, `l96_iso_l96N10_5seed_heatmap.png`, `l96_iso_l96N20_5seed_heatmap.png`, `rossler_iso_rossler_5seed_heatmap.png` (each with a matching `_bars.png`) |
+| **Figure 3** | Jitter / residual controls across L63, L96 N=20, Rössler at SP65 and SP82, comparing Panda mean VPT vs $\Pr(\mathrm{VPT}>1.0\,\Lambda)$; L63 is **10 seeds**, L96 / Rössler are **5 seeds**; **patched v2 protocol**; paired-bootstrap CI on every Δ | `deliverable/figures_jitter/jitter_milestone_SP65.png`, `jitter_milestone_SP82.png` |
 
-### §4.2 mechanism panels
-
-| Element | Path |
-|---|---|
-| L63 raw-patch v2 metric histograms (local stdev / lag-1 ρ / mid-freq power, SP65 + SP82) | `experiments/week1/figures/l63_patch_ood_v2_v2protocol_metrics_SP{65,82}.png` |
-| L63 raw-patch trajectory overlays (clean vs linear vs CSDI) | `experiments/week1/figures/l63_patch_ood_v2_v2protocol_traj_overlay_SP{65,82}.png` |
-| Panda token-space distance bars (patch / embed / encoder / pooled, SP65 + SP82) | `experiments/week1/figures/panda_embedding_ood_l63_sp65_sp82_dt025_v2protocol_patched_5seed_bars.png` |
-| Panda token-space PCA scatter (per stage and scenario) | `experiments/week1/figures/panda_embedding_ood_l63_sp65_sp82_5seed_SP{65,82}_{embed,encoder}_pca.png` |
-
-### §6.3 scope-boundary panels (appendix only)
+### §4.2 mechanism panels (patched v2 protocol)
 
 | Element | Path |
 |---|---|
-| Mackey-Glass S0–S6 phase-transition + trajectory | `experiments/week1/figures/iso_mackey_glass_5seed_*.png` (and trajectory plots in the same directory) |
-| Chua S0–S6 phase-transition + trajectory | `experiments/week1/figures/iso_chua_5seed_*.png` |
+| L63 raw-patch metric histograms (local stdev / lag-1 ρ / mid-freq power, SP65 + SP82, 10 seeds) | `experiments/week1/figures/l63_patch_ood_v2_v2protocol_metrics_SP65.png`, `..._SP82.png` |
+| L63 raw-patch trajectory overlays (clean vs linear vs CSDI, 10 seeds) | `experiments/week1/figures/l63_patch_ood_v2_v2protocol_traj_overlay_SP65.png`, `..._SP82.png` |
+| Panda token-space distance bars (patch / embed / encoder / pooled, SP65 + SP82, 5 seeds, paired-bootstrap CI) | `experiments/week1/figures/panda_embedding_ood_l63_sp65_sp82_dt025_v2protocol_patched_5seed_bars.png` |
+| Panda token-space PCA scatter (per stage and scenario, 5 seeds) | `experiments/week1/figures/panda_embedding_ood_l63_sp65_sp82_5seed_SP65_embed_pca.png`, `..._SP65_encoder_pca.png`, `..._SP82_embed_pca.png`, `..._SP82_encoder_pca.png` |
+
+### §4.4 / Appendix C alt-imputer (P1.1 + P1.5)
+
+| Element | Path |
+|---|---|
+| L63 SP65 + SP82 alt-imputer summary table (linear / SAITS-pretrained / CSDI; 10 seeds; paired-bootstrap CI; Wilson CI on survival) | `experiments/week1/figures/panda_altimputer_l63_sp65_sp82_pretrained_10seed_chunked.md` |
+| L96 N=20 SP82 alt-imputer summary table (linear / SAITS-pretrained / CSDI; 10 seeds; median + Wilson CI on survival; paired-bootstrap on means) | `experiments/week1/figures/panda_altimputer_l96_sp82_pretrained_10seed.md` |
+
+### §6.3 scope-boundary panels (appendix only, **legacy S0–S6 protocol**, 5 seeds)
+
+| Element | Path |
+|---|---|
+| Mackey-Glass S0–S6 phase-transition curve | `experiments/week1/figures/pt_mg_mg_5seed_phase_transition.png` |
+| Mackey-Glass attractor trajectory | `pictures/mackey_glass_trajectory_final.png` |
+| Chua S0–S6 phase-transition curve | `experiments/week1/figures/pt_chua_chua_5seed_phase_transition.png` |
+| Chua double-scroll trajectory | `pictures/chua_trajectory_final.png` |
 
 ### Pre-pivot figures (no longer cited in main text)
 
