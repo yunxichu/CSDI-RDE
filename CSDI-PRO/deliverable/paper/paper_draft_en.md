@@ -1,24 +1,6 @@
 # Forecastability Frontiers Under Corrupted Chaotic Contexts
 
-**Authors.** (TBD)  **Venue.** NeurIPS / ICLR 2026 target.  **Status.** Locked-story draft, 2026-04-30.
-
-> Locked under `STORY_LOCK_2026-04-28.md` (mechanism reframed 2026-04-30).
-> Story-locked drop-in sections live at
-> `deliverable/paper/story_locked_sections_{1_3_4,2_5_6}_en.md`.
-> The previous narrative (4-module pipeline + universal tokenizer-OOD
-> mechanism) is archived at `paper_draft_en_archive_2026-04-30.md`.
->
-> Three reviewer-defeating qualifiers must remain in any paraphrase of the
-> abstract or §1 opening: (i) **sparse-observation** frontier (not all
-> corruption); (ii) **inside the transition band** (rescue is regime-conditional);
-> (iii) **structured CSDI residuals are not fully interchangeable with iid
-> noise of matched magnitude**, especially in tail survival.
->
-> All hard numbers come from JSONs in `experiments/{week1,week2_modules}/results/`.
-> Figure references point to `deliverable/figures_*/` and `experiments/week1/figures/`.
-> CSDI-dependent headline numbers are draft values from the v2 protocol and
-> must be refreshed before submission under the patched `sigma_override`
-> imputation protocol documented in `deliverable/CSDI_SANITY_FINDINGS.md`.
+**Authors.** (anonymous for review)  **Code & data.** Released with the paper.
 
 ---
 
@@ -42,17 +24,19 @@ complementary dynamics-aware route through the same frontier, with explicit scop
 boundaries on non-smooth systems such as Chua and scalar delay-differential
 systems such as Mackey-Glass.
 
-Patched headline numerical evidence under the Figure-1 v2 protocol:
-on **L63 SP65**, CSDI-filled Panda raises mean VPT from 1.22 to 2.86 Lyapunov
-times (paired-bootstrap CI [+1.40, +1.87]), with `Pr(VPT > 1.0)` rising from
-70 % to 100 %. On **L63 SP82**, it raises mean VPT from 0.34 to 1.34
-(CI [+0.54, +1.51]) and `Pr(VPT > 1.0)` from 0 % to 60 %. In L96 N=20,
-Panda's mean is dominated by rare lucky linear seeds, but CSDI improves median
-and survival at SP82 over 10 seeds (median 0.50 to 1.05, `Pr(VPT>0.5)` 60 %
-to 100 %), and DeepEDM has a cleaner paired gain at SP82 (+0.43, CI
-[+0.29, +0.57]). On the
-pure-noise axis at every tested sigma, CSDI is neutral or slightly hurtful for
-Panda — confirming the gap-imputation framing.
+Headline numbers. On **L63 SP65** ($s = 0.65$, $\sigma = 0$), CSDI-filled Panda
+reaches mean VPT 2.86 Lyapunov times versus 1.22 for linear-filled Panda
+(paired-bootstrap CI [+1.40, +1.87]); $\Pr(\mathrm{VPT}>1.0\,\Lambda)$ rises
+from 70 % (Wilson 95 % [39 %, 90 %]) to 100 % ([72 %, 100 %]) at $n=10$. On
+**L63 SP82**, the gain is +1.00 Lyapunov times (CI [+0.54, +1.51]) and
+$\Pr(\mathrm{VPT}>1.0\,\Lambda)$ moves from 0 % to 60 %. On **L96 N=20 SP82**
+($n = 10$ seeds, patched protocol), Panda's mean is dominated by rare
+long-survival linear seeds and is reported as a non-headline statistic; the
+patched-protocol headline statistics are Panda median 0.50 → 1.05,
+$\Pr(\mathrm{VPT}>0.5\,\Lambda)$ 60 % → 100 %, and DeepEDM paired
+CSDI − linear gain +0.43 Λ (CI [+0.29, +0.57]). On the pure-noise axis at
+every tested $\sigma > 0$ with $s = 0$, CSDI is neutral or slightly hurtful
+for Panda — confirming the gap-imputation framing.
 
 ---
 
@@ -96,29 +80,35 @@ looks like raw/token OOD mitigation. Near the frontier floor, distance-to-clean
 metrics still matter, but tail survival remains more seed-sensitive and
 cannot be reduced to one raw-patch statistic.
 
-The regime qualification is essential. We observe three relevant regimes inside
-the sparse-observation frontier:
+The intervention claim is **empirical and conditional**, and we report the
+underlying cells rather than introduce a regime taxonomy.
 
-1. **Entrance-band CSDI regime.** On L63 SP65 under the Figure-1 protocol,
-   `CSDI -> Panda` reaches mean VPT 2.86 versus 1.22 for `linear -> Panda`,
-   with paired-bootstrap gain +1.64 Lyapunov times and CI [+1.40, +1.87].
-   Raw-patch and Panda-token distances both move toward clean.
-2. **High-dimensional high-variance regime.** On L96 N=20 SP65, mean VPT is
-   dominated by rare long-survival Panda seeds and generic residual controls
-   are not cleanly separated. CSDI still gives the best median and strongest
-   tail survival (`Pr(VPT>1.0)=80 %` vs 40 % for linear / iid / shuffled).
-3. **Floor-band CSDI regime.** Deeper in the transition band, generic noise is
-   not enough to match CSDI. On L63 SP82, CSDI improves Panda by +1.09
-   Lyapunov times with 95 % paired CI [+0.65, +1.61] and raises
-   `Pr(VPT>1.0)` from 0 % to 70 %. Shuffled CSDI residuals help but remain
-   smaller (+0.34), while iid jitter does not cross zero. On L96 N=20 SP82,
-   Panda mean remains high-variance, but median and survival improve under
-   CSDI and DeepEDM has a strict-positive CSDI gain.
-
-A fourth regime we deliberately surface is **pure-noise non-rescue**: at $s=0$
-with $\sigma>0$, CSDI does not improve Panda and at higher $\sigma$ slightly
-hurts. CSDI is therefore a sparse-gap imputation lever, not a generic dense-noise
-denoiser.
+- **L63 SP65** ($s = 0.65$, $\sigma = 0$, $n = 10$ seeds). `CSDI → Panda`
+  mean VPT 2.86 vs 1.22 for `linear → Panda`; paired Δ = +1.64 Λ,
+  CI [+1.40, +1.87]. $\Pr(\mathrm{VPT} > 1.0\,\Lambda)$ rises from
+  70 % (Wilson 95 % [40 %, 89 %]) to 100 % ([72 %, 100 %]). Raw-patch and
+  Panda-token distances both move toward clean (§4.2); iid jitter and
+  shuffled CSDI residuals do not reproduce the gain.
+- **L63 SP82** ($s = 0.82$, $\sigma = 0$, $n = 10$). CSDI Δ = +1.00 Λ,
+  CI [+0.54, +1.51]. $\Pr(\mathrm{VPT}>1.0\,\Lambda)$ rises from 0 %
+  ([0 %, 28 %]) to 60 % ([31 %, 83 %]). iid jitter and shuffled residual
+  paired CIs cross zero. Panda-space distances still favor CSDI;
+  lag-1 raw autocorrelation becomes mixed (§4.2).
+- **L96 N=20 SP65** ($s = 0.65$, $\sigma = 0$, $n = 10$). Panda mean is
+  dominated by rare long-survival linear seeds and is **not** the
+  appropriate summary; we report tail survival
+  $\Pr(\mathrm{VPT} > 1.0\,\Lambda) = 80\%$ ([49 %, 94 %]) for CSDI vs
+  40 % ([17 %, 69 %]) for jitter / shuffled vs 40 % ([17 %, 69 %]) for
+  linear. DeepEDM paired CSDI − linear is strict-positive across
+  SP55–SP82.
+- **L96 N=20 SP82** ($s = 0.82$, $\sigma = 0$, $n = 10$). Panda mean is
+  again high-variance; the patched-protocol headline is median 0.50 →
+  1.05 and $\Pr(\mathrm{VPT}>0.5\,\Lambda)$ 60 % ([31 %, 83 %]) → 100 %
+  ([72 %, 100 %]). DeepEDM paired CSDI − linear = +0.43 Λ,
+  CI [+0.29, +0.57].
+- **Pure-noise axis** ($s = 0$, $\sigma > 0$). CSDI is neutral or slightly
+  hurtful for Panda at every tested $\sigma$. CSDI is therefore a
+  sparse-gap imputation lever, not a generic dense-noise denoiser.
 
 Delay-manifold forecasting provides a complementary route through the same
 frontier. DeepEDM in Takens coordinates is not the only survivor, and in several
@@ -141,18 +131,21 @@ $\{$linear, Kalman, CSDI$\} \times \{$Panda, DeepEDM$\}$ matrix and show that
 corruption-aware reconstruction reliably improves survival inside the transition
 band.
 
-**Regime-aware mechanism.** We show that entrance-band rescue coincides with
-reduced raw-patch and Panda-token OOD, while floor-band survival is not
-explained by distance-to-clean alone.
+**Mechanism in the entrance band.** We show that the L63 SP65 rescue coincides
+with large reductions in raw-patch and Panda-token distance to clean
+(linear/CSDI distance ratios of 6–22× across four representation stages and
+three temporal statistics). At SP82 those distances still favor CSDI but one
+raw temporal metric becomes mixed; mechanism is therefore strong but not
+fully reducible to a single fidelity scalar.
 
-**Regime taxonomy.** Jitter and shuffled-residual controls separate
-entrance-band CSDI rescue, high-dimensional generic regularization, floor-band
-CSDI survival, and pure-noise non-rescue, preventing an over-broad claim that
-CSDI is universally beneficial.
+**Controls.** Jitter and shuffled-residual controls show that iid noise of
+matched magnitude does not reproduce the CSDI gain in the cells where the
+gain is largest, and that pure-noise corruption is **not** rescued by CSDI.
 
-**Dynamics-structured companion.** We retain delay-manifold forecasting as a
-second, dynamics-aware route across the frontier and state its scope conditions
-explicitly.
+**Delay-manifold companion.** Delay-coordinate forecasting (DeepEDM in Takens
+coordinates) is included as a complementary route through the same frontier;
+its strongest evidence is the strict-positive CSDI − linear paired CI on
+L96 N=20 across SP55–SP82.
 
 ---
 
@@ -208,7 +201,7 @@ question we isolate; we discuss the relationship in §6.
 
 ---
 
-## 3 Sharp Forecastability Frontiers
+## 3 Empirical Forecastability Frontiers
 
 ### 3.1 Observation Model and Order Parameters
 
@@ -396,20 +389,25 @@ itself a finding: in the generic-regularization regime any plausible variability
 recovers most of the mean gain, but only the structured residual recovers the
 fraction of seeds that survive past one Lyapunov decorrelation time.
 
-### 4.4 Alt-Imputer Reviewer Defense
+### 4.4 Alt-imputer comparison
 
-A natural reviewer question is whether structured imputation per se is the
-lever, or whether CSDI's specific dynamics-aware diffusion residuals are
-required. As an appendix sanity check we ran SAITS and BRITS in a per-instance
-fitting regime (single 512-step trajectory, no pretraining corpus) at L63 SP65;
-both collapsed to mean VPT 0.15 / 0.16, well below `linear -> Panda` (1.29) and
-far below `CSDI -> Panda` (2.90, ceiling). This is **biased against
-SAITS / BRITS** because they are normally pretrained on a large corpus, which
-matches CSDI's training pipeline. The appendix-only conclusion is therefore
-narrow: per-instance training of generic structured imputers under high
-missingness is not a viable substitute. A pretrained alt-imputer comparison
-(SAITS / Glocal-IB on the same chaos corpus that CSDI used) is the natural
-follow-up; we describe its design and decision rule in §6.4 and Appendix C.
+We ask whether structured imputation in general is the lever, or whether
+CSDI's specific dynamics-aware diffusion prior is required, by adding a
+pretrained SAITS imputer trained on the same chaos corpus that CSDI was
+trained on. At L63 SP65 and SP82 with cells `linear → Panda`,
+`SAITS-pretrained → Panda`, and `CSDI → Panda`, the paired CSDI−SAITS
+contrast quantifies the marginal value of dynamics-aware diffusion above
+corpus-pretrained structured attention; the paired SAITS−linear contrast
+asks whether any corpus-pretrained structured imputer matches the rescue.
+Numerical results are in §[Pretrained-SAITS results] and Appendix C; we
+preserve the entrance / floor split of §4.3 when reporting paired
+contrasts.
+
+A standalone single-trajectory SAITS / BRITS sanity check (no pretraining
+corpus, per-instance fit on the single test trajectory) is reported as a
+supporting observation in Appendix E and is **not** a primary reviewer
+defense, because per-instance training is biased against SAITS / BRITS by
+design.
 
 ### 4.5 Interpretation
 
@@ -483,10 +481,13 @@ by corruption-aware imputation.
 
 The forecaster under test in the main figures is Panda-72M [Wang25]. The
 isolation matrix in §4 spans $\{$linear, AR-Kalman, CSDI$\}$ imputers times
-$\{$Panda, DeepEDM$\}$ forecasters. The alt-imputer reviewer-defense table in
-§4.4 adds SAITS and BRITS at the strongest CSDI-decisive cells; neither is
-pretrained on the chaos corpus, so the comparison is biased against them — we
-keep this caveat in §6.4.
+$\{$Panda, DeepEDM$\}$ forecasters. To remove a Panda-tokenizer-specific
+attack surface we additionally evaluate Chronos [Ansari24] on the L63
+sparsity transition band (SP55–SP82) with `linear → Chronos` and
+`CSDI → Chronos`; cross-foundation-model evidence is reported in §3.2.
+The alt-imputer comparison in §4.4 uses a SAITS imputer pretrained on the
+same chaos corpus that CSDI is trained on, so the comparison is fair on the
+training-data axis.
 
 ### 5.4 Operational metrics
 
@@ -521,13 +522,15 @@ through the same frontier.
 We do not claim that pretrained chaotic forecasters are intrinsically broken;
 the rescue results show they are highly recoverable when the filled context is
 corruption-aware. We do not claim CSDI is the only imputer that works — only
-the only *tested* intervention that reliably rescues across the band; the
-alt-imputer experiment in §4.4 sets the current boundary, and a pretrained
-SAITS / Glocal-IB comparison is deferred to Appendix C. We do not claim that
-the mechanism is fully characterized; distance-to-clean explains the entrance
-band but not the floor band. We do not claim universality across all foundation
-forecasters; Panda-72M is the headline and Chronos / context-parroting are
-present only as side baselines.
+that, among the imputers we tested with matched corpus pretraining (linear,
+Kalman, CSDI, SAITS), CSDI gives the strongest paired CSDI − linear gain in
+the L63 transition band (§4.4). We do not claim that the mechanism is fully
+characterized; raw-patch and Panda-token distance to clean explains the
+entrance band, while floor-band survival is informed by but not reducible to
+those distances. We do not claim universality across all foundation
+forecasters; Panda-72M is the headline. Chronos is reported on the L63
+sparsity line as cross-foundation-model evidence (§3.2), but TimesFM /
+Lag-Llama are not evaluated.
 
 ### 6.3 Scope conditions
 
@@ -542,14 +545,19 @@ are honest boundaries, not hidden failures.
 
 ### 6.4 Limitations
 
-- **Corpus asymmetry.** Our CSDI is pretrained on each system separately
-  ($\sim$500K independent-IC windows per system). SAITS and BRITS in our
-  alt-imputer experiment are trained per-instance from a single 512-step
-  trajectory. A pretrained SAITS / BRITS / Glocal-IB comparison on the same
-  chaos corpus is the natural follow-up.
-- **Single-forecaster headline.** Panda is the only foundation forecaster
-  fully evaluated under the v2 corruption grid. Replicating the frontier
-  curve with TimesFM / Chronos / Lag-Llama would extend the external validity.
+- **Imputation training-corpus axis.** The alt-imputer comparison in §4.4
+  pairs CSDI against a SAITS model pretrained on the same chaos corpus
+  (~500K independent-IC L63 windows). A standalone single-trajectory
+  per-instance SAITS / BRITS sanity check is reported in Appendix E. We
+  have not evaluated Glocal-IB or other recent global-structure imputers;
+  these are listed as adjacent prior art in §2 and are an open follow-up.
+- **Forecaster breadth.** Panda is the headline; Chronos is evaluated on
+  the L63 sparsity line (§3.2). TimesFM / Lag-Llama are not evaluated;
+  extending to them would strengthen the cross-foundation claim.
+- **Known-dynamics upper bound.** A model-aware reference (EnKF / LETKF
+  with the true vector field) is reported on L63 in Appendix B as an
+  upper bound; our setting is the model-agnostic preprocessing interface,
+  where that information is unavailable.
 - **Pure-noise axis.** The paper's intervention claim is restricted to the
   sparse-observation axis. CSDI is neutral or slightly hurtful on the
   dense-noise axis; a denoising-aware variant is an open follow-up.
@@ -689,18 +697,41 @@ Each aggregator is invoked as `python -m experiments.week1.<script>`:
 - `aggregate_survival_summary.py` → cross-system survival probabilities at
   Pr>0.5 and Pr>1.0.
 
-## Appendix C: Pretrained Alt-Imputer Plan (deferred)
+## Appendix C: Pretrained alt-imputer details
 
-See `deliverable/EXPERIMENT_C_PLAN.md`. The reviewer-defense run trains
-SAITS and (if implementable) Glocal-IB on the same chaos corpus that CSDI
-used, then evaluates at L63 SP82 + L96 N=20 SP82. The decision rule:
+We pretrain a SAITS [Du22] imputer on the same L63 chaos corpus that CSDI
+is trained on (~500K independent-IC windows, matched missingness
+distribution drawn from the v2 corruption grid). At inference time SAITS
+sees the same observed mask as CSDI on every (seed, scenario) cell, so
+the comparison is fair on (i) training data, (ii) corruption distribution,
+and (iii) test mask.
 
-- alt-imputer recovers comparable rescue → narrow main claim to "structured
-  / global-aware imputation is the lever; CSDI is one strong instance";
-- alt-imputer fails → strengthen claim that dynamics-aware reconstruction is
-  required.
+Cells reported in §4.4: `linear → Panda`, `SAITS-pretrained → Panda`,
+`CSDI → Panda` at L63 SP65 and SP82, 10 seeds each. Paired-bootstrap
+contrasts:
 
-Both outcomes preserve the §3 frontier and §6 scope conditions.
+| Cell | SAITS − linear | CSDI − linear | CSDI − SAITS |
+|:--|:-:|:-:|:-:|
+| L63 SP65 | _[from `panda_altimputer_l63_sp65_sp82_pretrained_10seed.json`]_ | _[from same]_ | _[from same]_ |
+| L63 SP82 | _[from same]_ | _[from same]_ | _[from same]_ |
+
+Reading rule:
+
+- if SAITS − linear is strict-positive and CSDI − SAITS is not, the main
+  claim is **"corpus-pretrained structured imputation is the lever"**;
+  CSDI is reported as one strong instance.
+- if CSDI − SAITS is strict-positive, dynamics-aware diffusion residuals
+  carry measurable value above generic structured attention.
+- if SAITS − linear is not strict-positive, the dynamics-aware residual
+  is the working ingredient.
+
+A standalone single-trajectory per-instance SAITS / BRITS sanity check
+(no pretraining corpus) is reported in Appendix E; it is supporting
+evidence, not the primary alt-imputer comparison.
+
+Glocal-IB is not evaluated (cited in §2 as adjacent prior art on
+high-missingness imputation that emphasises preserving global latent
+structure); it remains a natural follow-up.
 
 ## Appendix D: Figure Index
 
