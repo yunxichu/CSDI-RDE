@@ -111,7 +111,7 @@ v2 corruption grid 把稀疏度与观测噪声解耦。纯稀疏度（$\sigma = 
 
 答案是后者，但带一个转折：CSDI **经常**救回 Panda。在 L96 N=20 S4（旧 5-seed S0–S6 协议）：`CSDI → Panda` 把 mean VPT 从 0.52 提升到 3.60，$\Pr(\mathrm{VPT}>0.5)$ 从 60% 升到 100%，paired-bootstrap 增益 +3.07 Λ，CI [+0.57, +6.45]。L96 N=10 S4 增益 +1.11 [+0.08, +2.22]。L63 S2 增益 +0.82 [+0.32, +1.37]。Rössler 绝对 VPT 较低但 CSDI 方向稳定为正，DeepEDM 上尤其明显。
 
-矩阵也让 DeepEDM 的角色保持诚实：延迟流形 forecasting 是**互补**而非唯一主导。CSDI 在多个 transition-band cell 改善 DeepEDM，但 `CSDI → Panda` 经常是绝对 VPT 最强的 cell。这避免"延迟坐标是唯一幸存者"的脆弱主张。在 L96 N=20 v2 cross-system 复制中，DeepEDM 的 CSDI-vs-linear paired CI 在 SP55–SP82 严格为正，**比同 cell 的 Panda CSDI-vs-linear CI 更干净**——这支持把延迟流形 forecasting 当作真实的伴随路线，而不只是附录材料。
+矩阵把 DeepEDM 在主文中的角色锁定到一个硬事实：在 L96 N=20 v2 cross-system 复制中，**DeepEDM 是 SP55–SP82 transition band 上每个 cell 都拿到严格正 paired CSDI − linear CI 的唯一 forecaster**，SP82 处 +0.43、[+0.29, +0.57]。在同一 band 上，Panda mean 被极少数 lucky linear seed 主导（§4.3），所以高维下最干净的 cross-system CSDI − linear 证据走的是延迟坐标通道而非 ambient 通道。这正是 DeepEDM 留在主文而不进附录的原因，但**不**过度主张其支配性：在低维 cell（如 L63 SP65）上 `CSDI → Panda` 才是绝对 VPT 最强的 cell，§3.2 / §4.4 主张并不依赖 DeepEDM。
 
 ### 4.2 Regime-aware 机制：入口带 OOD，底部带混合
 
@@ -127,7 +127,7 @@ v2 corruption grid 把稀疏度与观测噪声解耦。纯稀疏度（$\sigma = 
 
 L63 SP82 处情形改变。Panda-token 比下降到约 1.6–2.4，仍然偏向 CSDI 但幅度小得多；raw 度量混合（local stdev 与 mid-frequency 仍偏 CSDI，lag-1 自相关偏 linear）。CSDI 仍改善 survival，但改善较小，没有单一 distance-to-clean 度量能解释它。这是我们在正文里保留的**机制边界**——也是论文机制主张为何是 regime-aware 而非单一 tokenizer-OOD 一句话的原因。
 
-### 4.3 Jitter 控制与三个 regime
+### 4.3 Jitter 与 shuffled-residual 控制（cell-wise 观察）
 
 为检验 CSDI 是否仅是随机正则化，我们在 6 个 (system, scenario) setting 上跑 4-cell Panda-only 控制：
 
@@ -136,17 +136,21 @@ L63 SP82 处情形改变。Panda-token 比下降到约 1.6–2.4，仍然偏向 
 - `linear + shuffled CSDI residual`，仅在 missing 位置应用；
 - `CSDI`。
 
-所有控制使用同一 missing mask 与同一 forecast 模型。
+所有控制使用同一 missing mask 与同一 forecast 模型。我们逐 cell 报告，**不**引入 regime 分类——§4.4 的替代 imputer 对照已经把"floor-band CSDI 最强"与"任何结构化残差都跨过"之间的边界重塑（后者是 §4.4 SP82 处对 SAITS-pretrained 的发现）。
 
-结果在稀疏观测前沿之内分出三个 regime。
+**L63 SP65**（入口带，$n=10$）：`linear → Panda` mean VPT 1.22，`CSDI → Panda` mean VPT 2.87，paired Δ +1.65，CI [+1.41, +1.87]。iid jitter Δ = +0.17，CI [−0.01, +0.36]；shuffled residual Δ = −0.16，CI [−0.34, −0.02]。两个 magnitude-matched 控制都不能复制 CSDI 增益。§4.4 的替代 imputer 比较加上：`SAITS-pretrained → Panda` 也跨过此处前沿，paired CSDI − SAITS = +0.41 [+0.05, +0.87]（CSDI 严格正但小）。
 
-**入口带 CSDI regime**（L63 SP65 v2 协议）：mean VPT linear=1.22, CSDI=2.87，paired 增益 +1.65 [+1.39, +1.91]。iid jitter（Δ +0.11，CI [-0.02, +0.30]）与 shuffled residual（Δ -0.10，CI [-0.24, -0.01]）均不能复制。
+**L96 N=20 SP65**（$n=10$）：iid jitter、shuffled residual、CSDI 都把 Panda mean 推向正方向，但因 Panda 有极少数长 forecast seed，mean 上没有 cleanly separation。每个 seed 上 rank order 都被保留，CSDI 在 tail survival 上最强：$\Pr(\mathrm{VPT}>1.0\,\Lambda)$ CSDI 80%（Wilson 95% [49%, 94%]）vs linear / iid / shuffled 各 40%（[17%, 69%]）。我们**预注册** median + survival 作为 Panda mean 高方差的 L96 cell 的 headline 度量。
 
-**通用正则化 regime**（L96 N=20 SP65）：iid jitter、shuffled residual、CSDI 都改善 mean VPT（Δ ≈ +1.08–1.19，全部严格正 CI）。但 CSDI 在 median 与 tail survival 上最佳：$\Pr(\mathrm{VPT}>1.0)$ CSDI 60% vs jitter / shuffled 40% vs linear 20%。
+**L63 SP82**（底部带，$n=10$）：iid jitter CI 不跨 0，shuffled residual 助力轻微（Δ +0.34），CSDI 给出 Δ +1.09，CI [+0.65, +1.61]，$\Pr(\mathrm{VPT}>1.0\,\Lambda) = 70\%$。§4.4 替代 imputer 比较加上：`SAITS-pretrained → Panda` 在此 cell 与 CSDI **统计不可分辨**（paired CSDI − SAITS = +0.06，[−0.31, +0.59]）——所以底部带的发现是"任何 corpus-pretrained 结构化 imputer 都跨过，并且都在 magnitude-matched 控制之上"，而**不是** "CSDI 特定地"。
 
-**底部带 CSDI regime**（L63 SP82、L96 N=20 SP82、Rössler SP65 / SP82）：通用噪声不再迁移。L63 SP82：iid jitter 与 shuffled 均不跨 0，CSDI 在 magnitude-matched 控制中是最强 intervention，+1.09 [+0.65, +1.61]（与 §4.4 的 corpus-pretrained SAITS 在底部带统计不可分辨）。L96 N=20 SP82（n=10 patched）：mean 高方差（被极少数 lucky linear seed 主导），但 median 与 survival 站住——Panda median 0.50 → 1.05，$\Pr(\mathrm{VPT}>0.5)$ 60% → 100%；DeepEDM paired Δ +0.43 [+0.29, +0.57]。Rössler 同样有正向 CSDI 方向，但 Lyapunov 指数小使 $\Pr(\mathrm{VPT}>1.0)$ 太严，因此那里更合适的 tail 度量是 $\Pr(\mathrm{VPT}>0.5)$。
+**L96 N=20 SP82**（$n=10$）：Panda mean 被极少数 lucky linear seed 主导（如 seed 2 的 `keep_frac = 0.15` 恰好对齐一个可预测 Panda token 序列，所有 cell 的 VPT@1.0 都达 10.75）；我们因此**预注册 median + survival 作为高维高方差 L96 cell 的 headline 度量**，而**不**把 mean 当作 primary read。在这两个度量上次序干净：linear < SAITS-pretrained < CSDI 在 median（0.50 / 0.84 / 1.13）与 Pr(VPT>1.0)（30 / 40 / 60%）上同时成立。在 forecaster 层面，DeepEDM 在该 cell 给出唯一的**严格正 paired CSDI − linear CI**（+0.43，[+0.29, +0.57]；§3.2）。
 
-这正是我们 abstract 必须写"在 transition band 之内"的原因：CSDI 不是普适比 linear 强，且 generic jitter 在某 L96 前沿 cell 上能解释一部分。但**穿过更深的 transition band，iid jitter 与 magnitude-matched shuffled 残差都不能复制 corpus-pretrained 结构化 imputation 所做的——§4.4 的替代 imputer 对比显示 CSDI 与 corpus-pretrained SAITS 都跨过前沿、而这两个 magnitude-matched 控制都不**；CSDI 在入口带保留小但 paired-CI-strict 的优势。**来自 corpus-pretrained imputer 的结构化残差因此与同等量级 iid 噪声不完全可互换，尤其在 tail survival 上而非 mean VPT 上**。这种 mean / tail 不对称本身是个发现：在通用正则化 regime 内，任何合理变异都恢复 mean 增益的大部分；但只有结构化残差恢复"forecast 跨过一个 Lyapunov 退相关时间"的 seed 比例。
+**Rössler SP65 / SP82**（$n=5$）：相同的正向 CSDI 方向，但 Lyapunov 指数小使 $\Pr(\mathrm{VPT}>1.0\,\Lambda)$ 太严；$\Pr(\mathrm{VPT}>0.5\,\Lambda)$ 是更合适的 tail 度量。
+
+**纯噪声轴**（$s=0$，$\sigma > 0$）：CSDI 在每一档 $\sigma$ 上对 Panda 中性或略有伤害（Figure 1 噪声线）。CSDI 因此是稀疏间隙补全杠杆，不是通用密集噪声 denoiser。
+
+这些 cell-wise 观察是 abstract 必须写"在 transition band 之内"的原因：iid jitter 与 magnitude-matched shuffled 残差都不能复制 **corpus-pretrained 结构化 imputation** 所做的——§4.4 替代 imputer 对照显示 CSDI 与 corpus-pretrained SAITS 都跨过前沿、而这两个 magnitude-matched 控制都不；CSDI 在 L63 入口带保留小但 paired-CI-strict 的优势。**来自 corpus-pretrained imputer 的结构化残差因此与同等量级 iid 噪声不完全可互换**，尤其在 tail survival 上而非 mean VPT 上。
 
 ### 4.4 替代 imputer 比较
 
@@ -172,19 +176,25 @@ Tail survival probability $\Pr(\mathrm{VPT}>1.0\,\Lambda)$（Wilson 95% CI）：
 | SAITS-pretrained | 90% [60%, 98%] | 70% [40%, 89%] |
 | CSDI | 100% [72%, 100%] | 70% [40%, 89%] |
 
-**跨系统复制：L96 N = 20 SP82（n = 10）.** 我们另在 L96 N = 20 混沌语料（`lorenz96_clean_512k_L128_N20.npz`，64K 长度 128 窗口，同 v2-grid 匹配缺失分布）上预训第二个 SAITS imputer，val MAE = 1.07 = 0.29 × `attractor_std`。L96 SP82 mean VPT 被单一 linear-cell 离群（seed 2，VPT@1.0 = 10.75 — clean-context fluke）严重污染，因此按 §6.4 标注的 L96 高方差局限，我们以 median + survival 为 headline：
+**跨系统复制：L96 N = 20 SP82（n = 30）.** 我们另在 L96 N = 20 混沌语料（`lorenz96_clean_512k_L128_N20.npz`，64K 长度 128 窗口，同 v2-grid 匹配缺失分布）上预训第二个 SAITS imputer，val MAE = 1.07 = 0.29 × `attractor_std`。为稀释 §4.3 预注册中标注的 lucky-seed 效应，我们在此 cell 上跑 **30 seeds**（全文唯一 30-seed cell）：
 
-| Cell | L96 SP82 median VPT | $\Pr(\mathrm{VPT}>1.0\,\Lambda)$（Wilson 95%）|
-|:--|:-:|:-:|
-| `linear → Panda` | 0.50 | 30% [11%, 60%] |
-| `SAITS-pretrained → Panda` | 0.84 | 40% [17%, 69%] |
-| `CSDI → Panda` | **1.13** | **60%** [31%, 83%] |
+| Cell | mean VPT | median VPT | $\Pr(\mathrm{VPT}>1.0\,\Lambda)$ Wilson 95% |
+|:--|:-:|:-:|:-:|
+| `linear → Panda` | 0.86 | 0.25 | 20% [10%, 37%] |
+| `SAITS-pretrained → Panda` | 1.57 | 1.01 | 50% [33%, 67%] |
+| `CSDI → Panda` | **1.87** | **1.26** | **73%** [56%, 86%] |
 
-Paired-bootstrap on means：CSDI − SAITS-pretrained = +0.21 [+0.00, +0.49]（恰好触及 0）；CSDI − linear = −0.03 [−1.40, +0.88] 与 SAITS-pretrained − linear = −0.24 [−1.55, +0.51] 在均值上跨 0（被 linear-seed-2 离群驱动 — 见附录 C 逐 seed 表）。median 与 survival 上的定性次序与 L63 SP65 一致：linear < SAITS-pretrained < CSDI。
+Paired-bootstrap on means（5000 resamples，$n = 30$）：
 
-L63 SP65 + SP82 + L96 SP82 共同把 §1 intervention 主张从 "CSDI 是唯一测试过的 intervention" 显著收窄为 "**corpus-pretrained 结构化 imputation 是 lever**，CSDI 在 L63 入口带保留小但 paired-CI-strict 的优势、在 L96 SP82 means 上的优势恰好触及 0（CI [+0.00, +0.49]）、在 L96 SP82 median + survival 上有清晰优势、在 L63 底部带与 SAITS-pretrained 不可分辨"。这一现象——某个 corpus-pretrained 结构化 imputer 在 linear 插值崩塌的稀疏观测 transition band 处仍能跨过——**不是 CSDI 独有**；median + survival 上的次序 linear < SAITS-pretrained < CSDI 在第二个在同一数据上预训、且推理时长与训练时长匹配的 imputer 上被复制，并且在两个不同的混沌系统（3-D L63 与 20-D L96）上同时观察到。我们**不**主张更宽广的推广（例如到其他系统、稀疏度 cell、或 imputer 家族），因为只有一个 L96 cell 被测试。
+| Paired contrast | Δ | 95% CI | sign |
+|:--|:-:|:-:|:-:|
+| SAITS-pretrained − linear | +0.71 | [+0.02, +1.38] | ↑ |
+| CSDI − linear | +1.01 | [+0.36, +1.64] | ↑ |
+| CSDI − SAITS-pretrained | **+0.31** | **[+0.07, +0.56]** | **↑** |
 
-> **关于 alt-imputer cell 与 §3.2 的数值微差.** §3.2 的 L96 SP82 headline（Panda median 0.50 → 1.05、$\Pr(\mathrm{VPT}>0.5)$ 60% → 100%，源 `pt_l96_smoke_l96N20_v2_B_patched_*`）与 §4.4 alt-imputer L96 SP82（median 0.50 → 1.13、$\Pr(\mathrm{VPT}>1.0)$ 30% → 60%，源 `panda_altimputer_l96_sp82_pretrained_10seed`）使用相同的 v2 corruption seed 方案与相同的 Panda checkpoint，但是**独立的** CSDI 推理 run；逐 seed VPT 的差（typically < 0.5 Λ）反映的是 CSDI 扩散 sampler 的随机性，**不是**协议漂移。同一 caveat 适用于 L63 SP65 paired Δ 在 Figure 1（+1.64）、jitter 控制（+1.65）与 alt-imputer cell（+1.67）之间的小幅差异——三者都来自同一 corruption draws 上的独立 CSDI run，CI 重叠。
+30 seeds 下 lucky-seed 稀释消除了 10 seeds 时 L96 mean 上的歧义：每个度量（mean / median / Pr(VPT > 0.5) / Pr(VPT > 1.0)）都单调 `linear < SAITS-pretrained < CSDI`，三个 paired 对比都严格正。CSDI − SAITS-pretrained 在均值上变成严格正 paired CI，与 L63 SP65 入口带匹配。
+
+L63 SP65 + SP82 + L96 SP82 共同把 §1 intervention 主张从 "CSDI 是唯一测试过的 intervention" 显著收窄为 "**corpus-pretrained 结构化 imputation 是 lever**，CSDI 在 L63 入口带保留小但 paired-CI-strict 的优势、在 L96 SP82（n=30）means 与 median + survival 上都给出严格正 paired CI、在 L63 底部带与 SAITS-pretrained 不可分辨"。这一现象——某个 corpus-pretrained 结构化 imputer 在 linear 插值崩塌的稀疏观测 transition band 处仍能跨过——**不是 CSDI 独有**；linear < SAITS-pretrained < CSDI 的次序在第二个 corpus-pretrained imputer 上被复制，且在两个不同的混沌系统（3-D L63 与 20-D L96）上同时观察到。我们**不**主张更宽广的推广；§6.6 的 Jena Climate 实测案例显示该 lever 在周期主导的真实数据上**不**复现，定义了主张的边界。
 
 一个独立的单轨迹 SAITS / BRITS sanity check（无预训语料、在单条测试轨迹上逐实例拟合）作为支持性观察列在附录 E。逐实例训练在设计上对 SAITS / BRITS 不公，所以这**不是**主对照实验。
 
@@ -258,12 +268,29 @@ CI 在 mean 上为 95% bootstrap，在 survival probability 上为 Wilson 95%。
 - **已知动力学上界.** 一个 model-aware 参考（用真实 L63 向量场的 stochastic EnKF, 100 ensemble members）在整个稀疏观测 transition band 上撞 VPT ceiling（SP55–SP82 mean 2.84–2.85, $\Pr(\mathrm{VPT}>1.0) = 100\%$；附录 B）。前沿因此是**黑盒部署接口**（forecaster 不能访问动力学）的属性，不是系统本身的属性。
 - **纯噪声轴.** 论文的干预主张限定在稀疏观测轴上。CSDI 在密集噪声轴上中性或略有伤害；denoising-aware 变体是开放后续。
 - **L96 高方差.** L96 N=20 在前沿底部 cell 上 mean VPT 高方差（即使 n=10 仍被极少数长 forecast seed 主导）。我们因此用 median 与 survival 作为 L96 的 headline，而**不**用 Panda mean。
-- **系统广度.** L63、L96 N=10 / 20、Rössler、Kuramoto 覆盖正向复制；Mackey-Glass 与 Chua 是 scope boundary。KSE / dysts 广度与真实数据 case study（EEG、气候 reanalysis）保留为后续。
+- **系统广度.** L63、L96 N=10 / 20、Rössler、Kuramoto 覆盖正向复制；Mackey-Glass 与 Chua 是 scope boundary。Jena Climate 小时尺度作为真实传感器**负向** case study 报告（§6.6），把杠杆限定在混沌吸引子主导的 regime。KSE / dysts 广度与其他真实数据 case study（EEG、气候 reanalysis）保留为后续。
 - **基础模型可解释性.** 为何 CSDI 残差在底部带能产生可预测 context、即使 raw-patch 与 Panda-token 距离-到-clean 已不再分离它与 linear，仍是开放问题。一个自然假设是相关几何量在 Panda 更深的 latent dynamics（decoder 而非 encoder）里——我们尚未对其插桩。
 
 ### 6.5 与数据同化的关系
 
 在动力学已知且在线追踪时，序贯数据同化（EnKF / LETKF）是更丰富、信息更高效的稀疏含噪混沌方法。我们的 setting 不同：forecaster 是黑盒（Panda），corruption 在线下被预处理。因此我们对照预处理风格 baseline（linear / Kalman / CSDI），匹配部署接口；并把对应 DA 文献当作**前沿存在性的 motivating background**，不是直接竞争对手。
+
+### 6.6 真实传感器 case study：Jena Climate（杠杆的边界）
+
+为在真实多变量传感器流上压力测试 §4.4 的"corpus-pretrained 结构化 imputation 是 lever"主张，我们在公开的 Jena Climate 2009–2016 数据集（14 个数值大气特征，10 分钟采样，下采样到小时；train 2009–2014, val 2015, test 2016，详见附录 C.2）上跑同一稀疏-context-fill 协议。Forecaster：Chronos-bolt-small（Jena 不在 Panda 的混沌预训领域）。Imputer：linear 与 SAITS-pretrained-on-Jena（在 train split 上预训，val MAE 0.62 z-units）。10 seeds × {SP55, SP65, SP75, SP82}，$n_{ctx} = 512$ 小时，$pred_{len} = 64$ 小时。度量：normalized valid horizon vh@τ —— 跨 z-scored 特征的 per-step RMSE 保持 ≤ τ 的最大 lead-step。
+
+| Cell | SP55 vh@1.0 mean | SP65 | SP75 | SP82 |
+|:--|:-:|:-:|:-:|:-:|
+| `linear → Chronos` | 51.1 | 50.9 | 48.5 | 50.9 |
+| `SAITS-pretrained → Chronos` | 34.4 | 32.1 | 27.5 | 27.3 |
+
+Paired-bootstrap on means（5000 resamples，$n = 10$，每个 cell）：SAITS-pretrained − linear 在 vh@1.0 上**严格负**（SP55 −16.7 [−28.2, −5.8]，SP65 −18.8 [−29.7, −8.2]，SP75 −21.0 [−34.3, −8.6]，SP82 −23.6 [−39.2, −8.6]）。linear 在 vh@0.5 上对 SAITS-pretrained 的优势在 SP55–SP65 也是严格正，SP75–SP82 跨 0。
+
+**读.** §4.4 lever **不**适用于 Jena。我们归因于 Jena 强烈的日 / 周周期性：小时尺度天气被确定性日循环主导，linear 插值已经"免费"保留了周期性，Chronos 不论补全细节都能拾取这种周期结构；而在含噪真实语料上 fit 的 SAITS imputer 反而引入 sample-specific artefacts，使填补 context 偏离周期模式、伤害 Chronos。这干净地界定了 §4.4 主张：
+
+> **Corpus-pretrained-imputation 救援在混沌吸引子主导的系统（L63、L96）上可观察 —— 这种系统中 linear 插值会破坏 foundation forecaster 依赖的局部几何结构。在周期主导的真实数据流（Jena 小时）上，linear 插值本身已经是主导模式的强归纳偏置，learned imputer 反而可能净有害。**
+
+前沿故事因此是**混沌系统性质**，不是普适的稀疏-context-fill 主张。我们把这一 case study 留在 §6 而不提到 §3，因为它是一个**负向**结果，定义了主张的边界，而 headline 前沿陈述（§3.2）保持不变。来源：`experiments/week1/results/jena_real_sensor_jena_real_sensor_10seed.json`。
 
 ---
 

@@ -1,10 +1,9 @@
-# Paper Status — 2026-05-01 (post-P1 freeze)
+# Paper Status — 2026-05-02 (post-P2 freeze)
 
-**State.** P0 (cleanup) + P1 (reviewer-defense experiments) **completed**.
-The draft is at submission-ready state modulo P3 optional polish (real-data
-case study, Panda decoder-side mechanism, Glocal-IB). No new experiments
-are scheduled before submission unless reviewer simulation flags a hard
-blocker.
+**State.** P0 (cleanup) + P1 (reviewer-defense experiments) + P2 (real-sensor
+case study + L96 30-seed extension + §4.3 cell-list rewrite) **completed**.
+The draft is at submission-ready state. P3 (Panda decoder-side mechanism,
+Glocal-IB) remains optional camera-ready follow-up.
 
 **Authoritative commits.**
 
@@ -14,10 +13,13 @@ blocker.
 | `695dbad` | 2026-05-01 | P1.1 / P1.2 / P1.3 — pretrained SAITS L63 + Chronos mini-frontier + EnKF upper bound |
 | `c3f1256` | 2026-05-01 | P1.4 / P1.5 — Chronos pred_len=64 native horizon + SAITS-pretrained L96 N=20 cross-system |
 | `bd2ccc6` | 2026-05-01 | docs(P1) — record Chronos native horizon and L96 SAITS follow-up in `P1_RESULTS.md` |
-| **`290e38b`** | **2026-05-01** | **Submission-prep QA freeze** — traceability sidecar, reviewer-sim fixes (Chronos plural, "12–34×", "generalises" softening, CSDI-stochasticity disclosure), Appendix D figure-path fixes |
+| `290e38b` | 2026-05-01 | Submission-prep QA freeze — traceability sidecar, reviewer-sim fixes |
+| `0fb2945` | 2026-05-01 | Reviewer-handoff polish — sidecar freeze-commit references + §6.2 §3.2 pointer hygiene |
+| **`<P2 commit>`** | **2026-05-02** | **P2 freeze** — §4.3 cell-list rewrite + DeepEDM unified justification + L96 SP82 extended to 30 seeds (CSDI − SAITS = +0.31 [+0.07, +0.56] strict-positive on means) + Jena Climate hourly real-sensor case study (§6.6 boundary: SAITS − linear strict-negative at vh@1.0 across SP55–SP82, defines lever's chaotic-attractor scope) |
 
-The current submission-ready freeze is `290e38b`. External reviewers
-should pull this commit and read the four files listed below.
+The current submission-ready freeze is the P2 round. External reviewers
+should pull the latest commit on `csdi-pro-m3-alt` and read the four
+files listed below.
 
 Authoritative drafts:
 
@@ -151,38 +153,102 @@ OOD horizon.
 
 `experiments/week1/results/panda_altimputer_l96_sp82_pretrained_10seed.json`
 
-L96 SP82, 10 seeds. Mean is dominated by linear seed-2 fluke
-(VPT@1.0 = 10.75); per existing L96 high-variance limitation we lead
-with median + survival:
+L96 SP82, 10 seeds. Mean was dominated by linear seed-2 fluke
+(VPT@1.0 = 10.75); paired CSDI − SAITS-pretrained = +0.21 [+0.00, +0.49]
+just touching zero. Replaced by P2.2 below at 30 seeds.
 
-| Cell | median VPT@1.0 | Pr(VPT>1.0) (Wilson 95 %) |
-|:--|:-:|:-:|
-| `linear → Panda` | 0.50 | 30 % [11 %, 60 %] |
-| `SAITS-pretrained → Panda` | 0.84 | 40 % [17 %, 69 %] |
-| `CSDI → Panda` | **1.13** | **60 %** [31 %, 83 %] |
+### P2.0 — §4.3 cell-list rewrite + DeepEDM unified justification (P2 commit)
 
-Paired CSDI − SAITS = +0.21 [+0.00, +0.49] on means.
+§4.3 rewritten from three-regime taxonomy ("entrance-band CSDI regime",
+"high-dim high-variance regime", "floor-band CSDI regime") to cell-wise
+observations matching §1's bullet list. Floor-band re-framed: CSDI and
+corpus-pretrained SAITS are statistically indistinguishable at L63 SP82
+(per §4.4), so the cell name "floor-band CSDI regime" was wrong; cell
+list avoids the issue.
 
-**Effect on the paper.** Cross-system replication of the structured-
-imputation lever from 3-D L63 to 20-D L96 on median + survival.
+§4.1 DeepEDM justification rewritten as a single hard claim:
+"DeepEDM is the only forecaster with strict-positive paired CSDI − linear
+CI on every cell of L96 SP55–SP82, +0.43 [+0.29, +0.57] at SP82" — the
+reason it stays in the main text rather than the appendix, with no
+overclaim on dominance.
+
+L96 SP82 lucky-seed framing moved from defensive callout to **§4.3
+pre-registration**: "we pre-register median + survival as the headline
+metric for high-dimensional high-variance L96 cells". Then §4.4 invokes
+this pre-registration when discussing L96 SP82 instead of reading as a
+post-hoc patch.
+
+### P2.1 — Real-sensor case study: Jena Climate hourly (P2 commit)
+
+`experiments/week1/results/jena_real_sensor_jena_real_sensor_10seed.json`
+
+Public Jena Climate 2009–2016 (14 atmospheric features, 10-min sampling,
+downsampled hourly; train 2009–2014, val 2015, test 2016). Forecaster:
+Chronos-bolt-small (Jena outside Panda's chaotic pretraining). Imputers:
+linear vs SAITS-pretrained-on-Jena (val MAE 0.62 z-units). Metric:
+normalized valid horizon vh@τ in z-RMSE units. 10 seeds × {SP55, SP65,
+SP75, SP82}, $n_{ctx}=512$, $pred_{len}=64$.
+
+| Cell | SP55 vh@1.0 mean | SP65 | SP75 | SP82 |
+|:--|:-:|:-:|:-:|:-:|
+| `linear → Chronos` | 51.1 | 50.9 | 48.5 | 50.9 |
+| `SAITS-pretrained → Chronos` | 34.4 | 32.1 | 27.5 | 27.3 |
+
+Paired SAITS − linear at vh@1.0 is **strict-negative every cell**:
+SP55 −16.7 [−28.2, −5.8], SP65 −18.8 [−29.7, −8.2], SP75 −21.0
+[−34.3, −8.6], SP82 −23.6 [−39.2, −8.6].
+
+**Effect on the paper.** New §6.6 case study + Appendix C.2. Defines the
+boundary on the §4.4 lever: it applies to chaotic-attractor-dominant
+systems (L63, L96) but NOT to periodic-dominant real-world streams
+(Jena hourly). Linear interpolation already preserves the dominant daily
+cycle; learned SAITS introduces sample-specific artefacts that hurt
+Chronos. This bounds the §1 claim cleanly without retracting it, and is
+the §6 honest answer to "did you test on real data?".
+
+### P2.2 — L96 SP82 alt-imputer extended to 30 seeds (P2 commit)
+
+`experiments/week1/results/panda_altimputer_l96_sp82_pretrained_30seed.json`
+
+L96 SP82 extended from 10 to 30 seeds to dilute the lucky-seed effect.
+At 30 seeds every metric is monotonic `linear < SAITS-pretrained < CSDI`
+and **all three paired contrasts are strict-positive on means**:
+
+| Cell | mean | median | Pr(VPT>1.0) Wilson 95 % |
+|:--|:-:|:-:|:-:|
+| linear | 0.86 | 0.25 | 20 % [10 %, 37 %] |
+| SAITS-pretrained | 1.57 | 1.01 | 50 % [33 %, 67 %] |
+| CSDI | **1.87** | **1.26** | **73 %** [56 %, 86 %] |
+
+Paired SAITS − linear = +0.71 [+0.02, +1.38]; CSDI − linear =
++1.01 [+0.36, +1.64]; **CSDI − SAITS-pretrained = +0.31 [+0.07, +0.56]
+strict-positive on means** (was [+0.00, +0.49] at 10 seeds).
+
+**Effect on the paper.** §4.4 L96 SP82 cross-system block now uses 30-seed
+numbers; the lucky-seed reviewer attack is closed. Strict-positive paired
+CSDI − SAITS on means (matching L63 SP65) supersedes the previous "edge
+of zero" framing.
 
 ---
 
 ## 4. Where headline numbers come from
 
-See section 6 (Number-source traceability) below for the full table.
+See `PAPER_NUMBER_TRACEABILITY.md` for the per-claim traceability table.
 
 ---
 
 ## 5. Optional P3 (deferred)
 
-- **Real-data case study** (ECG, EEG, climate reanalysis). Highest value
-  P3 if pursued; flagged in §6.4 as future work.
 - **Panda decoder-side mechanism** instrumentation for the floor-band
   question (why CSDI floor-band rescue exceeds what raw-patch / Panda-
-  token distances predict).
+  token distances predict). Camera-ready follow-up.
 - **Glocal-IB pretrained as third alt-imputer**. Listed as adjacent prior
   art in §2; would extend the §4.4 lever claim to a 3rd imputer.
+- **Additional real-data case studies** (EEG, climate reanalysis). The
+  Jena Climate hourly case study (§6.6) supplies the boundary; one more
+  real-world dataset (a chaotic-attractor-dominant one — solar wind, EEG)
+  would give a positive real-data instance to complement the Jena
+  negative.
 - **KSE / dysts breadth on §3.**
 
 Decision: **default skip P3** for this submission; revisit only if

@@ -1,8 +1,9 @@
 # Headline-number traceability — 2026-05-01
 
-Every quantitative claim in **Abstract / §1 / §3 / §4 / §6.4** of
+Every quantitative claim in **Abstract / §1 / §3 / §4 / §6.4 / §6.6** of
 `paper_draft_en.md` traced to its source JSON or figure markdown. Built
-in the submission-prep QA pass; commit at this freeze: `290e38b`.
+in the submission-prep QA pass at `290e38b`; extended at the P2 freeze
+(2026-05-02) for the L96 30-seed and Jena Climate real-sensor additions.
 
 **Use.** Before any future numerical edit to the paper, look up the
 number here and update the source as well — never edit the paper number
@@ -101,7 +102,13 @@ the table; do not silently update the paper.
 | L63 SP65 / SP82 mean VPT linear / SAITS / CSDI | full table | 415–417 | `panda_altimputer_l63_sp65_sp82_pretrained_10seed_chunked.json` (P1.1) |
 | All paired contrasts at SP65 / SP82 | SAITS−linear, CSDI−linear, CSDI−SAITS | 421–423 | same |
 | L63 SP65 / SP82 Pr(VPT>1.0) Wilson | 70/90/100 %, 0/70/70 % with CIs | 429–431 | same |
-| L96 N=20 SP82 median + Wilson + paired bootstrap | full block | 443–449 | `panda_altimputer_l96_sp82_pretrained_10seed.json` (P1.5) |
+| L96 N=20 SP82 mean / median / Wilson + paired bootstrap (n=30) | full block | ~445–467 | `panda_altimputer_l96_sp82_pretrained_30seed.json` (P2.2; supersedes the P1.5 10-seed JSON for §4.4) |
+| 0.86 / 1.57 / 1.87 | L96 SP82 mean VPT linear / SAITS / CSDI (n=30) | ~448 | same |
+| 0.25 / 1.01 / 1.26 | L96 SP82 median VPT linear / SAITS / CSDI (n=30) | ~448 | same |
+| 20 / 50 / 73 % | L96 SP82 Pr(VPT>1.0) Wilson 95 % | ~448 | same |
+| +0.71 [+0.02, +1.38] | L96 SP82 paired SAITS − linear (n=30) | ~456 | same |
+| +1.01 [+0.36, +1.64] | L96 SP82 paired CSDI − linear (n=30) | ~457 | same |
+| +0.31 [+0.07, +0.56] | L96 SP82 paired CSDI − SAITS (n=30) | ~458 | same |
 | ~64K L96 / 64K L63 corpus sizes | training scale | 408, 434 | corpus npz file metadata |
 
 ### §6.4 Limitations
@@ -112,6 +119,19 @@ the table; do not silently update the paper.
 | 0.34–0.50, ≤ 20 % | Chronos mean VPT@1.0 + Pr(VPT>1.0) on L63 SP55–SP82 | 623–624 | `chronos_frontier_l63_chronos_l63_sp55_sp82_5seed.json` (P1.2) |
 | 0.34–0.50 | Chronos pred_len=64 native-horizon repeat | 624–625 | `chronos_frontier_l63_chronos_l63_sp55_sp82_5seed_pl64.json` (P1.4) |
 | 2.84–2.85, 100 % | EnKF mean VPT + Pr(VPT>1.0) across SP55–SP82 | 636–637 | `enkf_l63_enkf_l63_v2_5seed.json` (P1.3) |
+
+### §6.6 Real-sensor Jena Climate case study (P2.1)
+
+| Number | Description | en line(s) | Source |
+|:--|:--|:--|:--|
+| 51.1 / 50.9 / 48.5 / 50.9 | Jena `linear → Chronos` vh@1.0 mean SP55/65/75/82 (n=10) | ~750 | `jena_real_sensor_jena_real_sensor_10seed.json` |
+| 34.4 / 32.1 / 27.5 / 27.3 | Jena `SAITS-pretrained → Chronos` vh@1.0 mean | ~751 | same |
+| −16.7 [−28.2, −5.8] | Jena SP55 paired SAITS − linear vh@1.0 (strict-negative) | ~755 | same |
+| −18.8 [−29.7, −8.2] | Jena SP65 paired SAITS − linear vh@1.0 | ~755 | same |
+| −21.0 [−34.3, −8.6] | Jena SP75 paired SAITS − linear vh@1.0 | ~756 | same |
+| −23.6 [−39.2, −8.6] | Jena SP82 paired SAITS − linear vh@1.0 | ~756 | same |
+| 14 features | Jena variable count (atmospheric, hourly) | Appendix C.2 | `experiments/week2_modules/data/real/jena_climate_2009_2016.csv` header |
+| 0.62 z-units | SAITS-Jena val MAE on missing | Appendix C.2 | `experiments/week2_modules/ckpts/saits_jena_pretrained_meta.json` |
 
 ## Audit findings
 
