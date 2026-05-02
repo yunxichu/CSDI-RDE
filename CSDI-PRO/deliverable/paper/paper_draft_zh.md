@@ -307,7 +307,9 @@ CI 在 mean 上为 95% bootstrap，在 survival probability 上为 Wilson 95%。
 
 ### 6.3 Scope condition
 
-延迟流形伴随假设光滑吸引子与有用的有限维 Takens 表示。Mackey-Glass 与 Chua 作为附录 scope boundary 报告。Mackey-Glass 是标量延迟微分系统，其有效状态在观测窗口下无限维；可用的 CSDI 训练语料与延迟配置不能跨过相关历史维。Chua 是分段线性、非光滑电路；M1 / DeepEDM 中隐含的光滑吸引子假设被破坏。这些是**诚实的边界**，不是被掩盖的失败。
+延迟流形伴随假设光滑吸引子与有用的有限维 Takens 表示。Mackey-Glass 与 Chua 作为附录 scope boundary 报告。Mackey-Glass 是标量延迟微分系统，其有效状态在观测窗口下无限维；可用的 CSDI 训练语料与延迟配置不能跨过相关历史维。Chua 是分段线性、非光滑电路；M1 / DeepEDM 中隐含的光滑吸引子假设被破坏。这些是**合成系统**的 scope boundary：它们指出 lever 所利用的混沌吸引子结构能以哪两种方式被破坏。
+
+§6.6 的 Jena Climate hourly 真实传感器案例提供同一 lever 上的**互补的真实世界** scope boundary：当主导时间结构是**周期主导**而非混沌吸引子主导时，linear 插值已经饱和 forecaster 的 clean-context 天花板，corpus-pretrained imputer 净有害（在 Chronos 与 Panda 两个 forecaster 上交叉验证）。§6.3（合成、结构违反）与 §6.6（真实世界、周期主导 regime）共同把 §4.4 lever 的适用范围**夹**在中间，定义在混沌吸引子主导 regime 内。这些是**诚实的边界**，不是被掩盖的失败。
 
 ### 6.4 局限
 

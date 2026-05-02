@@ -752,6 +752,17 @@ system whose effective state is infinite-dimensional under the observation
 window; the available CSDI training corpus and delay configuration do not span
 the relevant history dimension. Chua is a piecewise-linear, non-smooth circuit;
 the smooth-attractor assumptions implicit in M1 / DeepEDM are violated. These
+are **synthetic-system** scope boundaries: they identify two ways the
+chaotic-attractor structure that the lever exploits can break.
+
+The §6.6 Jena Climate hourly real-sensor case study supplies a
+**complementary real-world** scope boundary on the same lever: when the
+dominant temporal structure is **periodic** rather than chaotic-attractor,
+linear interpolation already saturates the forecaster's clean-context
+ceiling and a corpus-pretrained imputer is net-harmful (verified
+cross-forecaster on Chronos and Panda). Together, §6.3 (synthetic, structure
+violations) and §6.6 (real-world, periodic-dominant regime) bracket the
+chaotic-attractor-dominant regime in which the §4.4 lever applies. These
 are honest boundaries, not hidden failures.
 
 ### 6.4 Limitations
