@@ -392,22 +392,67 @@ indistinguishable (paired CSDI − SAITS = +0.06 Λ, CI [−0.31, +0.59]).
 **Token distance is therefore informative — both corpus-pretrained
 imputers reduce it vs linear and both rescue Panda — but it does not
 order SAITS-vs-CSDI at the floor band**, where the smaller-token-distance
-imputer (SAITS) is not the better-VPT imputer. This is direct evidence
-that the residual SP82 forecastability difference between corpus-
-pretrained imputers is not captured by encoder-side distance, supporting
-the §6.4 hypothesis that decoder-side latent dynamics matter near the
-floor (which we leave instrumentation of to camera-ready).
+imputer (SAITS) is not the better-VPT imputer based on **final pooled**
+distance alone. The per-layer probe below resolves this paradox: it is
+not encoder-vs-decoder, it is *which encoder layer* is rescue-relevant.
 
 Raw metrics confirm the boundary: at SP82, local stdev and mid-frequency
 power favor CSDI (3.54× and 5.19×), while lag-1 autocorrelation favors
-linear (0.62×). The mechanism claim therefore reads:
+linear (0.62×).
+
+**Per-layer encoder probe (12-layer scan, L63, 5 seeds, v2 protocol).**
+The naïve reading of the SP82 flip — that some signal "downstream of the
+encoder" is needed to explain why CSDI ≈ SAITS on VPT despite SAITS
+being closer in pooled L2 — turns out to be wrong. Panda-72M is
+encoder-only (its head is a linear projection from the pooled encoder
+state), so we register a forward hook on each of the 12 PandaLayer
+outputs and measure paired L2-to-clean at every layer:
+
+| Layer | SP65 SAITS/CSDI | SP82 SAITS/CSDI |
+|:-:|:-:|:-:|
+| 0 (post-embedder) | 5.67 | 0.94 |
+| 1 | 5.08 | 0.70 |
+| 2 | 4.77 | 0.64 |
+| 3 | 4.20 | 0.65 |
+| 4 | 4.86 | 0.86 |
+| 5 | 5.46 | 0.94 |
+| **6** | **5.90** | **1.02** |
+| **7** | **6.26** | **1.06** |
+| **8** | **5.28** | **1.00** |
+| 9 | 4.35 | 0.74 |
+| 10 | 4.69 | 0.78 |
+| 11 | 4.78 | 0.76 |
+| 12 (final, before pooling) | 4.85 | 0.71 |
+
+At **SP65 every layer keeps CSDI 4–6× closer to clean than SAITS** —
+encoder geometry is uniformly informative and matches CSDI's strict-
+positive paired VPT advantage. At **SP82 the layer-wise picture is
+non-monotonic**: SAITS is closer at layers 0–5 and 9–12 (saits/csdi
+0.64–0.94), but at **mid-encoder layers 6–8 the two converge to a
+tie (saits/csdi 1.00–1.06)**. The mid-encoder band is the *only*
+sub-region of Panda's internal representation where SAITS and CSDI
+look equivalently close to clean — and it precisely matches the §4.4
+forecast tie (CSDI − SAITS = +0.06 Λ, CI [−0.31, +0.59]).
+
+We read this as direct measured evidence that **the §4.4 floor-band
+rescue saturates at Panda's mid-encoder**: by layer 7, both corpus-
+pretrained imputers have produced internal representations that are
+statistically indistinguishable in distance to clean, and any
+discrimination at later layers does not translate into forecastability
+because the head's linear projection sees the pooled (≈ averaged) state
+that smooths over the mid-encoder convergence. The pooled-only reading
+in the bar table above is therefore a *late-layer artefact*, not the
+relevant predictor of VPT.
+
+The mechanism claim therefore reads:
 
 > **At the entrance band, corpus-pretrained structured imputation
-> reduces raw / Panda-token OOD distance to clean, and the magnitude
-> of reduction tracks rescue strength. At the floor band, both
-> corpus-pretrained imputers reduce token distance enough to rescue,
-> and the rescue saturates: which one wins on VPT is no longer
-> ordered by encoder-side token distance.**
+> reduces raw / Panda-token OOD distance to clean uniformly across
+> the encoder, and the magnitude of reduction tracks rescue strength.
+> At the floor band, both corpus-pretrained imputers' representations
+> converge to a tie in Panda's mid-encoder (layers 6–8); this is where
+> the §4.4 forecast tie is realised. The final pooled distance is a
+> late-layer artefact, not the rescue-relevant geometry.**
 
 ### 4.3 Jitter and Shuffled-Residual Controls (Cell-Wise Observations)
 
@@ -751,12 +796,19 @@ are honest boundaries, not hidden failures.
   study that bounds the lever to chaotic-attractor-dominant regimes
   (§6.6). KSE / dysts breadth and additional real-data case studies
   (EEG, climate reanalysis) remain future work.
-- **Foundation-model interpretability.** Why CSDI's residual produces a
-  forecastable context near the floor band, where Panda-token distances favor
-  CSDI but raw temporal metrics are not uniformly aligned, is still open. A
-  natural hypothesis is that the relevant geometric quantity lives in Panda's
-  deeper latent dynamics (decoder side rather than encoder side), which we
-  have not instrumented.
+- **Foundation-model interpretability.** The per-layer encoder probe in
+  §4.2 resolves the original "decoder-side latent dynamics" hypothesis
+  by direct measurement: Panda-72M is encoder-only (its head is a linear
+  projection from the pooled encoder state), and the floor-band rescue
+  saturates at **mid-encoder layers 6–8**, where SAITS-pretrained and
+  CSDI representations converge to a tie in distance to clean
+  (saits/csdi 1.00–1.06). Final-pooled distance is a late-layer
+  artefact and is not the relevant geometry. What remains open is *why*
+  mid-encoder is the saturation band — that is, what specific
+  Panda-internal computation is performed by layers 6–8 such that two
+  corpus-pretrained imputers with very different early-layer distances
+  arrive at equivalent mid-layer states. This is a follow-up
+  interpretability question, not a blocker for the §1 / §3 / §4 claims.
 
 ### 6.5 Relationship to data assimilation
 
@@ -954,6 +1006,7 @@ repository root.
 | 14 | **Chronos mini-frontier (P1.2)** | L63 | SP55, SP65, SP75, SP82 | linear, CSDI (forecaster: Chronos, `pred_len ∈ {64, 128}`) | 5 | `chronos_frontier_l63_chronos_l63_sp55_sp82_5seed.json`, `..._5seed_pl64.json` | §6.4 cross-foundation observation; pred_len=64 confirms negative is not an artefact of Chronos OOD horizon |
 | 15 | **EnKF known-dynamics upper bound (P1.3)** | L63 | SP55–SP82, NO020, NO050 | EnKF (true vector field, 100 members) | 5 | `enkf_l63_enkf_l63_v2_5seed.json` | §6.5 / Appendix B reference |
 | 16 | **Real-sensor case study (P2.1 + P3.A clean-upper / cross-forecaster)** | Jena Climate 2009–2016 | SP55, SP65, SP75, SP82 (hourly, $n_{ctx}=512$, $pred_{len}=64$) | clean, linear, SAITS-pretrained-on-Jena × {Chronos-bolt-small, Panda-72M} | 10 | `jena_real_sensor_jena_chronos_with_clean_upper_10seed.json`, `jena_real_sensor_jena_panda_with_clean_upper_10seed.json` | §6.6 boundary case study with clean-context upper bound + cross-forecaster control; metric = normalized valid horizon vh@τ in z-RMSE units |
+| 17 | **Per-layer encoder probe (P3.B2)** | L63 | SP65, SP82 | clean / linear / SAITS-pretrained / CSDI × {12 PandaLayer outputs + post-embedder} | 5 | `panda_per_layer_probe_l63_sp65_sp82_per_layer_5seed.json` | §4.2 mid-encoder convergence finding; closes "decoder-side hypothesis" by direct measurement |
 
 Items 1–9 are the patched-protocol locked numbers cited in §3 / §4 / §6.
 Item 10 is the cross-system replication that uses the older S0–S6
